@@ -1,0 +1,16 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "central-interna",
+      "runtimeExecutable": "/Users/thiagolustosa/Documents/Projetos - CLAUDE/Projeto Interno/node_modules/.bin/vite",
+      "runtimeArgs": [
+        "--root",
+        "/Users/thiagolustosa/Documents/Projetos - CLAUDE/Projeto Interno",
+        "--port",
+        "5173"
+      ],
+      "port": 5173
+    }
+  ]
+}

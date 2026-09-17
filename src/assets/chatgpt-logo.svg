@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <title>ChatGPT</title>
+  <circle cx="12" cy="12" r="9" stroke="#10A37F" stroke-width="2"/>
+  <path d="M12 7v10M7.5 9.5l9 5M16.5 9.5l-9 5" stroke="#10A37F" stroke-width="1.6"
+        stroke-linecap="round"/>
+</svg>

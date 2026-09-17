@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Conteúdo Martech">
+  <!--
+    Marca da Conteúdo Martech reduzida ao que se lê num ícone de 16px:
+    o losango ⟨C⟩ em branco sobre o gradiente da marca.
+    Desenhado em vetor de propósito — nítido em qualquer tamanho e poucos bytes.
+  -->
+  <defs>
+    <linearGradient id="cm" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#22D3EE"/>
+      <stop offset="0.5" stop-color="#4F8DF7"/>
+      <stop offset="1" stop-color="#A855F7"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="128" height="128" rx="28" fill="url(#cm)"/>
+
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+    <!-- chevrons laterais -->
+    <path d="M30 38 L18 64 L30 90" stroke-width="11"/>
+    <path d="M98 38 L110 64 L98 90" stroke-width="11"/>
+    <!-- C central, com a abertura à direita -->
+    <path d="M78 44a22 22 0 1 0 0 40" stroke-width="13"/>
+  </g>
+</svg>
