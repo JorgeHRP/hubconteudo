@@ -8,6 +8,7 @@ import { AssistenteIA } from "@/components/AssistenteIA";
 import type { AppModulo } from "@/lib/types";
 
 import Login from "@/pages/Login";
+import DefinirSenha from "@/pages/DefinirSenha";
 import Dashboard from "@/pages/Dashboard";
 import Feed from "@/pages/Feed";
 import Colaboradores from "@/pages/Colaboradores";
@@ -53,7 +54,7 @@ function ProtectedRoute({
   modulo?: AppModulo;
   somenteMaster?: boolean;
 }) {
-  const { isAuthenticated, loading, temModulo, isMaster } = useAuth();
+  const { isAuthenticated, loading, temModulo, isMaster, precisaDefinirSenha } = useAuth();
 
   if (loading) {
     return (
@@ -63,6 +64,8 @@ function ProtectedRoute({
     );
   }
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  // Veio do convite ou do "esqueci minha senha": escolhe a senha antes de qualquer tela.
+  if (precisaDefinirSenha) return <Navigate to="/definir-senha" replace />;
   if (modulo && !temModulo(modulo)) return <Navigate to="/" replace />;
   if (somenteMaster && !isMaster) return <Navigate to="/" replace />;
 
@@ -75,7 +78,7 @@ function ProtectedRoute({
 }
 
 function Rotas() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, precisaDefinirSenha } = useAuth();
 
   return (
     <Routes>
@@ -83,8 +86,13 @@ function Rotas() {
       <Route path="/painel/:token" element={<PortalCliente />} />
       <Route
         path="/login"
-        element={!loading && isAuthenticated ? <Navigate to="/" replace /> : <Login />}
+        element={
+          !loading && isAuthenticated
+            ? <Navigate to={precisaDefinirSenha ? "/definir-senha" : "/"} replace />
+            : <Login />
+        }
       />
+      <Route path="/definir-senha" element={<DefinirSenha />} />
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
       <Route path="/colaboradores" element={<ProtectedRoute><Colaboradores /></ProtectedRoute>} />

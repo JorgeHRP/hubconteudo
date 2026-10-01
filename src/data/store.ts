@@ -237,6 +237,30 @@ export const buscarProfile = (user_id: string) =>
 export const papelDe = (user_id: string): AppRole => db.roles[user_id] ?? "funcionario";
 export const modulosDe = (user_id: string): AppModulo[] => db.permissoes[user_id] ?? [];
 
+/**
+ * Com o login real, quem a pessoa é, o papel e os painéis liberados vêm do
+ * Supabase. As telas ainda leem pessoas daqui, então a resposta do servidor é
+ * copiada para cá a cada login. Sai junto com o resto desta camada.
+ */
+export function espelharUsuarioRemoto(profile: Profile, papel: AppRole, modulos: AppModulo[]) {
+  // O master de demonstração tem o mesmo e-mail do master real: fica só o real.
+  const duplicados = db.profiles.filter(
+    (p) => p.email === profile.email && p.user_id !== profile.user_id
+  );
+  duplicados.forEach((p) => {
+    delete db.roles[p.user_id];
+    delete db.permissoes[p.user_id];
+  });
+  db.profiles = db.profiles.filter((p) => !duplicados.includes(p));
+
+  const i = db.profiles.findIndex((p) => p.user_id === profile.user_id);
+  if (i >= 0) db.profiles[i] = profile;
+  else db.profiles.push(profile);
+  db.roles[profile.user_id] = papel;
+  db.permissoes[profile.user_id] = modulos;
+  persistir();
+}
+
 export async function atualizarProfile(user_id: string, dados: Partial<Profile>) {
   const i = db.profiles.findIndex((p) => p.user_id === user_id);
   if (i >= 0) db.profiles[i] = { ...db.profiles[i], ...dados };

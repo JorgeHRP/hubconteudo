@@ -48,6 +48,16 @@ function cpfValido(valor: string): boolean {
   return digito(9) === Number(cpf[9]) && digito(10) === Number(cpf[10]);
 }
 
+/**
+ * Para onde o link do convite leva: a tela em que a pessoa cria a senha.
+ * SITE_URL é o endereço publicado da Central, definido nos segredos da função.
+ * Sem ele, o Supabase usa o endereço padrão configurado no projeto.
+ */
+function destinoDoConvite(): string | undefined {
+  const site = Deno.env.get("SITE_URL");
+  return site ? `${site.replace(/\/$/, "")}/definir-senha` : undefined;
+}
+
 Deno.serve(async (req) => {
   const pre = preflight(req);
   if (pre) return pre;
@@ -70,6 +80,7 @@ Deno.serve(async (req) => {
       const criacao = corpo.enviar_convite
         ? await admin.auth.admin.inviteUserByEmail(corpo.email, {
             data: { nome: corpo.nome },
+            redirectTo: destinoDoConvite(),
           })
         : await admin.auth.admin.createUser({
             email: corpo.email,
@@ -123,7 +134,9 @@ Deno.serve(async (req) => {
         .from("profiles").select("email").eq("user_id", corpo.user_id).maybeSingle();
       if (!perfil?.email) return erro("Colaborador não encontrado.", 404);
 
-      const { error } = await admin.auth.admin.inviteUserByEmail(perfil.email);
+      const { error } = await admin.auth.admin.inviteUserByEmail(perfil.email, {
+        redirectTo: destinoDoConvite(),
+      });
       if (error) return erro(error.message, 400);
 
       await admin.from("profiles")

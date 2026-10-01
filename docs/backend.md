@@ -50,6 +50,35 @@ As migrações já estão em `supabase/migrations/`, numeradas na ordem correta:
 | `20260901000003_nova_estrutura.sql` | Papéis novos, colaborador, viagens, integrações |
 | `20260901000004_historico_e_ia.sql` | Reuniões, histórico unificado, produção mensal |
 | `20260901000005_modulo_seo.sql` | As duas tabelas do painel de SEO |
+| `20260901000006_auditoria_rls.sql` | Correções da auditoria das policies (ver abaixo) |
+
+Antes de aplicar em qualquer banco, dá para conferir tudo sem Docker:
+
+```bash
+npm run db:testar
+```
+
+Sobe um Postgres em memória, aplica as migrações e entra como master, gerente e
+funcionário para conferir o que cada um vê. Mexeu em policy: rode de novo.
+
+### O que a auditoria das policies mudou
+
+- Gerente só vê painel que foi liberado para ele. Antes via todos.
+- CPF e contato de emergência não saem mais da tabela `profiles`. Quem precisa
+  lê pela view `colaboradores_publico`, que só entrega esses campos ao dono e a
+  quem tem o módulo `colaboradores`. **Consulta em `profiles` precisa listar as
+  colunas** — `select *` dá erro de permissão.
+- Contracheque e documento pessoal: dono e quem tem `colaboradores`.
+- Papéis e permissões: só o master altera.
+- Fixar post no feed: só gestor.
+- Funções de papel não respondem para quem não fez login.
+
+### Cadastro público precisa estar desligado
+
+No painel do Supabase: Authentication → Sign In / Providers → desligar
+**Allow new users to sign up**. Ligado, qualquer pessoa cria uma conta pela API
+e entra na Central como funcionária. Criar usuário pelo painel e por convite
+continua funcionando com isso desligado.
 
 ```bash
 npx supabase db reset
@@ -76,8 +105,15 @@ where user_id = (select id from auth.users
 
 ## 5. Ligar a aplicação no banco
 
-Com `.env.local` preenchido, `src/integrations/supabase/client.ts` passa a
-devolver um cliente de verdade. A troca da camada de dados é feita em
+Com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` preenchidos,
+`src/integrations/supabase/client.ts` passa a devolver um cliente de verdade e
+**o login passa a ser real**: e-mail e senha conferidos no Supabase, com
+"esqueci minha senha" e a tela `/definir-senha` para quem chega pelo convite.
+Sem as duas variáveis a aplicação fica no modo de demonstração (entra direto
+como master). Só ligue depois de as tabelas existirem e o master estar criado.
+
+Quem a pessoa é, o papel e os painéis liberados vêm do banco a cada login
+(`src/integrations/supabase/sessao.ts`). Os demais dados ainda vêm da camada local. A troca da camada de dados é feita em
 `src/data/store.ts`: cada função vira a query equivalente. As telas não mudam.
 
 ---

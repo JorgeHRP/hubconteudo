@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "db:subir": "node scripts/subir-banco.mjs",
-    "db:conferir": "node scripts/subir-banco.mjs --conferir"
+    "db:conferir": "node scripts/subir-banco.mjs --conferir",
+    "db:testar": "node supabase/testes/rls.test.mjs"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.2.6",
@@ -41,6 +42,7 @@
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
