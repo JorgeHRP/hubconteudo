@@ -14,6 +14,19 @@
 -- 1. PAPÉIS: master | gerente | funcionario
 -- =====================================================================
 
+-- O Postgres não deixa trocar o tipo de uma coluna citada em policy, nem apagar
+-- um tipo que ainda tem função ou policy pendurada. Então as policies que tocam
+-- em `role` ou nos papéis antigos saem antes da troca e voltam logo depois.
+DROP POLICY IF EXISTS "Only master can manage roles" ON public.user_roles;
+DROP POLICY IF EXISTS "Admins gerenciam papéis não-master" ON public.user_roles;
+DROP POLICY IF EXISTS "Admins atualizam papéis não-master" ON public.user_roles;
+DROP POLICY IF EXISTS "Admins removem papéis não-master" ON public.user_roles;
+-- 'rh' virou 'gerente', que já é atendido pelas policies de admin.
+DROP POLICY IF EXISTS "RH can view all requests" ON public.solicitacoes;
+DROP POLICY IF EXISTS "RH atualiza solicitações" ON public.solicitacoes;
+DROP POLICY IF EXISTS "RH gerencia eventos" ON public.eventos;
+DROP FUNCTION IF EXISTS public.has_role(uuid, public.app_role);
+
 ALTER TYPE public.app_role RENAME TO app_role_antigo;
 CREATE TYPE public.app_role AS ENUM ('master', 'gerente', 'funcionario');
 
@@ -63,6 +76,19 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS
   SELECT public.is_gestor(_user_id)
 $$;
 
+-- Papéis e permissões: só o master mexe. Gerente não entra aqui — se pudesse
+-- liberar painel, liberaria para si mesmo.
+CREATE POLICY "Only master can manage roles" ON public.user_roles
+  FOR ALL TO authenticated
+  USING (public.is_master(auth.uid()))
+  WITH CHECK (public.is_master(auth.uid()));
+
+DROP POLICY IF EXISTS "Admins manage permissions" ON public.user_permissoes;
+CREATE POLICY "Só master gerencia permissões" ON public.user_permissoes
+  FOR ALL TO authenticated
+  USING (public.is_master(auth.uid()))
+  WITH CHECK (public.is_master(auth.uid()));
+
 -- handle_new_user passa a criar 'funcionario'.
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
@@ -81,13 +107,9 @@ $$;
 -- 2. MÓDULOS: painéis liberados por usuário
 -- =====================================================================
 
-ALTER TYPE public.app_modulo ADD VALUE IF NOT EXISTS 'colaboradores';
-ALTER TYPE public.app_modulo ADD VALUE IF NOT EXISTS 'financeiro';
-ALTER TYPE public.app_modulo ADD VALUE IF NOT EXISTS 'viagens_aprovacao';
-ALTER TYPE public.app_modulo ADD VALUE IF NOT EXISTS 'trafego';
-ALTER TYPE public.app_modulo ADD VALUE IF NOT EXISTS 'seo_geo';
-ALTER TYPE public.app_modulo ADD VALUE IF NOT EXISTS 'projetos_rd';
--- 'cs', 'vendas' e 'clickup' já existem.
+-- Os valores novos de app_modulo são criados no fim de 000002_correcoes.sql.
+-- Não podem ficar aqui: o Postgres não deixa usar um valor de enum na mesma
+-- transação em que ele foi criado, e este arquivo já usa vários nas policies.
 
 -- =====================================================================
 -- 3. COLABORADOR: dados completos

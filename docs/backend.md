@@ -49,6 +49,7 @@ As migrações já estão em `supabase/migrations/`, numeradas na ordem correta:
 | `20260901000002_correcoes.sql` | **Duas correções de segurança**, constraints e índices |
 | `20260901000003_nova_estrutura.sql` | Papéis novos, colaborador, viagens, integrações |
 | `20260901000004_historico_e_ia.sql` | Reuniões, histórico unificado, produção mensal |
+| `20260901000005_modulo_seo.sql` | As duas tabelas do painel de SEO |
 
 ```bash
 npx supabase db reset
@@ -107,13 +108,21 @@ projeto em produção — nunca no frontend.
 
 ### Banco e funções
 
-**Supabase gerenciado:**
+**Supabase gerenciado:** coloque `SUPABASE_DB_URL` no `.env` (painel do Supabase →
+Connect → Session pooler) e rode:
+
 ```bash
-npx supabase link --project-ref <ref-do-projeto>
+npm run db:conferir
 ```
 ```bash
-npx supabase db push
+npm run db:subir
 ```
+
+O primeiro só mostra o que seria aplicado. O segundo aplica os arquivos de
+`supabase/migrations/` em ordem e anota no banco quais já rodaram, então dá para
+rodar de novo sem duplicar nada. Trocou de projeto: troque a `SUPABASE_DB_URL`
+e rode outra vez. Tabelas que já existem no projeto e não são da Central não
+são tocadas.
 ```bash
 npx supabase functions deploy
 ```
@@ -134,6 +143,39 @@ e é ele que faz a navegação funcionar ao dar F5 em qualquer rota.
 
 As variáveis `VITE_*` são embutidas no momento do build — buildar apontando
 para produção, não para o `127.0.0.1`.
+
+### Senha na frente do site (temporário)
+
+Enquanto o login real não existe, o botão "Entrar" coloca qualquer pessoa como
+master. Por isso a imagem Docker pede usuário e senha antes de entregar qualquer
+coisa. Ao subir o container, defina as duas variáveis:
+
+```
+ACESSO_USUARIO=<usuário>
+ACESSO_SENHA=<senha forte>
+```
+
+Sem elas o container não sobe — é de propósito. `/healthz` responde sem senha,
+para a checagem de saúde da hospedagem.
+
+Isso vale só para o caminho Docker/nginx. Subindo o `dist/` na hospedagem
+compartilhada (Apache), a senha precisa ser ligada pelo painel da Hostinger
+(Diretórios protegidos por senha), porque o `.htaccess` exige o caminho
+absoluto do arquivo de senha no servidor.
+
+Quando o login do Supabase entrar: tirar as duas linhas `auth_basic` do
+`nginx.conf`, o `docker/10-acesso.sh` e as linhas dele no `Dockerfile`.
+
+A função `temporary-master-access` (atalho de desenvolvimento que dava papel
+master) não existe mais no repositório e não pode voltar. Se ela chegou a ser
+publicada em algum projeto Supabase, apagar lá também:
+
+```bash
+npx supabase functions list
+```
+```bash
+npx supabase functions delete temporary-master-access
+```
 
 ---
 

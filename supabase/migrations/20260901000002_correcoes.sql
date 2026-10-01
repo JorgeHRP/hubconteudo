@@ -170,3 +170,21 @@ CREATE INDEX IF NOT EXISTS idx_analises_cliente       ON public.cliente_analises
 CREATE INDEX IF NOT EXISTS idx_tarefas_cliente        ON public.clickup_tarefas (cliente_id);
 CREATE INDEX IF NOT EXISTS idx_negocios_etapa         ON public.vendas_negocios (etapa);
 CREATE INDEX IF NOT EXISTS idx_user_permissoes_user   ON public.user_permissoes (user_id);
+
+-- =====================================================================
+-- MÓDULOS NOVOS (usados a partir de 000003_nova_estrutura.sql)
+-- =====================================================================
+-- Ficam neste arquivo de propósito: valor novo de enum só pode ser usado
+-- depois que a transação que o criou termina.
+ALTER TYPE public.app_modulo ADD VALUE IF NOT EXISTS 'colaboradores';
+ALTER TYPE public.app_modulo ADD VALUE IF NOT EXISTS 'financeiro';
+ALTER TYPE public.app_modulo ADD VALUE IF NOT EXISTS 'viagens_aprovacao';
+ALTER TYPE public.app_modulo ADD VALUE IF NOT EXISTS 'trafego';
+ALTER TYPE public.app_modulo ADD VALUE IF NOT EXISTS 'seo_geo';
+ALTER TYPE public.app_modulo ADD VALUE IF NOT EXISTS 'projetos_rd';
+-- Módulos que a aplicação já usa (AppModulo em src/lib/types.ts).
+ALTER TYPE public.app_modulo ADD VALUE IF NOT EXISTS 'clientes';
+ALTER TYPE public.app_modulo ADD VALUE IF NOT EXISTS 'tarefas';
+ALTER TYPE public.app_modulo ADD VALUE IF NOT EXISTS 'inbound';
+ALTER TYPE public.app_modulo ADD VALUE IF NOT EXISTS 'sites';
+ALTER TYPE public.app_modulo ADD VALUE IF NOT EXISTS 'social';

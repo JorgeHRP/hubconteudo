@@ -272,7 +272,6 @@ Dados pessoais editáveis, upload de foto (bucket `avatars`), visão dos própri
 |---|---|
 | `manage-users` | Criação/edição/exclusão de usuários com `SUPABASE_SERVICE_ROLE_KEY`; valida que o chamador é master/admin |
 | `setup-master` | Provisiona o usuário master inicial |
-| `temporary-master-access` | Concede papel master a sessão temporária (usado durante o desenvolvimento — **remover em produção**) |
 | `analise-cliente-ia` | Análise de CS por IA |
 
 Padrão obrigatório de toda função: tratar `OPTIONS` com `corsHeaders`, incluir CORS em **todas** as
@@ -326,7 +325,7 @@ src/
     CS ClienteDetalhe Vendas Admin Perfil Login NotFound
   integrations/supabase/{client.ts,types.ts}   gerados — não editar
 supabase/
-  functions/{manage-users,setup-master,temporary-master-access,analise-cliente-ia}/index.ts
+  functions/{manage-users,setup-master,analise-cliente-ia}/index.ts
   migrations/*.sql
 docs/schema-completo.sql         schema consolidado
 ```
@@ -335,7 +334,7 @@ docs/schema-completo.sql         schema consolidado
 
 ## 11. Backlog / o que falta
 
-- [ ] Reativar login real (e-mail + senha) e remover `temporary-master-access`.
+- [ ] Reativar login real (e-mail + senha).
 - [ ] Sincronização RD Station CRM, ClickUp, Read.ai e Google Drive.
 - [ ] Lembrete automático da avaliação mensal de churn (notificação para o analista responsável).
 - [ ] Histórico gráfico da evolução da flag por cliente.

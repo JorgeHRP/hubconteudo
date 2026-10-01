@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "db:subir": "node scripts/subir-banco.mjs",
+    "db:conferir": "node scripts/subir-banco.mjs --conferir"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.2.6",
