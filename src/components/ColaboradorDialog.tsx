@@ -29,7 +29,7 @@ const vazio: NovoColaborador = {
 const modulosDisponiveis = Object.keys(moduloLabels) as AppModulo[];
 
 export function ColaboradorDialog({ gatilho }: { gatilho?: ReactNode }) {
-  const { isMaster } = useAuth();
+  const { isMaster, loginReal } = useAuth();
   const qc = useQueryClient();
   const [aberto, setAberto] = useState(false);
   const [form, setForm] = useState<NovoColaborador>(vazio);
@@ -59,9 +59,11 @@ export function ColaboradorDialog({ gatilho }: { gatilho?: ReactNode }) {
       setForm(vazio);
       setErro(null);
       toast.success(
-        form.enviar_convite
-          ? `${novo.nome} cadastrado. O convite por e-mail sai quando o Supabase estiver conectado.`
-          : `${novo.nome} cadastrado sem convite.`
+        !form.enviar_convite
+          ? `${novo.nome} cadastrado sem convite.`
+          : loginReal
+            ? `${novo.nome} cadastrado. O convite foi enviado para ${novo.email}.`
+            : `${novo.nome} cadastrado. O convite por e-mail sai quando o Supabase estiver conectado.`
       );
     },
     onError: (e: Error) => setErro(e.message),

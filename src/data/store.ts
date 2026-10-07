@@ -32,6 +32,10 @@ import {
   contatosImportados, documentosImportados, empresasImportadas, escoposImportados,
   personasImportadas, produtosImportados, reunioesImportadas, timelineImportada,
 } from "./seed-carteira";
+import { temSupabase } from "@/integrations/supabase/client";
+import {
+  gerirUsuario, gravarModulos, gravarPapel, gravarPerfil, listarPessoas,
+} from "@/integrations/supabase/pessoas";
 
 /**
  * Camada de dados em memória.
@@ -231,7 +235,21 @@ const wait = <T,>(valor: T): Promise<T> =>
 
 /* ---------------- pessoas ---------------- */
 
-export const listarProfiles = () => wait(db.profiles);
+/**
+ * Com o banco ligado, pessoas, papéis e painéis liberados vêm do servidor e são
+ * copiados para cá: `papelDe` e `modulosDe` são lidos de forma síncrona por
+ * várias telas. O restante desta camada continua local.
+ */
+export async function listarProfiles(): Promise<Profile[]> {
+  if (!temSupabase()) return wait(db.profiles);
+
+  const remoto = await listarPessoas();
+  db.profiles = remoto.profiles;
+  db.roles = remoto.papeis;
+  db.permissoes = remoto.modulos;
+  persistir();
+  return clone(db.profiles);
+}
 export const buscarProfile = (user_id: string) =>
   wait(db.profiles.find((p) => p.user_id === user_id) ?? null);
 export const papelDe = (user_id: string): AppRole => db.roles[user_id] ?? "funcionario";
@@ -262,6 +280,7 @@ export function espelharUsuarioRemoto(profile: Profile, papel: AppRole, modulos:
 }
 
 export async function atualizarProfile(user_id: string, dados: Partial<Profile>) {
+  if (temSupabase()) await gravarPerfil(user_id, dados);
   const i = db.profiles.findIndex((p) => p.user_id === user_id);
   if (i >= 0) db.profiles[i] = { ...db.profiles[i], ...dados };
   return wait(db.profiles[i] ?? null);
@@ -284,20 +303,9 @@ export interface NovoColaborador {
 }
 
 export async function criarColaborador(dados: NovoColaborador) {
-  const emailEmUso = db.profiles.some(
-    (p) => p.email.toLowerCase() === dados.email.trim().toLowerCase()
-  );
-  if (emailEmUso) throw new Error("Já existe um colaborador com este e-mail.");
-
-  const cpfLimpo = dados.cpf.replace(/\D/g, "");
-  if (cpfLimpo && db.profiles.some((p) => (p.cpf ?? "").replace(/\D/g, "") === cpfLimpo)) {
-    throw new Error("Já existe um colaborador com este CPF.");
-  }
-
-  const user_id = `u-${uid()}`;
   const novo: Profile = {
     id: `p-${uid()}`,
-    user_id,
+    user_id: `u-${uid()}`,
     nome: dados.nome.trim(),
     email: dados.email.trim().toLowerCase(),
     cpf: dados.cpf || null,
@@ -313,19 +321,51 @@ export async function criarColaborador(dados: NovoColaborador) {
     convite_enviado_em: dados.enviar_convite ? agora() : null,
   };
 
+  // Banco ligado: quem cria a conta, o perfil e o acesso é a função no servidor,
+  // que também confere e-mail e CPF repetidos e dispara o convite.
+  if (temSupabase()) {
+    const { user_id } = await gerirUsuario<{ user_id: string }>({
+      acao: "criar",
+      nome: novo.nome,
+      email: novo.email,
+      cpf: novo.cpf,
+      telefone: novo.telefone,
+      contato_emergencia_nome: novo.contato_emergencia_nome,
+      contato_emergencia_telefone: novo.contato_emergencia_telefone,
+      data_admissao: novo.data_admissao,
+      data_nascimento: novo.data_nascimento,
+      cargo: novo.cargo,
+      departamento: novo.departamento,
+      role: dados.role,
+      modulos: dados.role === "master" ? [] : dados.modulos,
+      enviar_convite: dados.enviar_convite,
+    });
+    return { ...novo, id: user_id, user_id };
+  }
+
+  const emailEmUso = db.profiles.some((p) => p.email.toLowerCase() === novo.email);
+  if (emailEmUso) throw new Error("Já existe um colaborador com este e-mail.");
+
+  const cpfLimpo = dados.cpf.replace(/D/g, "");
+  if (cpfLimpo && db.profiles.some((p) => (p.cpf ?? "").replace(/D/g, "") === cpfLimpo)) {
+    throw new Error("Já existe um colaborador com este CPF.");
+  }
+
   db.profiles.push(novo);
-  db.roles[user_id] = dados.role;
-  if (dados.modulos.length > 0) db.permissoes[user_id] = dados.modulos;
+  db.roles[novo.user_id] = dados.role;
+  if (dados.modulos.length > 0) db.permissoes[novo.user_id] = dados.modulos;
 
   return wait(novo);
 }
 
 export async function definirPapel(user_id: string, role: AppRole) {
+  if (temSupabase()) await gravarPapel(user_id, role);
   db.roles[user_id] = role;
   return wait(role);
 }
 
 export async function definirModulos(user_id: string, modulos: AppModulo[]) {
+  if (temSupabase()) await gravarModulos(user_id, modulos);
   if (modulos.length === 0) delete db.permissoes[user_id];
   else db.permissoes[user_id] = modulos;
   return wait(modulos);
@@ -333,11 +373,16 @@ export async function definirModulos(user_id: string, modulos: AppModulo[]) {
 
 export async function alternarAtivo(user_id: string) {
   const p = db.profiles.find((x) => x.user_id === user_id);
+  // Desativar também bloqueia o login, o que só o servidor consegue fazer.
+  if (p && temSupabase()) {
+    await gerirUsuario({ acao: p.ativo ? "desativar" : "reativar", user_id });
+  }
   if (p) p.ativo = !p.ativo;
   return wait(p ?? null);
 }
 
 export async function registrarConvite(user_id: string) {
+  if (temSupabase()) await gerirUsuario({ acao: "reenviar_convite", user_id });
   const p = db.profiles.find((x) => x.user_id === user_id);
   if (p) p.convite_enviado_em = agora();
   return wait(p ?? null);

@@ -21,7 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Admin() {
-  const { isMaster, userId } = useAuth();
+  const { isMaster, userId, loginReal } = useAuth();
   const qc = useQueryClient();
 
   const { data: profiles } = useQuery({ queryKey: ["profiles"], queryFn: listarProfiles });
@@ -33,19 +33,26 @@ export default function Admin() {
   const mudarPapel = useMutation({
     mutationFn: ({ user_id, role }: { user_id: string; role: AppRole }) => definirPapel(user_id, role),
     onSuccess: () => { invalidar(); toast.success("Papel atualizado"); },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const alternar = useMutation({
     mutationFn: (user_id: string) => alternarAtivo(user_id),
     onSuccess: () => { invalidar(); toast.success("Status alterado"); },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const reenviar = useMutation({
     mutationFn: (user_id: string) => registrarConvite(user_id),
     onSuccess: () => {
       invalidar();
-      toast.success("Convite marcado para reenvio. O disparo real depende do Supabase.");
+      toast.success(
+        loginReal
+          ? "E-mail com o link de criar senha enviado."
+          : "Convite marcado para reenvio. O disparo real depende do Supabase."
+      );
     },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const ligar = useMutation({

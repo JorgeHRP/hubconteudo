@@ -17,8 +17,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Colaboradores() {
-  const { temModulo, isGestor } = useAuth();
-  const podeCadastrar = temModulo("colaboradores");
+  const { temModulo, isGestor, isMaster, loginReal } = useAuth();
+  const veDadosPessoais = temModulo("colaboradores");
+  // Com o banco ligado, criar conta de acesso é ação do master (função manage-users).
+  const podeCadastrar = loginReal ? isMaster : veDadosPessoais;
   const [busca, setBusca] = useState("");
   const [departamento, setDepartamento] = useState("todos");
 
@@ -128,12 +130,12 @@ export default function Colaboradores() {
                       <Phone className="h-3.5 w-3.5 shrink-0" /> {p.telefone}
                     </p>
                   )}
-                  {podeCadastrar && p.cpf && (
+                  {veDadosPessoais && p.cpf && (
                     <p className="flex items-center gap-2">
                       <IdCard className="h-3.5 w-3.5 shrink-0" /> {p.cpf}
                     </p>
                   )}
-                  {podeCadastrar && p.contato_emergencia_nome && (
+                  {veDadosPessoais && p.contato_emergencia_nome && (
                     <p className="flex items-center gap-2 truncate">
                       <HeartPulse className="h-3.5 w-3.5 shrink-0 text-destructive" />
                       {p.contato_emergencia_nome} · {p.contato_emergencia_telefone}

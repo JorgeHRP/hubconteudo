@@ -113,7 +113,16 @@ Sem as duas variáveis a aplicação fica no modo de demonstração (entra diret
 como master). Só ligue depois de as tabelas existirem e o master estar criado.
 
 Quem a pessoa é, o papel e os painéis liberados vêm do banco a cada login
-(`src/integrations/supabase/sessao.ts`). Os demais dados ainda vêm da camada local. A troca da camada de dados é feita em
+(`src/integrations/supabase/sessao.ts`).
+
+**Pessoas também já vêm do banco** (`src/integrations/supabase/pessoas.ts`): o
+diretório de colaboradores, papéis, painéis liberados e a edição do próprio
+perfil. Cadastrar colaborador, reenviar o link de criar senha e desativar passam
+pela função `manage-users`, que precisa estar publicada (seção 6) — e só o
+master consegue. Para o convite chegar a endereços de fora da equipe do projeto,
+configure um SMTP próprio em Authentication → Emails.
+
+Os demais dados ainda vêm da camada local. A troca da camada de dados é feita em
 `src/data/store.ts`: cada função vira a query equivalente. As telas não mudam.
 
 ---

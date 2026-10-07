@@ -58,6 +58,18 @@ function destinoDoConvite(): string | undefined {
   return site ? `${site.replace(/\/$/, "")}/definir-senha` : undefined;
 }
 
+/** As mensagens do Supabase vêm em inglês; estas são as que o cadastro de fato encontra. */
+function traduzir(mensagem: string): string {
+  const m = mensagem.toLowerCase();
+  if (m.includes("already been registered") || m.includes("already registered") || m.includes("email_exists")) {
+    return "Já existe um colaborador com este e-mail.";
+  }
+  if (m.includes("profiles_cpf_key")) return "Já existe um colaborador com este CPF.";
+  if (m.includes("rate limit")) return "Limite de envio de e-mails atingido. Tente de novo em alguns minutos.";
+  if (m.includes("invalid input value for enum")) return "Papel ou painel desconhecido.";
+  return mensagem;
+}
+
 Deno.serve(async (req) => {
   const pre = preflight(req);
   if (pre) return pre;
@@ -74,23 +86,43 @@ Deno.serve(async (req) => {
       if (!corpo.nome || corpo.nome.trim().length < 3) return erro("Nome muito curto.");
       if (!cpfValido(corpo.cpf ?? "")) return erro("CPF inválido.");
       if (!corpo.data_admissao) return erro("Data de admissão é obrigatória.");
+      if (!["master", "gerente", "funcionario"].includes(corpo.role)) return erro("Papel desconhecido.");
+
+      const email = corpo.email.trim().toLowerCase();
+
+      // Conferido antes de criar a conta: descobrir o CPF repetido só depois
+      // significaria já ter mandado o convite para alguém que não será cadastrado.
+      const digitos = (v: string) => v.replace(/\D/g, "");
+      const { data: comCpf, error: erroCpf } = await admin
+        .from("profiles").select("cpf").not("cpf", "is", null);
+      if (erroCpf) return erro(erroCpf.message, 500);
+      if ((comCpf ?? []).some((p) => digitos(p.cpf) === digitos(corpo.cpf))) {
+        return erro("Já existe um colaborador com este CPF.");
+      }
 
       // inviteUserByEmail cria o usuário e dispara o e-mail de primeiro acesso.
       // Sem convite, cria já confirmado com senha aleatória.
       const criacao = corpo.enviar_convite
-        ? await admin.auth.admin.inviteUserByEmail(corpo.email, {
+        ? await admin.auth.admin.inviteUserByEmail(email, {
             data: { nome: corpo.nome },
             redirectTo: destinoDoConvite(),
           })
         : await admin.auth.admin.createUser({
-            email: corpo.email,
+            email,
             password: crypto.randomUUID(),
             email_confirm: true,
             user_metadata: { nome: corpo.nome },
           });
 
-      if (criacao.error) return erro(criacao.error.message, 400);
+      if (criacao.error) return erro(traduzir(criacao.error.message), 400);
       const userId = criacao.data.user!.id;
+
+      // Se algo falhar daqui em diante, a conta recém-criada é apagada: sem
+      // isso o e-mail ficaria preso a um cadastro pela metade.
+      const desfazer = async (mensagem: string) => {
+        await admin.auth.admin.deleteUser(userId);
+        return erro(traduzir(mensagem), 400);
+      };
 
       // O trigger handle_new_user já criou profile + role 'funcionario'.
       const { error: erroPerfil } = await admin
@@ -109,21 +141,21 @@ Deno.serve(async (req) => {
         })
         .eq("user_id", userId);
 
-      if (erroPerfil) return erro(erroPerfil.message, 400);
+      if (erroPerfil) return desfazer(erroPerfil.message);
 
       if (corpo.role !== "funcionario") {
         const { error: erroPapel } = await admin
           .from("user_roles")
           .update({ role: corpo.role })
           .eq("user_id", userId);
-        if (erroPapel) return erro(erroPapel.message, 400);
+        if (erroPapel) return desfazer(erroPapel.message);
       }
 
-      if (corpo.modulos?.length) {
+      if (corpo.role !== "master" && corpo.modulos?.length) {
         const { error: erroModulos } = await admin
           .from("user_permissoes")
           .insert(corpo.modulos.map((modulo) => ({ user_id: userId, modulo })));
-        if (erroModulos) return erro(erroModulos.message, 400);
+        if (erroModulos) return desfazer(erroModulos.message);
       }
 
       return json({ user_id: userId, convite_enviado: corpo.enviar_convite });
@@ -134,10 +166,12 @@ Deno.serve(async (req) => {
         .from("profiles").select("email").eq("user_id", corpo.user_id).maybeSingle();
       if (!perfil?.email) return erro("Colaborador não encontrado.", 404);
 
-      const { error } = await admin.auth.admin.inviteUserByEmail(perfil.email, {
+      // O convite só existe para conta nova. Quem já foi convidado recebe o link
+      // de criar senha, que leva para a mesma tela.
+      const { error } = await admin.auth.resetPasswordForEmail(perfil.email, {
         redirectTo: destinoDoConvite(),
       });
-      if (error) return erro(error.message, 400);
+      if (error) return erro(traduzir(error.message), 400);
 
       await admin.from("profiles")
         .update({ convite_enviado_em: new Date().toISOString() })
@@ -148,6 +182,9 @@ Deno.serve(async (req) => {
 
     if (corpo.acao === "desativar" || corpo.acao === "reativar") {
       const ativo = corpo.acao === "reativar";
+      if (!ativo && corpo.user_id === autorizado.userId) {
+        return erro("Você não pode desativar a própria conta.");
+      }
       const { error } = await admin
         .from("profiles").update({ ativo }).eq("user_id", corpo.user_id);
       if (error) return erro(error.message, 400);

@@ -228,6 +228,15 @@ await barrado("pessoa não edita o perfil de outra", ANA, `update public.profile
 await barrado("gerente sem o módulo não edita perfil alheio", GERENTE, `update public.profiles set cargo = 'x' where user_id = '${ANA}' returning id`);
 await permitido("quem tem colaboradores edita perfil", RH, `update public.profiles set cargo = 'Analista' where user_id = '${ANA}' returning id`);
 
+// As consultas que a tela de pessoas faz (src/integrations/supabase/pessoas.ts).
+await ve("diretório pela view chega inteiro para qualquer pessoa", ANA, `select * from public.colaboradores_publico order by nome`, 8);
+await ve("papéis de todos são legíveis (a tela mostra o papel de cada um)", ANA, `select user_id, role from public.user_roles`, 8);
+await ve("funcionário só lê os próprios painéis liberados", BRUNO, `select user_id, modulo from public.user_permissoes`, 0);
+await ve("master lê os painéis de todos", MASTER, `select user_id, modulo from public.user_permissoes where user_id = '${RH}'`, 1);
+await permitido("pessoa edita o próprio contato de emergência", ANA, `update public.profiles set contato_emergencia_nome = 'Pai da Ana' where user_id = '${ANA}' returning id`);
+await permitido("master tira painel", MASTER, `delete from public.user_permissoes where user_id = '${RH}' and modulo in ('colaboradores') returning modulo`);
+await barrado("funcionário não tira painel de ninguém", ANA, `delete from public.user_permissoes where user_id = '${RH}' returning modulo`);
+
 // ---------------------------------------------------------------------------
 // 4. Documentos e contracheques
 // ---------------------------------------------------------------------------

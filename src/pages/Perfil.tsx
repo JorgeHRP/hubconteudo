@@ -51,6 +51,7 @@ export default function Perfil() {
       qc.invalidateQueries({ queryKey: ["profiles"] });
       toast.success("Perfil atualizado");
     },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   return (

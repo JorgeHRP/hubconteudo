@@ -38,6 +38,7 @@ export function PermissoesDialog({
       qc.invalidateQueries({ queryKey: ["profiles"] });
       toast.success(`Permissões de ${nome} atualizadas`);
     },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const ehMaster = papel === "master";
