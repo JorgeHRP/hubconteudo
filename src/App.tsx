@@ -1,7 +1,7 @@
 import { Suspense, lazy } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MutationCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
 import { AssistenteIA } from "@/components/AssistenteIA";
@@ -43,6 +43,13 @@ import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { refetchOnWindowFocus: false } },
+  // Gravação recusada pelo servidor não pode passar em silêncio. As telas que
+  // tratam o próprio erro continuam tratando; as demais caem aqui.
+  mutationCache: new MutationCache({
+    onError: (erro, _variaveis, _contexto, mutacao) => {
+      if (!mutacao.options.onError) toast.error(erro.message);
+    },
+  }),
 });
 
 function ProtectedRoute({

@@ -122,6 +122,10 @@ pela função `manage-users`, que precisa estar publicada (seção 6) — e só 
 master consegue. Para o convite chegar a endereços de fora da equipe do projeto,
 configure um SMTP próprio em Authentication → Emails.
 
+**O Hub também** (`src/integrations/supabase/hub.ts`): mural com curtidas,
+comentários e fixar; calendário; solicitações. O que uma pessoa publica, as
+outras veem.
+
 Os demais dados ainda vêm da camada local. A troca da camada de dados é feita em
 `src/data/store.ts`: cada função vira a query equivalente. As telas não mudam.
 

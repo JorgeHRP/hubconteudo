@@ -36,6 +36,12 @@ import { temSupabase } from "@/integrations/supabase/client";
 import {
   gerirUsuario, gravarModulos, gravarPapel, gravarPerfil, listarPessoas,
 } from "@/integrations/supabase/pessoas";
+import {
+  alternarCurtidaRemoto, alternarFixadoRemoto, comentarRemoto, criarEventoRemoto,
+  criarPostRemoto, criarSolicitacaoRemoto, listarEventosRemoto, listarPostsRemoto,
+  listarSolicitacoesRemoto, mudarStatusSolicitacaoRemoto, removerEventoRemoto,
+  removerPostRemoto,
+} from "@/integrations/supabase/hub";
 
 /**
  * Camada de dados em memória.
@@ -390,12 +396,18 @@ export async function registrarConvite(user_id: string) {
 
 /* ---------------- feed ---------------- */
 
+// Mural, calendário e solicitações: com o banco ligado vão direto ao servidor
+// (src/integrations/supabase/hub.ts) e nada fica guardado no navegador.
+
 export const listarPosts = () =>
-  wait([...db.posts].sort((a, b) =>
-    Number(b.fixado) - Number(a.fixado) || b.created_at.localeCompare(a.created_at)
-  ));
+  temSupabase()
+    ? listarPostsRemoto()
+    : wait([...db.posts].sort((a, b) =>
+        Number(b.fixado) - Number(a.fixado) || b.created_at.localeCompare(a.created_at)
+      ));
 
 export async function criarPost(autor_id: string, conteudo: string, tipo: PostTipo) {
+  if (temSupabase()) return criarPostRemoto(autor_id, conteudo, tipo);
   const novo: Post = {
     id: `post-${uid()}`, autor_id, conteudo, tipo, fixado: false,
     imagem_url: null, created_at: agora(), curtidas: [], comentarios: [],
@@ -405,6 +417,7 @@ export async function criarPost(autor_id: string, conteudo: string, tipo: PostTi
 }
 
 export async function alternarCurtida(post_id: string, user_id: string) {
+  if (temSupabase()) return alternarCurtidaRemoto(post_id, user_id);
   const p = db.posts.find((x) => x.id === post_id);
   if (!p) return wait(null);
   p.curtidas = p.curtidas.includes(user_id)
@@ -414,6 +427,7 @@ export async function alternarCurtida(post_id: string, user_id: string) {
 }
 
 export async function comentar(post_id: string, autor_id: string, conteudo: string) {
+  if (temSupabase()) return comentarRemoto(post_id, autor_id, conteudo);
   const p = db.posts.find((x) => x.id === post_id);
   if (!p) return wait(null);
   p.comentarios.push({ id: `c-${uid()}`, post_id, autor_id, conteudo, created_at: agora() });
@@ -421,12 +435,14 @@ export async function comentar(post_id: string, autor_id: string, conteudo: stri
 }
 
 export async function alternarFixado(post_id: string) {
+  if (temSupabase()) return alternarFixadoRemoto(post_id);
   const p = db.posts.find((x) => x.id === post_id);
   if (p) p.fixado = !p.fixado;
   return wait(p ?? null);
 }
 
 export async function removerPost(post_id: string) {
+  if (temSupabase()) return removerPostRemoto(post_id);
   db.posts = db.posts.filter((p) => p.id !== post_id);
   return wait(true);
 }
@@ -434,15 +450,19 @@ export async function removerPost(post_id: string) {
 /* ---------------- calendário ---------------- */
 
 export const listarEventos = () =>
-  wait([...db.eventos].sort((a, b) => a.data.localeCompare(b.data)));
+  temSupabase()
+    ? listarEventosRemoto()
+    : wait([...db.eventos].sort((a, b) => a.data.localeCompare(b.data)));
 
 export async function criarEvento(dados: Omit<Evento, "id">) {
+  if (temSupabase()) return criarEventoRemoto(dados);
   const novo: Evento = { ...dados, id: `e-${uid()}` };
   db.eventos.push(novo);
   return wait(novo);
 }
 
 export async function removerEvento(id: string) {
+  if (temSupabase()) return removerEventoRemoto(id);
   db.eventos = db.eventos.filter((e) => e.id !== id);
   return wait(true);
 }
@@ -450,11 +470,14 @@ export async function removerEvento(id: string) {
 /* ---------------- solicitações ---------------- */
 
 export const listarSolicitacoes = () =>
-  wait([...db.solicitacoes].sort((a, b) => b.created_at.localeCompare(a.created_at)));
+  temSupabase()
+    ? listarSolicitacoesRemoto()
+    : wait([...db.solicitacoes].sort((a, b) => b.created_at.localeCompare(a.created_at)));
 
 export async function criarSolicitacao(
   solicitante_id: string, categoria: string, titulo: string, descricao: string
 ) {
+  if (temSupabase()) return criarSolicitacaoRemoto(solicitante_id, categoria, titulo, descricao);
   const nova: Solicitacao = {
     id: `s-${uid()}`, solicitante_id, categoria, titulo, descricao,
     status: "aberta", created_at: agora(), updated_at: agora(),
@@ -464,6 +487,7 @@ export async function criarSolicitacao(
 }
 
 export async function mudarStatusSolicitacao(id: string, status: SolicitacaoStatus) {
+  if (temSupabase()) return mudarStatusSolicitacaoRemoto(id, status);
   const s = db.solicitacoes.find((x) => x.id === id);
   if (s) { s.status = status; s.updated_at = agora(); }
   return wait(s ?? null);
