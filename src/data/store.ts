@@ -29,9 +29,8 @@ import { templateOnboarding } from "./template-onboarding";
 import { modeloCertificadoPadrao } from "@/lib/treinamentos";
 import { catalogoInbound } from "./catalogo-inbound";
 import {
-  contatosImportados, documentosImportados, empresasImportadas, escoposImportados,
-  personasImportadas, produtosImportados, reunioesImportadas, timelineImportada,
-} from "./seed-carteira";
+  COLECOES, agendarEnvio, buscarMudancas, iniciarSincronia, pararSincronia,
+} from "./sincronia";
 import { temSupabase } from "@/integrations/supabase/client";
 import {
   gerirUsuario, gravarModulos, gravarPapel, gravarPerfil, listarPessoas,
@@ -54,6 +53,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const agora = () => new Date().toISOString();
 
 const CHAVE_DB = "central-interna:dados";
+const CHAVE_COPIA = "central-interna:dados:antes-do-banco";
 /** Suba este número ao acrescentar dados de origem novos (ex.: a carteira importada). */
 const VERSAO_DADOS = 3;
 
@@ -80,16 +80,18 @@ const inicial = () => ({
   tarefas: [] as ClickUpTarefa[],
   reunioes: [] as ReuniaoCliente[],
   projetosSeo: [] as ProjetoSeo[],
-  empresas: clone(empresasImportadas) as EmpresaDossie[],
-  contatos: clone(contatosImportados) as ContatoEmpresa[],
-  personas: clone(personasImportadas) as PersonaCliente[],
-  produtos: clone(produtosImportados) as ProdutoEmpresa[],
+  // A carteira não vem mais embutida no site: mora no banco e é semeada por
+  // scripts/semear-carteira.mjs. Site é arquivo público; dado de cliente, não.
+  empresas: [] as EmpresaDossie[],
+  contatos: [] as ContatoEmpresa[],
+  personas: [] as PersonaCliente[],
+  produtos: [] as ProdutoEmpresa[],
   concorrentes: [] as ConcorrenteEmpresa[],
-  reunioesEmpresa: clone(reunioesImportadas) as ReuniaoEmpresa[],
+  reunioesEmpresa: [] as ReuniaoEmpresa[],
   cases: [] as CaseEmpresa[],
-  timeline: clone(timelineImportada) as EventoTimeline[],
-  documentosEmpresa: clone(documentosImportados) as DocumentoEmpresa[],
-  escopos: clone(escoposImportados) as EscopoContrato[],
+  timeline: [] as EventoTimeline[],
+  documentosEmpresa: [] as DocumentoEmpresa[],
+  escopos: [] as EscopoContrato[],
   tarefas_internas: [] as Tarefa[],
   statusTarefa: clone(statusPadrao) as StatusTarefa[],
   tiposTarefa: clone(tiposPadrao) as TipoTarefa[],
@@ -134,6 +136,11 @@ function carregar(): Banco {
     if (!salvo) return base;
 
     const { _versao, ...guardado } = JSON.parse(salvo) as Banco & { _versao?: number };
+    // Com o banco ligado, o que é compartilhado vem do servidor depois do login.
+    // O que ficou neste navegador do tempo da demonstração não entra.
+    if (temSupabase()) {
+      for (const colecao of Object.keys(COLECOES)) delete (guardado as Record<string, unknown>)[colecao];
+    }
     const banco = { ...base, ...guardado } as Banco;
 
     // Dados de origem novos só entram onde o navegador ainda não tem nada,
@@ -214,8 +221,13 @@ const db: Banco = carregar();
 })();
 
 function persistir(): boolean {
+  // Com o banco ligado, as coleções compartilhadas sobem para o servidor e não
+  // ficam guardadas no navegador.
+  agendarEnvio();
   try {
-    localStorage.setItem(CHAVE_DB, JSON.stringify({ ...db, _versao: VERSAO_DADOS }));
+    const local: Record<string, unknown> = { ...db, _versao: VERSAO_DADOS };
+    if (temSupabase()) for (const colecao of Object.keys(COLECOES)) delete local[colecao];
+    localStorage.setItem(CHAVE_DB, JSON.stringify(local));
     return true;
   } catch {
     // quota cheia ou storage bloqueado — segue em memória
@@ -223,8 +235,31 @@ function persistir(): boolean {
   }
 }
 
-/** Apaga tudo e volta ao estado inicial (só o usuário master). */
+/**
+ * Liga as coleções compartilhadas ao servidor, logo depois do login.
+ * Antes de qualquer coisa, guarda uma cópia do que este navegador tinha da
+ * época da demonstração — só uma vez, e só neste navegador.
+ */
+export async function iniciarDadosCompartilhados(master: boolean) {
+  try {
+    const antigo = localStorage.getItem(CHAVE_DB);
+    if (antigo && !localStorage.getItem(CHAVE_COPIA)) localStorage.setItem(CHAVE_COPIA, antigo);
+  } catch {
+    // sem espaço para a cópia: segue sem ela
+  }
+  await iniciarSincronia(
+    db as unknown as Record<string, unknown>,
+    inicial() as unknown as Record<string, unknown>,
+    master
+  );
+}
+
+export { buscarMudancas, pararSincronia };
+
+/** Apaga tudo e volta ao estado inicial (só o usuário master). Só no modo de demonstração. */
 export function zerarDados() {
+  // Com o banco ligado isto apagaria a carteira de todo mundo.
+  if (temSupabase()) return;
   const base = inicial();
   (Object.keys(base) as (keyof Banco)[]).forEach((k) => {
     // @ts-expect-error atribuição dinâmica sobre chaves conhecidas

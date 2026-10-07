@@ -1,4 +1,4 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { MutationCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster, toast } from "sonner";
@@ -6,6 +6,8 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
 import { AssistenteIA } from "@/components/AssistenteIA";
 import type { AppModulo } from "@/lib/types";
+import { buscarMudancas } from "@/data/store";
+import { ouvirSincronia } from "@/data/sincronia";
 
 import Login from "@/pages/Login";
 import DefinirSenha from "@/pages/DefinirSenha";
@@ -84,8 +86,29 @@ function ProtectedRoute({
   );
 }
 
+// O que outra pessoa gravou chega aqui e as telas abertas se atualizam sozinhas.
+ouvirSincronia({
+  mudou: () => void queryClient.invalidateQueries(),
+  falhou: (mensagem) => toast.error(mensagem),
+});
+
+/** Busca o que os outros mudaram: a cada 20 s e sempre que a pessoa volta para a aba. */
+function useDadosCompartilhados(ativo: boolean) {
+  useEffect(() => {
+    if (!ativo) return;
+    const buscar = () => { if (!document.hidden) void buscarMudancas(); };
+    const intervalo = window.setInterval(buscar, 20_000);
+    document.addEventListener("visibilitychange", buscar);
+    return () => {
+      window.clearInterval(intervalo);
+      document.removeEventListener("visibilitychange", buscar);
+    };
+  }, [ativo]);
+}
+
 function Rotas() {
-  const { isAuthenticated, loading, precisaDefinirSenha } = useAuth();
+  const { isAuthenticated, loading, precisaDefinirSenha, loginReal } = useAuth();
+  useDadosCompartilhados(loginReal && isAuthenticated);
 
   return (
     <Routes>

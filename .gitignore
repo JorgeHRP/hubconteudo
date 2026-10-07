@@ -27,3 +27,6 @@ dist-ssr
 .env
 .env.local
 .env*.local
+
+# Gerados a partir de supabase/migrations e supabase/functions, para colar no painel
+supabase/colar-*

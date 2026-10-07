@@ -271,6 +271,8 @@ export default function Admin() {
                 </div>
                 <Button
                   variant="destructive"
+                  disabled={loginReal}
+                  title={loginReal ? "Indisponível com o banco ligado" : undefined}
                   onClick={() => {
                     zerarDados();
                     qc.invalidateQueries();

@@ -336,6 +336,53 @@ const semRls = await db.query(`
 conferir("toda tabela da Central tem RLS ligado", semRls.rows.length === 0, semRls.rows.map((r) => r.relname).join(", "));
 
 // ---------------------------------------------------------------------------
+// 10. Registros compartilhados (carteira, CS, tarefas, inbound, tráfego…)
+// ---------------------------------------------------------------------------
+
+const TRAFEGO = "00000000-0000-0000-0000-0000000000aa"; // funcionária com o painel de tráfego
+const INATIVO = "00000000-0000-0000-0000-0000000000bb"; // tinha painel, foi desativado
+await db.exec(`
+  insert into auth.users (id, email) values ('${TRAFEGO}', 'trafego@teste'), ('${INATIVO}', 'inativo@teste');
+  insert into public.user_permissoes (user_id, modulo) values ('${TRAFEGO}', 'trafego'), ('${INATIVO}', 'inbound');
+  update public.profiles set ativo = false where user_id = '${INATIVO}';
+  insert into public.central_registros (colecao, id, dados) values
+    ('empresas', 'emp-01', '{"nome":"Cliente A"}'), ('empresas', 'emp-02', '{"nome":"Cliente B"}'),
+    ('avaliacoes', 'av-1', '{"flag":"amarela"}'), ('paineis', 'trafego', '{"url":""}'),
+    ('notificacoes', 'n-1', '{"titulo":"oi"}'), ('colecao_inventada', 'x', '{}');
+`);
+
+const reg = (colecao, idr) => `insert into public.central_registros (colecao, id, dados) values ('${colecao}', '${idr}', '{}') returning id`;
+await ve("registros: quem tem painel de agência lê a carteira", TRAFEGO, `select 1 from public.central_registros where colecao = 'empresas'`, 2);
+await ve("registros: funcionário sem painel não lê a carteira", ANA, `select 1 from public.central_registros where colecao = 'empresas'`, 0);
+await ve("registros: painel que não é de agência (vendas) não lê a carteira", VENDEDOR, `select 1 from public.central_registros where colecao = 'empresas'`, 0);
+await ve("registros: ficha de CS só para quem tem CS", TRAFEGO, `select 1 from public.central_registros where colecao = 'avaliacoes'`, 0);
+await ve("registros: quem tem CS lê a ficha", GERENTE_CS, `select 1 from public.central_registros where colecao = 'avaliacoes'`, 1);
+await ve("registros: quem tem CS também lê a carteira", GERENTE_CS, `select 1 from public.central_registros where colecao = 'empresas'`, 2);
+await ve("registros: master lê tudo, inclusive coleção fora da lista", MASTER, `select 1 from public.central_registros`, 6);
+await ve("registros: coleção fora da lista não aparece para os demais", TRAFEGO, `select 1 from public.central_registros where colecao = 'colecao_inventada'`, 0);
+await ve("registros: todos leem o endereço dos painéis", ANA, `select 1 from public.central_registros where colecao = 'paineis'`, 1);
+await ve("registros: todos leem os avisos", ANA, `select 1 from public.central_registros where colecao = 'notificacoes'`, 1);
+await ve("registros: conta desativada não lê nada", INATIVO, `select 1 from public.central_registros`, 0);
+await barrado("registros: visitante sem login não lê", null, `select 1 from public.central_registros`);
+await permitido("registros: quem tem painel grava na carteira", TRAFEGO, reg("projetos", "p-1"));
+await permitido("registros: quem tem painel altera a carteira", TRAFEGO, `update public.central_registros set dados = '{"nome":"Novo"}' where colecao = 'empresas' and id = 'emp-01' returning id`);
+await permitido("registros: remover é marcar, e quem tem painel marca", TRAFEGO, `update public.central_registros set removido = true where colecao = 'empresas' and id = 'emp-02' returning id`);
+await barrado("registros: ninguém apaga linha de verdade", MASTER, `delete from public.central_registros where colecao = 'empresas' returning id`);
+await barrado("registros: funcionário sem painel não grava na carteira", ANA, reg("empresas", "emp-99"));
+await barrado("registros: sem CS não grava avaliação de churn", TRAFEGO, reg("avaliacoes", "av-9"));
+await permitido("registros: com CS grava avaliação de churn", GERENTE_CS, reg("avaliacoes", "av-9"));
+await barrado("registros: só o master muda o endereço dos painéis", GERENTE_CS, `update public.central_registros set dados = '{"url":"x"}' where colecao = 'paineis' returning id`);
+await permitido("registros: master muda o endereço dos painéis", MASTER, `update public.central_registros set dados = '{"url":"x"}' where colecao = 'paineis' returning id`);
+await barrado("registros: ninguém grava em coleção fora da lista", TRAFEGO, reg("colecao_inventada", "y"));
+await barrado("registros: conta desativada não grava", INATIVO, reg("pautasInbound", "pa-1"));
+await permitido("registros: qualquer pessoa grava aviso", ANA, reg("notificacoes", "n-2"));
+{
+  const r = await como(TRAFEGO, `insert into public.central_registros (colecao, id, dados, atualizado_por) values ('projetos', 'p-3', '{}', '${MASTER}') returning atualizado_por`);
+  conferir("registros: autor forjado é trocado pelo de quem gravou", r.linhas[0]?.atualizado_por === TRAFEGO, r.erro ?? `veio ${r.linhas[0]?.atualizado_por}`);
+}
+await barrado("visitante sem login não chama pode_colecao", null, `select public.pode_colecao('${MASTER}', 'empresas', false)`);
+
+// ---------------------------------------------------------------------------
 
 console.log(`\n${passou} conferências passaram, ${falhas.length} falharam.`);
 if (falhas.length) {

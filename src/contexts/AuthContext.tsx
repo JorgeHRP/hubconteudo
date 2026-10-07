@@ -1,6 +1,9 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AppModulo, AppRole, Profile } from "@/lib/types";
-import { buscarProfile, espelharUsuarioRemoto, modulosDe, papelDe } from "@/data/store";
+import {
+  buscarProfile, espelharUsuarioRemoto, iniciarDadosCompartilhados, modulosDe, papelDe,
+  pararSincronia,
+} from "@/data/store";
 import { USUARIO_MASTER_ID } from "@/data/seed";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -61,6 +64,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     }
     espelharUsuarioRemoto(usuario.profile, usuario.papel, usuario.modulos);
+    // Carteira, tarefas e frentes vêm do servidor antes de a primeira tela abrir.
+    // Se falhar, a pessoa entra do mesmo jeito e as telas mostram o que há local.
+    await iniciarDadosCompartilhados(usuario.papel === "master").catch((e: Error) =>
+      console.warn("[sincronia] não foi possível carregar os dados compartilhados:", e.message)
+    );
     setProfile(usuario.profile);
     setUserId(id);
     return true;
@@ -83,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: inscricao } = supabase.auth.onAuthStateChange((evento, sessao) => {
       if (evento === "PASSWORD_RECOVERY") setPrecisaDefinirSenha(true);
       if (evento === "SIGNED_OUT" || !sessao) {
+        pararSincronia();
         setProfile(null);
         setUserId(null);
         return;

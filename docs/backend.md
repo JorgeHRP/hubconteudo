@@ -193,27 +193,19 @@ e é ele que faz a navegação funcionar ao dar F5 em qualquer rota.
 As variáveis `VITE_*` são embutidas no momento do build — buildar apontando
 para produção, não para o `127.0.0.1`.
 
-### Senha na frente do site (temporário)
+### Acesso ao site
 
-Enquanto o login real não existe, o botão "Entrar" coloca qualquer pessoa como
-master. Por isso a imagem Docker pede usuário e senha antes de entregar qualquer
-coisa. Ao subir o container, defina as duas variáveis:
+Quem protege a Central é o login (e-mail e senha no Supabase) e as policies do
+banco. A senha que o nginx pedia antes do login era temporária e saiu.
 
-```
-ACESSO_USUARIO=<usuário>
-ACESSO_SENHA=<senha forte>
-```
+O site em si é arquivo público: qualquer pessoa baixa o JavaScript sem entrar.
+Por isso **nenhum dado de cliente pode ir embutido no código** — a carteira
+mora no banco (`npm run db:semear`) e só chega a quem entrou.
 
-Sem elas o container não sobe — é de propósito. `/healthz` responde sem senha,
-para a checagem de saúde da hospedagem.
-
-Isso vale só para o caminho Docker/nginx. Subindo o `dist/` na hospedagem
-compartilhada (Apache), a senha precisa ser ligada pelo painel da Hostinger
-(Diretórios protegidos por senha), porque o `.htaccess` exige o caminho
-absoluto do arquivo de senha no servidor.
-
-Quando o login do Supabase entrar: tirar as duas linhas `auth_basic` do
-`nginx.conf`, o `docker/10-acesso.sh` e as linhas dele no `Dockerfile`.
+O container lê `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` na subida e
+escreve `/config.js` (`docker/20-config.sh`). Sem as duas, o site sobe em modo
+de demonstração, em que o botão "Entrar" não confere nada — **não publique
+assim**. `ACESSO_USUARIO` e `ACESSO_SENHA` não são mais usadas.
 
 A função `temporary-master-access` (atalho de desenvolvimento que dava papel
 master) não existe mais no repositório e não pode voltar. Se ela chegou a ser

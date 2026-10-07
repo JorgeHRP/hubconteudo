@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "db:subir": "node scripts/subir-banco.mjs",
     "db:conferir": "node scripts/subir-banco.mjs --conferir",
-    "db:testar": "node supabase/testes/rls.test.mjs"
+    "db:testar": "node supabase/testes/rls.test.mjs",
+    "db:semear": "node scripts/semear-carteira.mjs"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.2.6",
