@@ -8,14 +8,21 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
  * sem banco e ligar o backend depois, sem reescrever nada.
  *
  * Local:      as variáveis saem de `supabase start` e vão para `.env.local`
- * Produção:   entram no build (Vite embute variáveis VITE_* no bundle)
+ * Produção:   vêm de `/config.js`, escrito na subida do container a partir das
+ *             variáveis do serviço (docker/20-config.sh); na hospedagem sem
+ *             container, entram no build (Vite embute variáveis VITE_*)
  *
  * A chave `anon` é pública por natureza — quem protege os dados é o RLS do banco.
  * A chave `service_role` NUNCA entra aqui: ela vive apenas nas edge functions.
  */
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const emExecucao =
+  (window as { __CENTRAL_CONFIG__?: { supabaseUrl?: string; supabaseAnonKey?: string } })
+    .__CENTRAL_CONFIG__ ?? {};
+
+const url = emExecucao.supabaseUrl || (import.meta.env.VITE_SUPABASE_URL as string | undefined);
+const anonKey =
+  emExecucao.supabaseAnonKey || (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined);
 
 export const supabase: SupabaseClient | null =
   url && anonKey
