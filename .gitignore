@@ -1,5 +1,126 @@
+# =====================================================================
+# Central Interna — o que não vai para o git
+# =====================================================================
+# Regra geral: segredo, arquivo gerado e coisa pessoal de cada máquina ficam
+# fora. A documentação do projeto (README.md e docs/) continua versionada.
+
+# ---------------------------------------------------------------------
+# Segredos e variáveis de ambiente
+# ---------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.local
+*.local.*
+senha*
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+id_rsa*
+id_ed25519*
+credenciais*
+credentials*
+secrets*
+service-account*.json
+*-sa.json
+
+# Supabase: segredos das funções e arquivos da CLI
+supabase/.env
+supabase/.env.*
+supabase/functions/.env
+supabase/.temp/
+supabase/.branches/
+supabase/.supabase/
+
+# Gerados a partir de supabase/migrations e supabase/functions, para colar no painel
+supabase/colar-*
+
+# Cópias e exportações de banco (podem ter dado real de cliente)
+*.dump
+*.backup
+*.bak
+backup*/
+backups/
+dump*.sql
+*.sqlite
+*.sqlite3
+*.db
+
+# ---------------------------------------------------------------------
+# Assistentes de IA: instruções, memória e rascunhos ficam na máquina
+# ---------------------------------------------------------------------
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+**/CLAUDE.md
+AGENTS.md
+**/AGENTS.md
+GEMINI.md
+.gemini/
+.cursor/
+.cursorrules
+.cursorignore
+.windsurf/
+.windsurfrules
+.aider*
+.continue/
+.codeium/
+.copilot/
+.github/copilot-instructions.md
+.github/instructions/
+.junie/
+.kiro/
+.roo/
+.clinerules
+.cline/
+.specstory/
+.mcp.json
+mcp.json
+memory/
+prompts/
+
+# ---------------------------------------------------------------------
+# Anotações pessoais em markdown (fora de docs/ e do README)
+# ---------------------------------------------------------------------
+notas/
+rascunhos/
+anotacoes/
+*.rascunho.md
+*.notas.md
+*.local.md
+*.privado.md
+NOTAS*.md
+TODO*.md
+RASCUNHO*.md
+SCRATCH*.md
+PLAN*.md
+PLANO*.md
+
+# ---------------------------------------------------------------------
+# Dependências e build
+# ---------------------------------------------------------------------
+node_modules/
+dist/
+dist-ssr/
+build/
+.vite/
+*.tsbuildinfo
+coverage/
+.nyc_output/
+.eslintcache
+.stylelintcache
+.cache/
+.parcel-cache/
+.turbo/
+.vercel/
+.netlify/
+
+# ---------------------------------------------------------------------
 # Logs
-logs
+# ---------------------------------------------------------------------
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,26 +128,36 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# ---------------------------------------------------------------------
+# Editores e sistema operacional
+# ---------------------------------------------------------------------
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*~
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
 
-# variáveis locais
-.env
-.env.local
-.env*.local
-
-# Gerados a partir de supabase/migrations e supabase/functions, para colar no painel
-supabase/colar-*
+# ---------------------------------------------------------------------
+# Temporários e arquivos soltos
+# ---------------------------------------------------------------------
+tmp/
+temp/
+*.tmp
+*.temp
+*.orig
+*.rej
+*.patch
+*.diff
+# Planilhas e PDFs exportados com dado de cliente ou de colaborador
+exportacoes/
+*.xlsx
+*.csv
