@@ -43,6 +43,14 @@ import {
   listarSolicitacoesRemoto, mudarStatusSolicitacaoRemoto, removerEventoRemoto,
   removerPostRemoto,
 } from "@/integrations/supabase/hub";
+import {
+  adicionarDespesaRemoto, criarViagemRemoto, listarViagensRemoto, mudarStatusViagemRemoto,
+  removerDespesaRemoto, removerViagemRemoto,
+} from "@/integrations/supabase/viagens";
+import {
+  alterarNegocioRemoto, criarNegocioRemoto, listarNegociosRemoto, removerNegocioRemoto,
+  type DadosNegocio,
+} from "@/integrations/supabase/vendas";
 
 /**
  * Camada de dados em memória.
@@ -798,13 +806,19 @@ export function progressoDaTrilha(trilha_id: string, user_id: string) {
 
 /* ---------------- relatórios de viagem ---------------- */
 
+// Com o banco ligado, vai direto ao servidor (src/integrations/supabase/viagens.ts),
+// que decide quem vê cada relatório e quem pode mudar cada status.
+
 export const listarViagens = () =>
-  wait([...db.viagens].sort((a, b) => b.created_at.localeCompare(a.created_at)));
+  temSupabase()
+    ? listarViagensRemoto()
+    : wait([...db.viagens].sort((a, b) => b.created_at.localeCompare(a.created_at)));
 
 export async function criarViagem(dados: {
   colaborador_id: string; titulo: string; destino: string; motivo: string;
   data_inicio: string; data_fim: string;
 }) {
+  if (temSupabase()) return criarViagemRemoto(dados);
   const nova: RelatorioViagem = {
     ...dados, id: `v-${uid()}`, status: "rascunho", observacao_financeiro: null,
     avaliado_por: null, avaliado_em: null, created_at: agora(), despesas: [],
@@ -816,6 +830,7 @@ export async function criarViagem(dados: {
 export async function adicionarDespesa(
   relatorio_id: string, despesa: Omit<DespesaViagem, "id" | "relatorio_id">
 ) {
+  if (temSupabase()) return adicionarDespesaRemoto(relatorio_id, despesa);
   const v = db.viagens.find((x) => x.id === relatorio_id);
   if (!v) return wait(null);
   v.despesas.push({ ...despesa, id: `dv-${uid()}`, relatorio_id });
@@ -823,6 +838,7 @@ export async function adicionarDespesa(
 }
 
 export async function removerDespesa(relatorio_id: string, despesa_id: string) {
+  if (temSupabase()) return removerDespesaRemoto(relatorio_id, despesa_id);
   const v = db.viagens.find((x) => x.id === relatorio_id);
   if (v) v.despesas = v.despesas.filter((d) => d.id !== despesa_id);
   return wait(v ?? null);
@@ -831,6 +847,7 @@ export async function removerDespesa(relatorio_id: string, despesa_id: string) {
 export async function mudarStatusViagem(
   id: string, status: ViagemStatus, avaliador_id: string | null, observacao?: string
 ) {
+  if (temSupabase()) return mudarStatusViagemRemoto(id, status, observacao);
   const v = db.viagens.find((x) => x.id === id);
   if (!v) return wait(null);
   v.status = status;
@@ -843,6 +860,7 @@ export async function mudarStatusViagem(
 }
 
 export async function removerViagem(id: string) {
+  if (temSupabase()) return removerViagemRemoto(id);
   db.viagens = db.viagens.filter((v) => v.id !== id);
   return wait(true);
 }
@@ -3040,7 +3058,51 @@ export async function encerrarProjetoSeo(id: string) {
 
 /* ---------------- vendas ---------------- */
 
-export const listarNegocios = () => wait(db.negocios);
+// Com o banco ligado, vai direto a `vendas_negocios` (src/integrations/supabase/vendas.ts).
+
+export const listarNegocios = () =>
+  temSupabase()
+    ? listarNegociosRemoto()
+    : wait([...db.negocios].sort((a, b) =>
+        b.data_criacao.localeCompare(a.data_criacao) || a.nome.localeCompare(b.nome)
+      ));
+
+/** Status e fechamento seguem a etapa — o banco faz o mesmo (migração 000008). */
+function coerenteComEtapa(n: VendaNegocio) {
+  if (n.etapa === "ganho" || n.etapa === "perdido") {
+    n.status = n.etapa;
+    n.data_fechamento = n.data_fechamento ?? agora().slice(0, 10);
+  } else {
+    n.status = "aberto";
+    n.data_fechamento = null;
+  }
+}
+
+export async function criarNegocio(dados: DadosNegocio) {
+  if (temSupabase()) return criarNegocioRemoto(dados);
+  const novo: VendaNegocio = {
+    ...dados, id: `neg-${uid()}`, rd_deal_id: null, status: "aberto",
+    data_criacao: agora().slice(0, 10), data_fechamento: null,
+  };
+  coerenteComEtapa(novo);
+  db.negocios.unshift(novo);
+  return wait(novo);
+}
+
+export async function alterarNegocio(id: string, dados: Partial<DadosNegocio>) {
+  if (temSupabase()) return alterarNegocioRemoto(id, dados);
+  const n = db.negocios.find((x) => x.id === id);
+  if (!n || n.rd_deal_id) throw new Error("Negócio do RD Station não se altera por aqui.");
+  Object.assign(n, dados);
+  coerenteComEtapa(n);
+  return wait(n);
+}
+
+export async function removerNegocio(id: string) {
+  if (temSupabase()) return removerNegocioRemoto(id);
+  db.negocios = db.negocios.filter((n) => n.id !== id || n.rd_deal_id);
+  return wait(true);
+}
 
 /* ---------------- integrações e painéis ---------------- */
 
@@ -3084,3 +3146,4 @@ export async function salvarUrlPainel(chave: PainelExternoChave, url: string | n
   if (p) p.url = url;
   return wait(p ?? null);
 }
+export type { DadosNegocio } from "@/integrations/supabase/vendas";

@@ -11,9 +11,9 @@ import { exigirSupabase } from "./client";
  * Por isso toda gravação pede a linha de volta e reclama quando ela não vem.
  */
 
-const SEM_PERMISSAO = "Você não tem permissão para fazer isto.";
+export const SEM_PERMISSAO = "Você não tem permissão para fazer isto.";
 
-function conferir<T>(resposta: { data: T[] | null; error: { message: string } | null }): T {
+export function conferir<T>(resposta: { data: T[] | null; error: { message: string } | null }): T {
   if (resposta.error) throw new Error(resposta.error.message);
   if (!resposta.data?.length) throw new Error(SEM_PERMISSAO);
   return resposta.data[0];

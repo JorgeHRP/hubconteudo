@@ -53,6 +53,7 @@ export default function RelatorioViagens() {
   const { data: profiles } = useQuery({ queryKey: ["profiles"], queryFn: listarProfiles });
 
   const invalidar = () => qc.invalidateQueries({ queryKey: ["viagens"] });
+  const falhou = (e: Error) => toast.error(e.message);
   const nomeDe = (id: string | null) => profiles?.find((p) => p.user_id === id)?.nome ?? "—";
 
   const criar = useMutation({
@@ -65,6 +66,7 @@ export default function RelatorioViagens() {
       invalidar();
       toast.success("Relatório criado. Agora adicione as despesas e os comprovantes.");
     },
+    onError: falhou,
   });
 
   const addDespesa = useMutation({
@@ -83,11 +85,13 @@ export default function RelatorioViagens() {
       invalidar();
       toast.success("Despesa lançada");
     },
+    onError: falhou,
   });
 
   const tirarDespesa = useMutation({
     mutationFn: ({ r, d }: { r: string; d: string }) => removerDespesa(r, d),
     onSuccess: invalidar,
+    onError: falhou,
   });
 
   const mudarStatus = useMutation({
@@ -105,11 +109,13 @@ export default function RelatorioViagens() {
       };
       toast.success(msg[v.status] ?? "Status atualizado");
     },
+    onError: (e: Error) => { invalidar(); falhou(e); },
   });
 
   const excluir = useMutation({
     mutationFn: (id: string) => removerViagem(id),
     onSuccess: () => { invalidar(); toast.success("Relatório excluído"); },
+    onError: falhou,
   });
 
   const todos = viagens ?? [];

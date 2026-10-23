@@ -1,8 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, Wallet, Trophy, Percent, Briefcase } from "lucide-react";
+import { TrendingUp, Wallet, Trophy, Percent, Briefcase, Plus, Pencil } from "lucide-react";
 import { listarNegocios } from "@/data/store";
 import { etapasFunil, formatCurrency, formatDate, produtoLabels } from "@/lib/cs-data";
 import { FunilBarras, type EtapaFunilDados } from "@/components/FunilBarras";
+import { NegocioDialog } from "@/components/NegocioDialog";
+import { EstadoVazio } from "@/components/EstadoVazio";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,6 +66,7 @@ export default function Vendas() {
         icone={TrendingUp}
         titulo="Resultados de Vendas"
         subtitulo="Funil comercial — atualiza sozinho a cada 60 segundos"
+        acao={<NegocioDialog gatilho={<Button><Plus /> Novo negócio</Button>} />}
       />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -123,12 +127,16 @@ export default function Vendas() {
                 <th className="hidden p-3 font-medium lg:table-cell">Responsável</th>
                 <th className="hidden p-3 font-medium lg:table-cell">Origem</th>
                 <th className="hidden p-3 font-medium xl:table-cell">Fechamento</th>
+                <th className="w-10" />
               </tr>
             </thead>
             <tbody>
               {lista.map((n) => (
                 <tr key={n.id} className="border-b hover:bg-muted/20">
-                  <td className="p-3 font-medium">{n.nome}</td>
+                  <td className="p-3 font-medium">
+                    {n.nome}
+                    {n.rd_deal_id && <Badge variant="outline" className="ml-2 text-[9px]">RD Station</Badge>}
+                  </td>
                   <td className="hidden p-3 text-muted-foreground md:table-cell">{n.empresa}</td>
                   <td className="p-3">
                     <Badge
@@ -142,10 +150,26 @@ export default function Vendas() {
                   <td className="hidden p-3 text-muted-foreground lg:table-cell">{n.responsavel}</td>
                   <td className="hidden p-3 text-muted-foreground lg:table-cell">{n.origem}</td>
                   <td className="hidden p-3 text-muted-foreground xl:table-cell">{formatDate(n.data_fechamento)}</td>
+                  <td className="p-2">
+                    {!n.rd_deal_id && (
+                      <NegocioDialog negocio={n} gatilho={
+                        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Editar ${n.nome}`}>
+                          <Pencil className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      } />
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          {lista.length === 0 && (
+            <EstadoVazio
+              icone={Briefcase}
+              titulo="Nenhum negócio ainda"
+              descricao="Cadastre os negócios em andamento. Quando o RD Station for conectado, os de lá entram aqui sozinhos."
+            />
+          )}
         </CardContent>
       </Card>
     </div>

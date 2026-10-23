@@ -102,15 +102,28 @@ await db.exec(`
     ('10000000-0000-0000-0000-000000000001', 'Cliente da Ana', '${ANA}'),
     ('10000000-0000-0000-0000-000000000002', 'Cliente sem dono', null);
 
-  insert into public.vendas_negocios (nome) values ('Negócio X');
+  insert into public.vendas_negocios (id, nome, rd_deal_id) values
+    ('30000000-0000-0000-0000-000000000001', 'Negócio do RD', 'rd-1'),
+    ('30000000-0000-0000-0000-000000000002', 'Negócio manual', null);
   insert into public.lancamentos_financeiros (tipo, descricao, valor, competencia, origem)
     values ('receita', 'Mensalidade', 1000, current_date, 'conta_azul');
 
   insert into public.solicitacoes (solicitante_id, categoria, titulo, descricao)
     values ('${BRUNO}', 'ti', 'Notebook', 'Não liga');
 
-  insert into public.relatorios_viagem (id, colaborador_id, titulo, destino, data_inicio, data_fim)
-    values ('20000000-0000-0000-0000-000000000001', '${ANA}', 'Visita', 'Goiânia', current_date, current_date);
+  -- 1: rascunho com despesa · 2: enviado · 3: enviado pelo próprio financeiro
+  -- 4: rascunho vazio · 5: aprovado
+  insert into public.relatorios_viagem (id, colaborador_id, titulo, destino, data_inicio, data_fim, status) values
+    ('20000000-0000-0000-0000-000000000001', '${ANA}', 'Visita', 'Goiânia', current_date, current_date, 'rascunho'),
+    ('20000000-0000-0000-0000-000000000002', '${ANA}', 'Evento', 'Campo Grande', current_date, current_date, 'enviado'),
+    ('20000000-0000-0000-0000-000000000003', '${FINANCEIRO}', 'Feira', 'São Paulo', current_date, current_date, 'enviado'),
+    ('20000000-0000-0000-0000-000000000004', '${ANA}', 'Sem gastos', 'Brasília', current_date, current_date, 'rascunho'),
+    ('20000000-0000-0000-0000-000000000005', '${ANA}', 'Congresso', 'Recife', current_date, current_date, 'aprovado');
+  insert into public.despesas_viagem (relatorio_id, descricao, data, valor) values
+    ('20000000-0000-0000-0000-000000000001', 'Táxi', current_date, 50),
+    ('20000000-0000-0000-0000-000000000002', 'Hotel', current_date, 300),
+    ('20000000-0000-0000-0000-000000000003', 'Passagem', current_date, 800),
+    ('20000000-0000-0000-0000-000000000005', 'Inscrição', current_date, 450);
 `);
 
 // ---------------------------------------------------------------------------
@@ -267,8 +280,23 @@ await ve("CS: quem não tem nada a ver não vê", BRUNO, `select 1 from public.c
 await barrado("CS: gerente sem liberação não apaga cliente", GERENTE, `delete from public.clientes returning id`);
 await permitido("CS: gerente com liberação apaga cliente", GERENTE_CS, `delete from public.clientes where responsavel_id is null returning id`);
 await ve("Vendas: gerente sem liberação não vê", GERENTE, `select 1 from public.vendas_negocios`, 0);
-await ve("Vendas: quem tem o painel vê", VENDEDOR, `select 1 from public.vendas_negocios`, 1);
-await barrado("Vendas: quem tem o painel não altera negócio", VENDEDOR, `update public.vendas_negocios set valor = 1 returning id`);
+await ve("Vendas: quem tem o painel vê", VENDEDOR, `select 1 from public.vendas_negocios`, 2);
+await barrado("Vendas: negócio do RD não se altera pela tela", VENDEDOR, `update public.vendas_negocios set valor = 1 where rd_deal_id is not null returning id`);
+await barrado("Vendas: negócio do RD não se apaga pela tela", VENDEDOR, `delete from public.vendas_negocios where rd_deal_id is not null returning id`);
+await permitido("Vendas: quem tem o painel move negócio manual", VENDEDOR, `update public.vendas_negocios set etapa = 'proposta' where rd_deal_id is null returning id`);
+await permitido("Vendas: quem tem o painel cadastra", VENDEDOR, `insert into public.vendas_negocios (nome, valor) values ('Novo', 10) returning id`);
+await barrado("Vendas: cadastro pela tela não se passa por negócio do RD", VENDEDOR, `insert into public.vendas_negocios (nome, rd_deal_id) values ('Falso', 'rd-9') returning id`);
+await barrado("Vendas: sem o painel não cadastra", ANA, `insert into public.vendas_negocios (nome) values ('x') returning id`);
+await barrado("Vendas: etapa inventada não entra", VENDEDOR, `update public.vendas_negocios set etapa = 'sonho' where rd_deal_id is null returning id`);
+await permitido("Vendas: quem tem o painel remove negócio manual", VENDEDOR, `delete from public.vendas_negocios where rd_deal_id is null returning id`);
+{
+  const r = await como(VENDEDOR, `update public.vendas_negocios set etapa = 'ganho', status = 'aberto' where rd_deal_id is null returning status, data_fechamento`);
+  conferir("Vendas: etapa ganho fecha o negócio", r.linhas[0]?.status === "ganho" && Boolean(r.linhas[0]?.data_fechamento), r.erro ?? JSON.stringify(r.linhas[0]));
+}
+{
+  const r = await como(VENDEDOR, `insert into public.vendas_negocios (nome) values ('x') returning criado_por`);
+  conferir("Vendas: autor do cadastro é quem gravou", r.linhas[0]?.criado_por === VENDEDOR, r.erro ?? `veio ${r.linhas[0]?.criado_por}`);
+}
 await ve("Financeiro: gerente sem liberação não vê", GERENTE, `select 1 from public.lancamentos_financeiros`, 0);
 await ve("Financeiro: master vê", MASTER, `select 1 from public.lancamentos_financeiros`, 1);
 await ve("SEO: sem liberação não lê os dados", ANA, `select 1 from public.shared_table_data`, 0);
@@ -293,14 +321,44 @@ await barrado("calendário: funcionário não cria evento", ANA, `insert into pu
 // ---------------------------------------------------------------------------
 
 const viagem = `select 1 from public.relatorios_viagem`;
-await ve("viagem: dona vê a própria", ANA, viagem, 1);
+const rel = (n) => `'20000000-0000-0000-0000-00000000000${n}'`;
+const statusViagem = (n, status, extra = "") =>
+  `update public.relatorios_viagem set status = '${status}'${extra} where id = ${rel(n)} returning id, status, avaliado_por, observacao_financeiro`;
+const despesaEm = (n) =>
+  `insert into public.despesas_viagem (relatorio_id, descricao, data, valor) values (${rel(n)}, 'Almoço', current_date, 40) returning id`;
+await ve("viagem: dona vê as próprias", ANA, viagem, 4);
 await ve("viagem: colega não vê", BRUNO, viagem, 0);
 await ve("viagem: gerente sem liberação não vê", GERENTE, viagem, 0);
-await ve("viagem: quem aprova vê", FINANCEIRO, viagem, 1);
-await barrado("viagem: dona não aprova a própria", ANA, `update public.relatorios_viagem set status = 'aprovado' returning id`);
-await permitido("viagem: dona envia", ANA, `update public.relatorios_viagem set status = 'enviado' returning id`);
-await permitido("viagem: quem aprova, aprova", FINANCEIRO, `update public.relatorios_viagem set status = 'aprovado' returning id`);
-await barrado("viagem: colega não aprova", BRUNO, `update public.relatorios_viagem set status = 'aprovado' returning id`);
+await ve("viagem: quem aprova vê todas", FINANCEIRO, viagem, 5);
+await ve("viagem: dona vê as despesas dela", ANA, `select 1 from public.despesas_viagem`, 3);
+await ve("viagem: colega não vê despesas", BRUNO, `select 1 from public.despesas_viagem`, 0);
+await barrado("viagem: dona não aprova a própria", ANA, statusViagem(2, "aprovado"));
+await permitido("viagem: dona envia", ANA, statusViagem(1, "enviado"));
+await barrado("viagem: não se envia relatório sem despesa", ANA, statusViagem(4, "enviado"));
+await permitido("viagem: dona recolhe o que enviou", ANA, statusViagem(2, "rascunho"));
+await permitido("viagem: quem aprova, aprova", FINANCEIRO, statusViagem(2, "aprovado"));
+await barrado("viagem: rascunho não vai direto para aprovado", FINANCEIRO, statusViagem(1, "aprovado"));
+await barrado("viagem: quem aprova não aprova a própria", FINANCEIRO, statusViagem(3, "aprovado"));
+await permitido("viagem: master aprova a de qualquer um", MASTER, statusViagem(3, "aprovado"));
+await barrado("viagem: reprovar exige motivo", FINANCEIRO, statusViagem(2, "reprovado"));
+await permitido("viagem: reprovar com motivo", FINANCEIRO, statusViagem(2, "reprovado", ", observacao_financeiro = 'Falta nota'"));
+await barrado("viagem: colega não aprova", BRUNO, statusViagem(2, "aprovado"));
+await permitido("viagem: aprovado vira reembolsado", FINANCEIRO, statusViagem(5, "pago"));
+await barrado("viagem: dona não marca como reembolsado", ANA, statusViagem(5, "pago"));
+await barrado("viagem: reembolso não pula a aprovação", FINANCEIRO, statusViagem(2, "pago"));
+await barrado("viagem: quem aprova não edita o rascunho alheio", FINANCEIRO, `update public.relatorios_viagem set destino = 'x' where id = ${rel(1)} returning id`);
+await barrado("viagem: dona não edita depois de enviar", ANA, `update public.relatorios_viagem set destino = 'x' where id = ${rel(2)} returning id`);
+await permitido("viagem: dona lança despesa no rascunho", ANA, despesaEm(1));
+await barrado("viagem: dona não lança despesa no enviado", ANA, despesaEm(2));
+await barrado("viagem: colega não lança despesa no relatório alheio", BRUNO, despesaEm(1));
+{
+  const r = await como(FINANCEIRO, statusViagem(2, "aprovado", `, avaliado_por = '${BRUNO}'`));
+  conferir("viagem: quem avaliou é carimbado pelo servidor", r.linhas[0]?.avaliado_por === FINANCEIRO, r.erro ?? `veio ${r.linhas[0]?.avaliado_por}`);
+}
+{
+  const r = await como(ANA, `insert into public.relatorios_viagem (colaborador_id, titulo, destino, data_inicio, data_fim, status) values ('${ANA}', 'x', 'y', current_date, current_date, 'pago') returning status`);
+  conferir("viagem: relatório novo nasce rascunho", r.linhas[0]?.status === "rascunho", r.erro ?? `veio ${r.linhas[0]?.status}`);
+}
 
 // ---------------------------------------------------------------------------
 // 8. Storage
