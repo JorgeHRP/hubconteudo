@@ -271,6 +271,8 @@ export interface EmpresaDossie extends Empresa {
   flag_conta?: ChurnFlag;
   /** Integrações desta conta. */
   clickup_list_id?: string | null;
+  /** Pastas e listas do ClickUp que são deste cliente (Painel Admin → Integrações). */
+  clickup_vinculos?: ClickUpVinculo[];
   drive_folder_url?: string | null;
   read_workspace_url?: string | null;
   rd_deal_id?: string | null;
@@ -957,10 +959,46 @@ export interface ProducaoMensal {
   reunioes: number;
 }
 
+/** Pasta ou lista do ClickUp ligada a uma empresa da carteira. */
+export interface ClickUpVinculo {
+  tipo: "pasta" | "lista";
+  id: string;
+  nome: string;
+  /** Endereço da pasta ou lista no ClickUp. */
+  url?: string;
+}
+
+/** Workspace do ClickUp, como a função `sync-clickup` devolve para vincular. */
+export interface ClickUpEstrutura {
+  workspaces: {
+    id: string;
+    nome: string;
+    espacos: {
+      id: string;
+      nome: string;
+      pastas: { id: string; nome: string; listas: { id: string; nome: string }[] }[];
+      listas: { id: string; nome: string }[];
+    }[];
+  }[];
+}
+
+export interface ClickUpSincronizacao {
+  empresas: number;
+  listas: number;
+  tarefas: number;
+  gravadas: number;
+  removidas: number;
+  por_empresa: Record<string, number>;
+  falhas: string[];
+  sincronizado_em: string;
+}
+
 export interface ClickUpTarefa {
   id: string;
   cliente_id: string;
   task_id: string;
+  /** Tarefa-mãe, quando é subtarefa. */
+  parent_id?: string | null;
   nome: string;
   status: string;
   responsavel: string | null;

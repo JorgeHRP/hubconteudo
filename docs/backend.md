@@ -144,9 +144,40 @@ Já escritas:
 | Função | Papel |
 |---|---|
 | `manage-users` | Cria colaborador, envia convite por e-mail, ativa e desativa. Só master. |
+| `sync-clickup` | Traz as tarefas do ClickUp para a coleção `tarefas`. Master (Painel Admin → Integrações) ou agendamento com `x-sync-secret`. |
 
-A escrever: `assistente-ia`, `analise-cliente-ia`, `sync-clickup`, `sync-rd`,
+A escrever: `assistente-ia`, `analise-cliente-ia`, `sync-rd`,
 `sync-read`, `sync-solides`, `sync-conta-azul`.
+
+Para publicar pelo painel do Supabase (Edge Functions → Deploy a new function →
+Via Editor), gere o arquivo único e cole com o mesmo nome da função:
+
+```bash
+node scripts/gerar-colar.mjs sync-clickup
+```
+
+### sync-clickup
+
+- Segredos: `CLICKUP_API_TOKEN` (token pessoal `pk_…`) e, só se for agendar,
+  `SYNC_SECRET`.
+- Cada empresa guarda em `clickup_vinculos` as pastas e listas dela. Quem vincula
+  é o master, em Painel Admin → Integrações → Vincular clientes. Uma lista
+  escolhida direto vale mais que a pasta onde ela está.
+- Entra tudo o que está aberto e o que foi concluído nos últimos 6 meses
+  (subtarefas inclusive). O que sumiu do ClickUp sai da Central, a não ser que
+  alguma lista tenha falhado na mesma rodada.
+- Agendar (opcional), no SQL Editor, com as extensões `pg_cron` e `pg_net`:
+
+```sql
+select cron.schedule('sync-clickup', '0 * * * *', $$
+  select net.http_post(
+    url := 'https://<projeto>.supabase.co/functions/v1/sync-clickup',
+    headers := jsonb_build_object('Content-Type', 'application/json',
+                                  'Authorization', 'Bearer <chave anon>',
+                                  'x-sync-secret', '<o mesmo SYNC_SECRET>'),
+    body := '{"acao":"sincronizar"}'::jsonb)
+$$);
+```
 
 Segredos de integração ficam em `supabase/.env` no local e nos secrets do
 projeto em produção — nunca no frontend.

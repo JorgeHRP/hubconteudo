@@ -20,6 +20,7 @@ import type {
   PautaInbound, FluxoInbound, NoFluxo,
   OportunidadeVenda, RespostaOferta,
   ProjetoSite, PerfilSocial, Publicacao,
+  ClickUpVinculo,
 } from "@/lib/types";
 import {
   seedIntegracoes, seedPaineis, seedPermissoes, seedProfiles, seedRoles,
@@ -29,8 +30,9 @@ import { templateOnboarding } from "./template-onboarding";
 import { modeloCertificadoPadrao } from "@/lib/treinamentos";
 import { catalogoInbound } from "./catalogo-inbound";
 import {
-  COLECOES, agendarEnvio, buscarMudancas, iniciarSincronia, pararSincronia,
+  COLECOES, agendarEnvio, buscarMudancas, descarregar, iniciarSincronia, pararSincronia,
 } from "./sincronia";
+import { estruturaClickUpRemota, sincronizarClickUpRemoto } from "@/integrations/supabase/clickup";
 import { temSupabase } from "@/integrations/supabase/client";
 import {
   gerirUsuario, gravarModulos, gravarPapel, gravarPerfil, listarPessoas,
@@ -933,8 +935,13 @@ export async function salvarAnalise(analise: Omit<AnaliseIA, "id" | "created_at"
   return wait(nova);
 }
 
+/** Tarefas do ClickUp: abertas primeiro, por vencimento; depois as entregues, da mais recente. */
 export const listarTarefas = (cliente_id: string) =>
-  wait(db.tarefas.filter((t) => t.cliente_id === cliente_id));
+  wait(db.tarefas.filter((t) => t.cliente_id === cliente_id).sort((a, b) => {
+    if (!a.concluida_em !== !b.concluida_em) return a.concluida_em ? 1 : -1;
+    if (a.concluida_em && b.concluida_em) return b.concluida_em.localeCompare(a.concluida_em);
+    return (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999");
+  }));
 
 /* ---------------- reuniões (Read.ai) ---------------- */
 
@@ -3046,6 +3053,26 @@ export async function salvarIntegracao(chave: IntegracaoChave, conectada: boolea
     i.ultima_sincronizacao = conectada ? agora() : null;
   }
   return wait(i ?? null);
+}
+
+/* ---- ClickUp ---- */
+
+/** Pastas e listas do workspace, para o master vincular a cada empresa. */
+export const estruturaClickUp = () => estruturaClickUpRemota();
+
+export async function vincularClickUp(empresa_id: string, vinculos: ClickUpVinculo[]) {
+  const e = db.empresas.find((x) => x.id === empresa_id);
+  if (!e) throw new Error("Empresa não encontrada.");
+  e.clickup_vinculos = vinculos;
+  return wait(e);
+}
+
+/** Roda a sincronização no servidor. Antes, sobe os vínculos que ainda não foram enviados. */
+export async function sincronizarClickUp() {
+  await descarregar();
+  const resultado = await sincronizarClickUpRemoto();
+  await buscarMudancas();
+  return resultado;
 }
 
 export const listarPaineis = () => wait(db.paineis);

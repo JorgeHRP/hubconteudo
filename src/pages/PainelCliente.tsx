@@ -177,7 +177,7 @@ export default function ClienteDetalhe() {
   const integracoes = [
     { rotulo: "Google Drive", url: cliente.drive_folder_url ?? null },
     { rotulo: "Read.ai", url: cliente.read_workspace_url ?? null },
-    { rotulo: "ClickUp", url: cliente.clickup_list_id ? `https://app.clickup.com/${cliente.clickup_list_id}` : null },
+    { rotulo: "ClickUp", url: cliente.clickup_vinculos?.[0]?.url ?? null },
     { rotulo: "RD Station", url: cliente.rd_deal_id ? `https://crm.rdstation.com/deals/${cliente.rd_deal_id}` : null },
   ];
 
@@ -552,9 +552,9 @@ export default function ClienteDetalhe() {
                   <ListChecks className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
                   <p className="font-medium">Nenhuma tarefa sincronizada</p>
                   <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-                    {cliente.clickup_list_id
-                      ? "Este cliente já tem a lista do ClickUp cadastrada. Falta ligar a integração no Painel Admin para trazer as tarefas pendentes e a produção do mês."
-                      : "Cadastre o ClickUp list id do cliente e ligue a integração para ver aqui as tarefas pendentes e a produção mensal."}
+                    {cliente.clickup_vinculos?.length
+                      ? "Este cliente já está vinculado ao ClickUp. As tarefas aparecem aqui depois da próxima sincronização (Painel Admin → Integrações → Sincronizar agora)."
+                      : "Vincule a pasta deste cliente no ClickUp em Painel Admin → Integrações → Vincular clientes para ver aqui as tarefas pendentes e a produção mensal."}
                   </p>
                 </div>
               )}

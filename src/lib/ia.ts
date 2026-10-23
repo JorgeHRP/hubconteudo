@@ -90,8 +90,9 @@ const base: Verbete[] = [
     chaves: ["clickup", "tarefa", "produção", "producao", "entrega"],
     resposta:
       "O ClickUp alimenta duas coisas: a lista de tarefas do cliente (pendentes, atrasadas e " +
-      "entregues) e o gráfico de produção mensal na aba Histórico. A ligação é feita pelo campo " +
-      "ClickUp list id no cadastro do cliente. A sincronização precisa da integração ligada no Painel Admin.",
+      "entregues) e o gráfico de produção mensal na aba Histórico. O master liga cada cliente à " +
+      "pasta dele em Painel Admin → Integrações → Vincular clientes, e as tarefas chegam ao clicar " +
+      "em Sincronizar agora.",
     sugestoes: ["Como conecto o ClickUp?", "O que aparece no histórico do cliente?"],
   },
   {

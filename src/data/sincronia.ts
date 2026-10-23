@@ -209,6 +209,14 @@ async function enviar() {
   }
 }
 
+/** Envia agora o que estiver pendente. Usado antes de uma função ler o banco. */
+export function descarregar(): Promise<void> {
+  if (!ligada) return Promise.resolve();
+  if (agendado) { clearTimeout(agendado); agendado = null; }
+  fila = fila.then(enviar);
+  return fila;
+}
+
 /** Busca o que os outros mudaram. Registro com alteração local ainda não enviada não é sobrescrito. */
 export function buscarMudancas(): Promise<void> {
   if (!ligada) return Promise.resolve();

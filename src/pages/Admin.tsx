@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Settings, Power, Mail, Users, UsersRound, Plug, Link2, CheckCircle2, RotateCcw,
+  RefreshCw, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   alternarAtivo, definirPapel, listarIntegracoes, listarPaineis, listarProfiles,
-  modulosDe, papelDe, registrarConvite, salvarIntegracao, zerarDados,
+  modulosDe, papelDe, registrarConvite, salvarIntegracao, sincronizarClickUp, zerarDados,
 } from "@/data/store";
 import { moduloLabels, roleDescricoes, roleLabels } from "@/lib/mock-data";
 import type { AppRole, IntegracaoChave } from "@/lib/types";
@@ -14,6 +15,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { EquipesAgencia } from "@/components/EquipesAgencia";
 import { PermissoesDialog } from "@/components/PermissoesDialog";
 import { ColaboradorDialog } from "@/components/ColaboradorDialog";
+import { ClickUpDialog } from "@/components/ClickUpDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -66,6 +68,22 @@ export default function Admin() {
           : "Integração desligada."
       );
     },
+  });
+
+  const sincronizar = useMutation({
+    mutationFn: sincronizarClickUp,
+    onSuccess: (r) => {
+      qc.invalidateQueries();
+      if (!r.empresas) {
+        toast.warning("Nenhum cliente vinculado ao ClickUp ainda. Use Vincular clientes.");
+        return;
+      }
+      const resumo = `${r.tarefas} tarefas de ${r.empresas} cliente(s)` +
+        (r.removidas ? `, ${r.removidas} retirada(s)` : "");
+      if (r.falhas.length) toast.warning(`Sincronizado com falhas: ${resumo}. ${r.falhas[0]}`);
+      else toast.success(`ClickUp sincronizado: ${resumo}.`);
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   return (
@@ -214,7 +232,16 @@ export default function Admin() {
                       Sincronizado em {new Date(i.ultima_sincronizacao).toLocaleString("pt-BR")}
                     </p>
                   )}
-                  {isMaster && (
+                  {isMaster && i.chave === "clickup" && loginReal && (
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <ClickUpDialog />
+                      <Button size="sm" disabled={sincronizar.isPending} onClick={() => sincronizar.mutate()}>
+                        {sincronizar.isPending ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+                        Sincronizar agora
+                      </Button>
+                    </div>
+                  )}
+                  {isMaster && !(i.chave === "clickup" && loginReal) && (
                     <Button
                       variant={i.conectada ? "outline" : "default"}
                       size="sm"
