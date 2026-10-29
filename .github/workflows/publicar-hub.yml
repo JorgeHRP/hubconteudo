@@ -1,0 +1,32 @@
+# Botão "Publicar no Hub": dispara o deploy do serviço mentor_conteudo no Easypanel.
+# Aba Actions > Publicar no Hub > Run workflow. Publica o que estiver no main.
+# O link de deploy fica no segredo EASYPANEL_DEPLOY_URL (Settings > Secrets and variables > Actions).
+name: Publicar no Hub
+
+on:
+  workflow_dispatch:
+
+# Dois cliques seguidos não disparam dois deploys ao mesmo tempo.
+concurrency:
+  group: publicar-hub
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Disparar deploy no Easypanel
+        env:
+          DEPLOY_URL: ${{ secrets.EASYPANEL_DEPLOY_URL }}
+        run: |
+          if [ -z "$DEPLOY_URL" ]; then
+            echo "::error::Falta o segredo EASYPANEL_DEPLOY_URL no repositório."
+            exit 1
+          fi
+          status=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$DEPLOY_URL")
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error::O Easypanel recusou o deploy (HTTP $status)."
+            exit 1
+          fi
+          echo "Deploy disparado. Em 1 a 2 minutos o hub.conteudomar.tech está atualizado." >> "$GITHUB_STEP_SUMMARY"
