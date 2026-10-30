@@ -6,9 +6,10 @@ import { seedProfiles } from "@/data/seed";
 import { pedirTrocaDeSenha } from "@/integrations/supabase/sessao";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Marca } from "@/components/Marca";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+const LOGO_HUB = "https://conteudomartech.com.br/wp-content/uploads/2026/10/logo-hub-animada.gif";
 
 export default function Login() {
   const { login, loginReal } = useAuth();
@@ -54,14 +55,16 @@ export default function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md p-8">
-        <Marca altura={40} className="mb-6" />
-        <h1 className="text-2xl font-bold">Central Interna</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Acesso restrito a colaboradores.
-        </p>
+        {/* GIF animado da marca, hospedado no site institucional. */}
+        <h1 className="flex justify-center">
+          <img
+            src={LOGO_HUB} alt="Hub Conteúdo Martech"
+            width={220} height={84} className="h-auto max-w-full"
+          />
+        </h1>
 
         <form
-          className="mt-6 space-y-3"
+          className="mt-8 space-y-3"
           onSubmit={(e) => { e.preventDefault(); entrar(); }}
         >
           <div>
@@ -107,20 +110,16 @@ export default function Login() {
           )}
         </form>
 
-        <div className="mt-4 flex items-start gap-2 rounded-md bg-muted/60 p-3 text-xs text-muted-foreground">
-          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          {loginReal ? (
-            <span>
-              Não há cadastro público: contas são criadas no painel de Colaboradores e o
-              primeiro acesso chega por e-mail.
-            </span>
-          ) : (
+        {/* Só aparece sem banco conectado (prévia local); em produção a tela termina no formulário. */}
+        {!loginReal && (
+          <div className="mt-4 flex items-start gap-2 rounded-md bg-muted/60 p-3 text-xs text-muted-foreground">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <span>
               Modo de demonstração: o banco ainda não está conectado, então o botão entra
               direto como <strong>{master.nome}</strong> (master), sem conferir a senha.
             </span>
-          )}
-        </div>
+          </div>
+        )}
       </Card>
     </div>
   );
