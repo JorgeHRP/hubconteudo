@@ -104,7 +104,7 @@ export function AppSidebar({
         </button>
       </div>
 
-      <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
+      <nav className="rolagem-sidebar flex-1 space-y-5 overflow-y-auto overscroll-contain px-3 py-4">
         {grupos.map(({ grupo, itens }) => {
           const visiveis = itens.filter((i) => !i.modulo || temModulo(i.modulo));
           if (visiveis.length === 0) return null;
