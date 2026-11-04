@@ -14,13 +14,15 @@ Abre em http://localhost:5173.
 
 ## Estado atual
 
-Interface completa e navegável, **sem dados fictícios**: existe apenas o usuário master
-(Thiago Lustosa). Tudo o mais nasce vazio e é preenchido pelo uso real.
+No ar em https://hub.conteudomar.tech/, com login real no Supabase e a maior parte
+das telas gravando no banco. O retrato atualizado, em linguagem simples, está em
+`docs/andamento.md`; o passo a passo do banco e da publicação, em `docs/backend.md`.
 
-Os dados ficam em `src/data/store.ts` (memória + `localStorage`, então sobrevivem ao
-recarregar a página). Não há Supabase conectado ainda. Cada função do store tem
-equivalente direto em uma query do Supabase — ao conectar o backend, troca-se o corpo
-dessas funções e as telas não mudam.
+A camada de dados continua sendo `src/data/store.ts`. Com o Supabase ligado
+(`VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`), pessoas, hub, viagens e vendas vão
+direto às tabelas; o resto (carteira, CS, tarefas, inbound, treinamentos…) é
+sincronizado pela tabela `central_registros` (`src/data/sincronia.ts`). Sem as duas
+variáveis, o site roda em modo de demonstração, com os dados no navegador.
 
 Papéis: **master**, **gerente**, **funcionário**. O acesso a cada painel é liberado
 por usuário. Ver `docs/estrutura.md`.
@@ -64,10 +66,10 @@ docs/
 
 ## Próximos passos
 
-Lista completa em `docs/estrutura.md`, seção 8. Em resumo:
+O quadro do projeto fica no ClickUp. Em resumo, falta:
 
-1. Conectar o Supabase (URL + anon key) e trocar `src/data/store.ts` pelas queries reais.
-2. Aplicar os dois arquivos de `docs/migrations/` na ordem — o primeiro inclui duas
-   correções de segurança.
-3. Edge functions: `manage-users` (com envio do e-mail de primeiro acesso) e `analise-cliente-ia`.
-4. Integrações: ClickUp, Sólides, Conta Azul, Alfaix, RD Station, Read.ai, Google Drive.
+1. Financeiro, Repositórios e Contracheques no banco.
+2. Arquivos de verdade em `documentos`, `avatars` e `posts` (os comprovantes de viagem já usam o Storage).
+3. Edge functions `assistente-ia` e `analise-cliente-ia`.
+4. Integrações: Sólides, Conta Azul, Alfaix, RD Station, Read.ai, Google Drive (ClickUp já sincroniza).
+5. Backup do Postgres, ambiente de homologação e revisão de segurança final.

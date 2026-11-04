@@ -34,7 +34,11 @@ export function CarteiraDaFrente({
    */
   esconderComProjeto?: boolean;
 }) {
-  const { userId } = useAuth();
+  const { userId, temModulo } = useAuth();
+  // A ficha do cliente fica no Painel de CS. Quem não tem esse painel seria
+  // devolvido ao início sem explicação; para essa pessoa, o link não aparece.
+  const abreFicha = temModulo("cs");
+  const destinoDo = (id: string) => (destino ? destino(id) : abreFicha ? `/cs/${id}` : null);
   const qc = useQueryClient();
   const [encerrando, setEncerrando] = useState<string | null>(null);
 
@@ -61,6 +65,7 @@ export function CarteiraDaFrente({
   const encerrar = useMutation({
     mutationFn: (empresaId: string) => encerrarFrente(empresaId, tipo),
     onSuccess: () => { recarregar(); setEncerrando(null); toast.success("Projeto encerrado"); },
+    onError: (e: Error) => { setEncerrando(null); toast.error(e.message); },
   });
 
   const lista = empresas ?? [];
@@ -78,7 +83,9 @@ export function CarteiraDaFrente({
         icone={Building2}
         titulo="Nenhum cliente cadastrado"
         descricao="Os clientes são cadastrados no Painel de CS. Assim que a primeira empresa entrar, ela aparece aqui para receber o projeto."
-        acao={<Button asChild><Link to="/cs">Ir para o Painel de CS <ArrowRight /></Link></Button>}
+        acao={abreFicha
+          ? <Button asChild><Link to="/cs">Ir para o Painel de CS <ArrowRight /></Link></Button>
+          : undefined}
       />
     );
   }
@@ -93,14 +100,19 @@ export function CarteiraDaFrente({
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {com.map((e) => {
               const p = daFrente(e.id)!;
+              const abrir = destinoDo(e.id);
               return (
                 <Card key={e.id}>
                   <CardContent className="p-4 pt-4">
                     <div className="mb-2 flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <Link to={`/cs/${e.id}`} className="truncate font-medium hover:text-primary">
-                          {e.nome_fantasia}
-                        </Link>
+                        {abreFicha ? (
+                          <Link to={`/cs/${e.id}`} className="truncate font-medium hover:text-primary">
+                            {e.nome_fantasia}
+                          </Link>
+                        ) : (
+                          <p className="truncate font-medium">{e.nome_fantasia}</p>
+                        )}
                         <p className="truncate text-xs text-muted-foreground">
                           {e.segmento ?? statusEmpresaLabels[e.status]}
                         </p>
@@ -135,11 +147,13 @@ export function CarteiraDaFrente({
                         </Button>
                       )}
 
-                      <Button asChild variant="ghost" size="sm" className="h-7 text-xs">
-                        <Link to={destino ? destino(e.id) : `/cs/${e.id}`}>
-                          Abrir <ArrowRight />
-                        </Link>
-                      </Button>
+                      {abrir && (
+                        <Button asChild variant="ghost" size="sm" className="h-7 text-xs">
+                          <Link to={abrir}>
+                            Abrir <ArrowRight />
+                          </Link>
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

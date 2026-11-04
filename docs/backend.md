@@ -51,6 +51,10 @@ As migrações já estão em `supabase/migrations/`, numeradas na ordem correta:
 | `20260901000004_historico_e_ia.sql` | Reuniões, histórico unificado, produção mensal |
 | `20260901000005_modulo_seo.sql` | As duas tabelas do painel de SEO |
 | `20260901000006_auditoria_rls.sql` | Correções da auditoria das policies (ver abaixo) |
+| `20260901000007_registros.sql` | `central_registros`: carteira, CS, tarefas, inbound e frentes no banco |
+| `20260901000008_viagens_vendas.sql` | Caminho do status das viagens e cadastro manual de negócios |
+| `20260901000009_treinamentos.sql` | Treinamentos: catálogo do master, progresso e certificado de cada pessoa |
+| `20260901000010_comprovantes.sql` | A despesa só aponta para arquivo na pasta do próprio relatório |
 
 Antes de aplicar em qualquer banco, dá para conferir tudo sem Docker:
 
@@ -84,8 +88,7 @@ continua funcionando com isso desligado.
 npx supabase db reset
 ```
 
-Isso recria o banco local do zero aplicando as quatro na sequência. São 1.178
-linhas de SQL, com 43 políticas de segurança.
+Isso recria o banco local do zero aplicando todas na sequência.
 
 ---
 

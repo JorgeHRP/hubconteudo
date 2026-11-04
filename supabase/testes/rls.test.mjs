@@ -441,6 +441,72 @@ await permitido("registros: qualquer pessoa grava aviso", ANA, reg("notificacoes
 await barrado("visitante sem login não chama pode_colecao", null, `select public.pode_colecao('${MASTER}', 'empresas', false)`);
 
 // ---------------------------------------------------------------------------
+// 11. Treinamentos
+// ---------------------------------------------------------------------------
+
+await db.exec(`
+  insert into public.central_registros (colecao, id, dados) values
+    ('trilhas', 'tr-1', '{"titulo":"Onboarding"}'), ('cursos', 'cu-1', '{"titulo":"Boas-vindas"}'),
+    ('perguntasCurso', 'pg-1', '{"curso_id":"cu-1"}'), ('modelosCertificado', 'padrao', '{"titulo":"Certificado"}'),
+    ('progressoCurso', '${ANA}:cu-1', '{"user_id":"${ANA}","curso_id":"cu-1","concluido":true}'),
+    ('certificados', 'ct-ana', '{"user_id":"${ANA}","curso_id":"cu-1"}'),
+    ('progressoCurso', '${BRUNO}:cu-1', '{"user_id":"${BRUNO}","curso_id":"cu-1","concluido":false}'),
+    ('progressoCurso', '${INATIVO}:cu-1', '{"user_id":"${INATIVO}","curso_id":"cu-1"}');
+`);
+
+const proprio = (colecao, idr, dono) =>
+  `insert into public.central_registros (colecao, id, dados) values ('${colecao}', '${idr}', '{"user_id":"${dono}","curso_id":"cu-2"}') returning id`;
+await ve("treinamentos: qualquer pessoa lê o catálogo", ANA, `select 1 from public.central_registros where colecao in ('trilhas','cursos','perguntasCurso','modelosCertificado')`, 4);
+await barrado("treinamentos: funcionário não cria curso", ANA, reg("cursos", "cu-9"));
+await barrado("treinamentos: gerente não altera trilha", GERENTE_CS, `update public.central_registros set dados = '{"titulo":"x"}' where colecao = 'trilhas' returning id`);
+await barrado("treinamentos: funcionário não altera o modelo do certificado", ANA, `update public.central_registros set dados = '{"titulo":"x"}' where colecao = 'modelosCertificado' returning id`);
+await permitido("treinamentos: master cria curso", MASTER, reg("cursos", "cu-9"));
+await ve("treinamentos: cada um vê só o próprio progresso", ANA, `select 1 from public.central_registros where colecao = 'progressoCurso'`, 1);
+await ve("treinamentos: cada um vê só os próprios certificados", BRUNO, `select 1 from public.central_registros where colecao = 'certificados'`, 0);
+await ve("treinamentos: master vê o progresso de todos", MASTER, `select 1 from public.central_registros where colecao = 'progressoCurso'`, 3);
+await permitido("treinamentos: grava o próprio progresso", BRUNO, proprio("progressoCurso", `${BRUNO}:cu-2`, BRUNO));
+await permitido("treinamentos: atualiza o próprio progresso", BRUNO, `update public.central_registros set dados = '{"user_id":"${BRUNO}","curso_id":"cu-1","concluido":true}' where colecao = 'progressoCurso' and id = '${BRUNO}:cu-1' returning id`);
+await barrado("treinamentos: não grava progresso em nome de outra pessoa", BRUNO, proprio("progressoCurso", `${ANA}:cu-2`, ANA));
+await barrado("treinamentos: não emite certificado para outra pessoa", BRUNO, proprio("certificados", "ct-falso", ANA));
+await barrado("treinamentos: não altera o progresso de outra pessoa", BRUNO, `update public.central_registros set dados = '{"user_id":"${BRUNO}"}' where colecao = 'progressoCurso' and id = '${ANA}:cu-1' returning id`);
+await barrado("treinamentos: não passa o próprio registro para outra pessoa", BRUNO, `update public.central_registros set dados = '{"user_id":"${ANA}","curso_id":"cu-1"}' where colecao = 'progressoCurso' and id = '${BRUNO}:cu-1' returning id`);
+await barrado("treinamentos: o dono no JSON não vale fora destas coleções", BRUNO, proprio("empresas", "emp-bruno", BRUNO));
+await ve("treinamentos: conta desativada não lê o próprio progresso", INATIVO, `select 1 from public.central_registros where colecao = 'progressoCurso'`, 0);
+await barrado("treinamentos: conta desativada não grava progresso", INATIVO, proprio("progressoCurso", `${INATIVO}:cu-2`, INATIVO));
+await barrado("treinamentos: visitante sem login não lê o catálogo", null, `select 1 from public.central_registros where colecao = 'cursos'`);
+await barrado("visitante sem login não chama pode_registro_proprio", null, `select public.pode_registro_proprio('${ANA}', 'progressoCurso', '{}')`);
+
+// ---------------------------------------------------------------------------
+// 12. Comprovantes de viagem (arquivo no bucket privado)
+// ---------------------------------------------------------------------------
+
+const RASCUNHO_ANA = "20000000-0000-0000-0000-000000000001";
+const OUTRO_DA_ANA = "20000000-0000-0000-0000-000000000004";
+await db.exec(`
+  insert into storage.objects (bucket_id, name) values
+    ('comprovantes', '${ANA}/${RASCUNHO_ANA}/a1-taxi.pdf');
+`);
+const despesaCom = (caminho) =>
+  `insert into public.despesas_viagem (relatorio_id, descricao, data, valor, comprovante_nome, comprovante_url)
+   values ('${RASCUNHO_ANA}', 'Táxi', current_date, 40, 'taxi.pdf', '${caminho}') returning id`;
+await permitido("comprovante: despesa aponta para o arquivo na pasta do relatório", ANA, despesaCom(`${ANA}/${RASCUNHO_ANA}/a1-taxi.pdf`));
+await barrado("comprovante: despesa não aponta para arquivo de outra pessoa", ANA, despesaCom(`${BRUNO}/${RASCUNHO_ANA}/b1.pdf`));
+await barrado("comprovante: despesa não aponta para arquivo de outro relatório", ANA, despesaCom(`${ANA}/${OUTRO_DA_ANA}/a2.pdf`));
+await barrado("comprovante: caminho com .. é recusado", ANA, despesaCom(`${ANA}/${RASCUNHO_ANA}/../x.pdf`));
+await barrado("comprovante: caminho sem nome de arquivo é recusado", ANA, despesaCom(`${ANA}/${RASCUNHO_ANA}/`));
+await permitido("comprovante: despesa sem arquivo continua valendo", ANA,
+  `insert into public.despesas_viagem (relatorio_id, descricao, data, valor) values ('${RASCUNHO_ANA}', 'Ônibus', current_date, 5) returning id`);
+await permitido("comprovante: dono envia na própria pasta", ANA,
+  `insert into storage.objects (bucket_id, name) values ('comprovantes', '${ANA}/${RASCUNHO_ANA}/a3.pdf') returning id`);
+await barrado("comprovante: ninguém envia na pasta de outra pessoa", BRUNO,
+  `insert into storage.objects (bucket_id, name) values ('comprovantes', '${ANA}/${RASCUNHO_ANA}/b2.pdf') returning id`);
+await ve("comprovante: dono abre o próprio arquivo", ANA, `select 1 from storage.objects where bucket_id = 'comprovantes' and name = '${ANA}/${RASCUNHO_ANA}/a1-taxi.pdf'`, 1);
+await ve("comprovante: quem aprova viagens abre o arquivo", FINANCEIRO, `select 1 from storage.objects where bucket_id = 'comprovantes' and name = '${ANA}/${RASCUNHO_ANA}/a1-taxi.pdf'`, 1);
+await ve("comprovante: colega não abre o arquivo", BRUNO, `select 1 from storage.objects where bucket_id = 'comprovantes' and name = '${ANA}/${RASCUNHO_ANA}/a1-taxi.pdf'`, 0);
+await barrado("comprovante: colega não apaga o arquivo", BRUNO, `delete from storage.objects where bucket_id = 'comprovantes' and name = '${ANA}/${RASCUNHO_ANA}/a1-taxi.pdf' returning id`);
+await permitido("comprovante: dono apaga o próprio arquivo", ANA, `delete from storage.objects where bucket_id = 'comprovantes' and name = '${ANA}/${RASCUNHO_ANA}/a1-taxi.pdf' returning id`);
+
+// ---------------------------------------------------------------------------
 
 console.log(`\n${passou} conferências passaram, ${falhas.length} falharam.`);
 if (falhas.length) {

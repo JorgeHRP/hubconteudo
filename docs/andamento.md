@@ -1,6 +1,6 @@
 # Central Interna: onde estamos
 
-Atualizado em 23/10/2026.
+Atualizado em 04/11/2026.
 
 O sistema está no ar, com login de verdade e com as principais telas gravando
 no banco de dados. Abaixo, o que já dá para usar, o que está no ar só para
@@ -55,8 +55,24 @@ Tudo nesta lista grava no banco. O que uma pessoa cadastra, as outras veem.
 - Relatório de Viagens: cada pessoa cria o relatório, lança as despesas e
   envia. Quem tem o painel de aprovação aprova, reprova com motivo ou marca
   como reembolsado. Ninguém aprova o próprio relatório, e um relatório sem
-  despesa não pode ser enviado. O arquivo do comprovante entra com o
-  armazenamento de arquivos; por enquanto vai só o nome.
+  despesa não pode ser enviado.
+- Comprovantes de viagem: o arquivo (PDF ou foto, até 10 MB) é enviado junto
+  com a despesa e fica guardado em área privada. Só a própria pessoa e quem
+  aprova viagens conseguem abrir.
+
+**Treinamentos**
+
+- Trilhas, cursos e questionários, cadastrados pelo master, valem para todo
+  mundo.
+- O progresso, as notas e os certificados de cada pessoa ficam no banco. Cada
+  um vê só os seus; o master vê os de todos.
+- O que o master já tinha cadastrado no navegador sobe sozinho no primeiro
+  login depois da atualização.
+
+**Gestão de Tráfego**
+
+- Quem tem o painel de tráfego, mas não o de CS, não é mais levado para a
+  tela inicial ao clicar num cliente.
 
 Quando alguém altera alguma coisa, a mudança aparece para os outros em até
 20 segundos, sem precisar recarregar a página.
@@ -80,7 +96,7 @@ Quando alguém altera alguma coisa, a mudança aparece para os outros em até
 - Só o master altera papéis, permissões e integrações.
 - Os dados de clientes não ficam mais dentro do código do site. Ficam no
   banco e só chegam a quem fez login.
-- Essas regras têm 162 testes automáticos, que rodam antes de qualquer
+- Essas regras têm 194 testes automáticos, que rodam antes de qualquer
   mudança no banco.
 
 ## O que está no ar só para navegar
@@ -89,8 +105,7 @@ Estas telas abrem e funcionam, mas ainda guardam os dados no navegador de
 cada pessoa. Servem para conhecer e validar, não para uso real ainda:
 
 - Financeiro
-- Treinamentos
 - Repositórios e Contracheques
 
-Contracheques e comprovantes não devem receber arquivo real por enquanto.
+Contracheques ainda não devem receber arquivo real.
 

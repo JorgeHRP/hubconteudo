@@ -45,7 +45,8 @@ import {
 } from "@/integrations/supabase/hub";
 import {
   adicionarDespesaRemoto, criarViagemRemoto, listarViagensRemoto, mudarStatusViagemRemoto,
-  removerDespesaRemoto, removerViagemRemoto,
+  removerDespesaRemoto, removerViagemRemoto, enviarComprovanteRemoto, apagarComprovantes,
+  linkComprovanteRemoto,
 } from "@/integrations/supabase/viagens";
 import {
   alterarNegocioRemoto, criarNegocioRemoto, listarNegociosRemoto, removerNegocioRemoto,
@@ -80,7 +81,9 @@ const inicial = () => ({
   perguntasCurso: [] as PerguntaCurso[],
   progressoCurso: [] as ProgressoCurso[],
   certificados: [] as Certificado[],
-  modeloCertificado: { ...modeloCertificadoPadrao } as ModeloCertificado,
+  // Lista de um item só: a sincronia trabalha com listas. Ler e gravar sempre
+  // por lerModeloCertificado / salvarModeloCertificado.
+  modelosCertificado: [{ chave: "padrao", ...modeloCertificadoPadrao }] as ModeloCertificadoSalvo[],
   viagens: [] as RelatorioViagem[],
   clientes: [] as Cliente[],
   notas: [] as ClienteNota[],
@@ -133,6 +136,19 @@ const inicial = () => ({
 });
 
 type Banco = ReturnType<typeof inicial>;
+type ModeloCertificadoSalvo = ModeloCertificado & { chave: string };
+
+/** Coleções de treinamento que moravam no navegador antes de irem para o banco. */
+const TREINAMENTOS = [
+  "trilhas", "cursos", "perguntasCurso", "progressoCurso", "certificados", "modelosCertificado",
+] as const;
+
+/**
+ * Treinamentos cadastrados neste navegador antes de o módulo ir para o banco.
+ * Se o servidor ainda não tiver nada, o master envia isto no primeiro login, em
+ * vez de começar do zero. Depois disso o navegador não guarda mais treinamentos.
+ */
+let treinamentosLocais: Partial<Banco> = {};
 
 /**
  * Enquanto o Supabase não entra, os dados ficam no localStorage do navegador
@@ -145,10 +161,26 @@ function carregar(): Banco {
     const salvo = localStorage.getItem(CHAVE_DB);
     if (!salvo) return base;
 
-    const { _versao, ...guardado } = JSON.parse(salvo) as Banco & { _versao?: number };
+    const { _versao, ...guardado } = JSON.parse(salvo) as Banco & {
+      _versao?: number;
+      modeloCertificado?: ModeloCertificado;
+    };
+    // Formato antigo: o modelo do certificado era um objeto solto.
+    if (guardado.modeloCertificado && !guardado.modelosCertificado) {
+      guardado.modelosCertificado = [{ ...modeloCertificadoPadrao, ...guardado.modeloCertificado, chave: "padrao" }];
+    }
+    delete guardado.modeloCertificado;
+
     // Com o banco ligado, o que é compartilhado vem do servidor depois do login.
-    // O que ficou neste navegador do tempo da demonstração não entra.
+    // O que ficou neste navegador do tempo da demonstração não entra — menos os
+    // treinamentos, que ficam separados para o master enviar (ver treinamentosLocais).
     if (temSupabase()) {
+      for (const colecao of TREINAMENTOS) {
+        const itens = guardado[colecao];
+        if (Array.isArray(itens) && itens.length) {
+          (treinamentosLocais as Record<string, unknown>)[colecao] = itens;
+        }
+      }
       for (const colecao of Object.keys(COLECOES)) delete (guardado as Record<string, unknown>)[colecao];
     }
     const banco = { ...base, ...guardado } as Banco;
@@ -257,9 +289,13 @@ export async function iniciarDadosCompartilhados(master: boolean) {
   } catch {
     // sem espaço para a cópia: segue sem ela
   }
+  // Só o master envia padrões ao servidor, então só para ele os treinamentos
+  // locais servem de ponto de partida. Usados uma vez, saem da memória.
+  const padroes = { ...inicial(), ...(master ? treinamentosLocais : {}) };
+  treinamentosLocais = {};
   await iniciarSincronia(
     db as unknown as Record<string, unknown>,
-    inicial() as unknown as Record<string, unknown>,
+    padroes as unknown as Record<string, unknown>,
     master
   );
 }
@@ -783,11 +819,17 @@ export const listarCertificados = (user_id: string) =>
 export const buscarCertificado = (id: string) =>
   wait(db.certificados.find((c) => c.id === id) ?? null);
 
-export const lerModeloCertificado = () => wait(db.modeloCertificado);
+const modeloAtual = (): ModeloCertificado => {
+  const { chave: _chave, ...modelo } = db.modelosCertificado[0] ?? { chave: "padrao", ...modeloCertificadoPadrao };
+  return modelo;
+};
+
+export const lerModeloCertificado = () => wait(modeloAtual());
 
 export async function salvarModeloCertificado(dados: Partial<ModeloCertificado>) {
-  db.modeloCertificado = { ...db.modeloCertificado, ...dados };
-  return wait(db.modeloCertificado);
+  const novo = { ...modeloAtual(), ...dados };
+  db.modelosCertificado = [{ chave: "padrao", ...novo }];
+  return wait(novo);
 }
 
 /** Progresso de uma trilha: quantos cursos dela a pessoa já concluiu. */
@@ -827,15 +869,38 @@ export async function criarViagem(dados: {
   return wait(nova);
 }
 
+/** Upload de arquivo só existe com o banco ligado; na demonstração fica só o nome. */
+export const podeEnviarComprovante = () => temSupabase();
+
+/**
+ * Lança a despesa. Com arquivo, ele sobe antes; se a despesa não puder ser
+ * gravada, o arquivo é apagado para não ficar órfão no bucket.
+ */
 export async function adicionarDespesa(
-  relatorio_id: string, despesa: Omit<DespesaViagem, "id" | "relatorio_id">
+  relatorio_id: string,
+  despesa: Omit<DespesaViagem, "id" | "relatorio_id">,
+  arquivo?: { dono_id: string; arquivo: File } | null
 ) {
-  if (temSupabase()) return adicionarDespesaRemoto(relatorio_id, despesa);
+  if (temSupabase()) {
+    if (!arquivo) return adicionarDespesaRemoto(relatorio_id, despesa);
+    const caminho = await enviarComprovanteRemoto(arquivo.dono_id, relatorio_id, arquivo.arquivo);
+    try {
+      return await adicionarDespesaRemoto(relatorio_id, {
+        ...despesa, comprovante_nome: arquivo.arquivo.name, comprovante_url: caminho,
+      });
+    } catch (e) {
+      await apagarComprovantes([caminho]);
+      throw e;
+    }
+  }
   const v = db.viagens.find((x) => x.id === relatorio_id);
   if (!v) return wait(null);
   v.despesas.push({ ...despesa, id: `dv-${uid()}`, relatorio_id });
   return wait(v);
 }
+
+/** Link temporário para abrir o comprovante (o bucket é privado). */
+export const linkComprovante = (caminho: string) => linkComprovanteRemoto(caminho);
 
 export async function removerDespesa(relatorio_id: string, despesa_id: string) {
   if (temSupabase()) return removerDespesaRemoto(relatorio_id, despesa_id);

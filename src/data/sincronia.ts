@@ -44,6 +44,9 @@ export const COLECOES: Record<string, (item: Item) => string> = {
   // sites, redes e projetos RD
   projetosSite: porId, perfisSociais: porId, publicacoes: porId,
   implantacoes: porId, notasImplantacao: porId,
+  // treinamentos: o catálogo é do master; progresso e certificado, de cada pessoa
+  trilhas: porId, cursos: porId, perguntasCurso: porId, modelosCertificado: porChave,
+  progressoCurso: (p) => `${p.user_id}:${p.curso_id}`, certificados: porId,
   // administração
   integracoes: porChave, paineis: porChave,
 };
@@ -55,7 +58,9 @@ const NOVOS_PRIMEIRO = new Set([
 ]);
 
 /** Só o master altera estas; os demais nunca tentam enviar. */
-const SO_MASTER = new Set(["integracoes", "paineis"]);
+const SO_MASTER = new Set([
+  "integracoes", "paineis", "trilhas", "cursos", "perguntasCurso", "modelosCertificado",
+]);
 
 /** Folga na busca do que mudou: uma gravação pode ser confirmada um instante depois da hora dela. */
 const FOLGA_MS = 15_000;

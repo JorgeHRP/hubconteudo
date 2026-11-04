@@ -6,9 +6,10 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  adicionarDespesa, criarViagem, listarProfiles, listarViagens, mudarStatusViagem,
-  removerDespesa, removerViagem,
+  adicionarDespesa, criarViagem, linkComprovante, listarProfiles, listarViagens, mudarStatusViagem,
+  podeEnviarComprovante, removerDespesa, removerViagem,
 } from "@/data/store";
+import { COMPROVANTE_MAX_BYTES, COMPROVANTE_TIPOS } from "@/integrations/supabase/viagens";
 import {
   despesaCategoriaLabels, formatCurrency, formatDate, viagemStatusLabels, viagemStatusVariant,
 } from "@/lib/cs-data";
@@ -33,6 +34,22 @@ const despesaVazia = {
   descricao: "", data: "", valor: "", comprovante_nome: "",
 };
 
+/**
+ * Abre o comprovante numa aba nova. A aba é aberta antes de pedir o link, ainda
+ * dentro do clique: aberta depois da espera, o navegador a bloquearia como pop-up.
+ */
+async function abrirComprovante(caminho: string) {
+  const aba = window.open("about:blank", "_blank");
+  try {
+    const url = await linkComprovante(caminho);
+    if (aba) aba.location.href = url;
+    else window.location.href = url;
+  } catch (e) {
+    aba?.close();
+    toast.error((e as Error).message);
+  }
+}
+
 const total = (r: RelatorioViagem) => r.despesas.reduce((s, d) => s + d.valor, 0);
 
 export default function RelatorioViagens() {
@@ -46,6 +63,8 @@ export default function RelatorioViagens() {
   const [aba, setAba] = useState("aprovar");
   const [despesaEm, setDespesaEm] = useState<string | null>(null);
   const [despesa, setDespesa] = useState(despesaVazia);
+  const [arquivo, setArquivo] = useState<File | null>(null);
+  const comUpload = podeEnviarComprovante();
   const [reprovando, setReprovando] = useState<string | null>(null);
   const [motivoReprova, setMotivoReprova] = useState("");
 
@@ -78,10 +97,11 @@ export default function RelatorioViagens() {
         valor: Number(despesa.valor) || 0,
         comprovante_nome: despesa.comprovante_nome.trim() || null,
         comprovante_url: null,
-      }),
+      }, arquivo && userId ? { dono_id: userId, arquivo } : null),
     onSuccess: () => {
       setDespesaEm(null);
       setDespesa(despesaVazia);
+      setArquivo(null);
       invalidar();
       toast.success("Despesa lançada");
     },
@@ -122,6 +142,8 @@ export default function RelatorioViagens() {
   const meus = todos.filter((v) => v.colaborador_id === userId);
   const paraAprovar = todos.filter((v) => v.status === "enviado");
 
+  // Chamada como função, não como <ListaViagens />: declarada aqui dentro, como
+  // componente ela seria recriada a cada tecla e os campos perderiam o foco.
   function ListaViagens({ itens, mostrarDono }: { itens: RelatorioViagem[]; mostrarDono?: boolean }) {
     if (itens.length === 0) {
       return (
@@ -263,8 +285,19 @@ export default function RelatorioViagens() {
                                 {formatDate(d.data)}
                               </td>
                               <td className="p-2">
-                                {d.comprovante_nome ? (
-                                  <span className="flex items-center gap-1 text-xs text-primary">
+                                {d.comprovante_url ? (
+                                  <button
+                                    type="button"
+                                    className="flex max-w-[14rem] items-center gap-1 text-left text-xs text-primary hover:underline"
+                                    title="Abrir o comprovante"
+                                    onClick={() => abrirComprovante(d.comprovante_url!)}
+                                  >
+                                    <Paperclip className="h-3 w-3 shrink-0" />
+                                    <span className="truncate">{d.comprovante_nome ?? "comprovante"}</span>
+                                  </button>
+                                ) : d.comprovante_nome ? (
+                                  <span className="flex items-center gap-1 text-xs text-muted-foreground"
+                                    title="Só o nome foi informado; o arquivo não foi enviado">
                                     <Paperclip className="h-3 w-3" /> {d.comprovante_nome}
                                   </span>
                                 ) : (
@@ -319,29 +352,52 @@ export default function RelatorioViagens() {
                           </div>
                           <div className="sm:col-span-2">
                             <Label htmlFor="d-comp">Comprovante</Label>
-                            <Input id="d-comp" className="mt-1.5" value={despesa.comprovante_nome}
-                              placeholder="nota-fiscal-taxi.pdf"
-                              onChange={(e) => setDespesa({ ...despesa, comprovante_nome: e.target.value })} />
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              O upload do arquivo entra junto com o Storage do Supabase.
-                            </p>
+                            {comUpload ? (
+                              <>
+                                <Input id="d-comp" type="file" className="mt-1.5"
+                                  accept={COMPROVANTE_TIPOS.join(",")}
+                                  onChange={(e) => {
+                                    const f = e.target.files?.[0] ?? null;
+                                    if (f && f.size > COMPROVANTE_MAX_BYTES) {
+                                      toast.error("O comprovante passa de 10 MB.");
+                                      e.target.value = "";
+                                      setArquivo(null);
+                                      return;
+                                    }
+                                    setArquivo(f);
+                                  }} />
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  PDF ou foto, até 10 MB. Só você e quem aprova viagens conseguem abrir.
+                                </p>
+                              </>
+                            ) : (
+                              <>
+                                <Input id="d-comp" className="mt-1.5" value={despesa.comprovante_nome}
+                                  placeholder="nota-fiscal-taxi.pdf"
+                                  onChange={(e) => setDespesa({ ...despesa, comprovante_nome: e.target.value })} />
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  No modo de demonstração fica só o nome do arquivo.
+                                </p>
+                              </>
+                            )}
                           </div>
                           <div className="flex gap-2 sm:col-span-2">
-                            <Button size="sm" variant="outline" onClick={() => setDespesaEm(null)}>
+                            <Button size="sm" variant="outline"
+                              onClick={() => { setDespesaEm(null); setArquivo(null); }}>
                               Cancelar
                             </Button>
                             <Button
                               size="sm"
-                              disabled={!despesa.descricao.trim() || !despesa.data || !despesa.valor}
+                              disabled={!despesa.descricao.trim() || !despesa.data || !despesa.valor || addDespesa.isPending}
                               onClick={() => addDespesa.mutate(v.id)}
                             >
-                              Lançar despesa
+                              {addDespesa.isPending ? "Enviando…" : "Lançar despesa"}
                             </Button>
                           </div>
                         </div>
                       ) : (
                         <Button size="sm" variant="outline" className="mt-3"
-                          onClick={() => { setDespesaEm(v.id); setDespesa(despesaVazia); }}>
+                          onClick={() => { setDespesaEm(v.id); setDespesa(despesaVazia); setArquivo(null); }}>
                           <Plus /> Adicionar despesa
                         </Button>
                       )
@@ -431,12 +487,12 @@ export default function RelatorioViagens() {
             <TabsTrigger value="meus">Meus relatórios</TabsTrigger>
             <TabsTrigger value="todos">Todos ({todos.length})</TabsTrigger>
           </TabsList>
-          <TabsContent value="aprovar"><ListaViagens itens={paraAprovar} mostrarDono /></TabsContent>
-          <TabsContent value="meus"><ListaViagens itens={meus} /></TabsContent>
-          <TabsContent value="todos"><ListaViagens itens={todos} mostrarDono /></TabsContent>
+          <TabsContent value="aprovar">{ListaViagens({ itens: paraAprovar, mostrarDono: true })}</TabsContent>
+          <TabsContent value="meus">{ListaViagens({ itens: meus })}</TabsContent>
+          <TabsContent value="todos">{ListaViagens({ itens: todos, mostrarDono: true })}</TabsContent>
         </Tabs>
       ) : (
-        <ListaViagens itens={meus} />
+        ListaViagens({ itens: meus })
       )}
     </div>
   );
