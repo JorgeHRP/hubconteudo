@@ -149,8 +149,10 @@ Já escritas:
 |---|---|
 | `manage-users` | Cria colaborador, envia convite por e-mail, ativa e desativa. Só master. |
 | `sync-clickup` | Traz as tarefas do ClickUp para a coleção `tarefas`. Master (Painel Admin → Integrações) ou agendamento com `x-sync-secret`. |
+| `assistente-ia` | Responde o botão de IA do canto da tela. Qualquer pessoa ativa, até 60 perguntas por hora. |
+| `analise-cliente-ia` | Gera a análise de CS da ficha do cliente. Quem tem o painel de CS. |
 
-A escrever: `assistente-ia`, `analise-cliente-ia`, `sync-rd`,
+A escrever: `sync-rd`,
 `sync-read`, `sync-solides`, `sync-conta-azul`.
 
 Para publicar pelo painel do Supabase (Edge Functions → Deploy a new function →
@@ -182,6 +184,27 @@ select cron.schedule('sync-clickup', '0 * * * *', $$
     body := '{"acao":"sincronizar"}'::jsonb)
 $$);
 ```
+
+### assistente-ia e analise-cliente-ia
+
+- Segredos (os mesmos para as duas): `IA_API_KEY`, `IA_API_URL` e `IA_MODELO`.
+  Servem para qualquer provedor no formato "chat completions". Exemplos de
+  `IA_API_URL`:
+  - OpenAI: `https://api.openai.com/v1/chat/completions`
+  - Gemini: `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`
+  - Gateway da Lovable: `https://ai.gateway.lovable.dev/v1/chat/completions`
+
+  `IA_MODELO` é o nome do modelo exatamente como o provedor escreve. Trocar de
+  provedor é trocar os três segredos.
+- Sem os segredos, o assistente responde pelo manual local (`src/lib/ia.ts`) e
+  avisa "IA indisponível"; a análise de CS mostra o erro, sem inventar análise.
+- O manual do assistente é a lista `base` de `src/lib/ia.ts`. A função recebe
+  esse texto como referência, então mantê-lo em dia melhora as respostas.
+- A análise lê, com a chave de serviço, a ficha do cliente em `central_registros`
+  (frentes, 30 notas, 12 avaliações, 30 recursos, 10 reuniões, 50 tarefas). O
+  navegador manda só o id do cliente. A tela grava o resultado em `analises`.
+- Cada chamada das duas fica em `consultas_ia` (quem, quando, modelo e tokens),
+  para acompanhar o custo.
 
 Segredos de integração ficam em `supabase/.env` no local e nos secrets do
 projeto em produção — nunca no frontend.

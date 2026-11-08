@@ -68,6 +68,17 @@ Tudo nesta lista grava no banco. O que uma pessoa cadastra, as outras veem.
 - Manual interno, Políticas, Ativos de marca e Repositórios: o gestor publica
   o arquivo e todos os colaboradores baixam.
 
+**Inteligência artificial**
+
+- O botão de IA no canto da tela responde dúvidas sobre o sistema, sabendo em
+  que tela a pessoa está e lembrando o que já foi perguntado na conversa.
+- Na ficha do cliente, "Gerar análise" lê tudo o que está registrado (frentes,
+  notas, avaliações de churn, reuniões, materiais e tarefas do ClickUp) e
+  devolve resumo, percepções, riscos, recomendações e a flag sugerida. Dá para
+  fazer uma pergunta livre junto.
+- Cada consulta fica registrada, para acompanhar o uso e o custo.
+- Passa a funcionar assim que a chave do serviço de IA for cadastrada.
+
 **Treinamentos**
 
 - Trilhas, cursos e questionários, cadastrados pelo master, valem para todo

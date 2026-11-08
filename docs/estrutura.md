@@ -116,15 +116,12 @@ rascunho → enviado → aprovado → pago
 Disponível em **toda a ferramenta** pelo botão flutuante no canto inferior direito.
 Sabe em que tela a pessoa está e sugere perguntas conforme o contexto.
 
-A camada fica em `src/lib/ia.ts`. Hoje responde localmente, a partir de uma base de
-conhecimento sobre o próprio sistema — churn, cadastro, papéis, viagens, contracheques,
-histórico, integrações, vendas e financeiro. A resposta sempre indica o motor usado.
-
-**Ponto de troca:** a função `consultarIA(pergunta, contexto)` é a única coisa a mudar.
-Quando a edge function `assistente-ia` existir, o corpo dela vira um `fetch` enviando
-`{ pergunta, contexto }` e devolvendo `{ resposta, sugestoes, motor }` — telas, histórico
-de conversa e sugestões continuam iguais. As consultas podem ser gravadas em
-`consultas_ia` para auditoria e controle de custo.
+A camada fica em `src/lib/ia.ts`, com um manual do próprio sistema — churn, cadastro,
+papéis, viagens, contracheques, histórico, integrações, vendas e financeiro. Com o banco
+ligado, `consultarIA` chama a edge function `assistente-ia`, que responde com o modelo
+de IA usando esse manual como referência e as últimas mensagens da conversa. Sem banco,
+ou com a IA fora do ar, o manual responde sozinho. A resposta sempre indica o motor usado.
+Cada consulta fica em `consultas_ia`, para auditoria e controle de custo.
 
 Na ficha do cliente, além do assistente, existe o botão **Gerar análise**, que produz
 resumo, percepções, riscos, recomendações e flag sugerida a partir dos dados do cliente.
@@ -523,8 +520,8 @@ O passo 3 altera o enum `app_role`. Havendo usuários em produção, rodar antes
 - [ ] Conectar o Supabase e substituir `src/data/store.ts` pelas queries reais
 - [ ] Login por e-mail e senha (hoje o botão entra direto como master)
 - [ ] Edge function `manage-users` (criar usuário + disparar e-mail de primeiro acesso)
-- [ ] Edge function `analise-cliente-ia` (hoje a análise é simulada no cliente)
-- [ ] Edge function `assistente-ia` (hoje o assistente responde de uma base local)
+- [x] Edge function `analise-cliente-ia`
+- [x] Edge function `assistente-ia`
 - [ ] Upload real de arquivos nos buckets `documentos`, `comprovantes`, `avatars`, `posts`
 - [ ] Sincronizações `sync-clickup`, `sync-solides`, `sync-conta-azul`, `sync-rd`, `sync-read`
 - [ ] URLs dos três painéis externos

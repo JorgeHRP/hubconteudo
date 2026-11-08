@@ -76,11 +76,13 @@ export function AssistenteIA() {
     setSugestoes([]);
     setPensando(true);
 
+    // A conversa até aqui (sem a pergunta nova), para a IA entender o contexto.
+    const historico = mensagens.slice(-6).map((m) => ({ autor: m.autor, texto: m.texto }));
     const r: RespostaIA = await consultarIA(limpo, {
       rota: pathname,
       tela: nomeDaTela(pathname),
       papel: role,
-    });
+    }, historico);
 
     setMensagens((m) => [...m, { autor: "ia", texto: r.resposta, motor: r.motor }]);
     setSugestoes(r.sugestoes);

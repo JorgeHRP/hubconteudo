@@ -50,3 +50,25 @@ export async function exigirMaster(req: Request): Promise<
   }
   return { ok: true, userId };
 }
+
+/**
+ * Quem chamou precisa estar logado e ativo e, se `modulo` vier, ter aquele
+ * painel liberado. A conferência é a mesma do banco (`has_modulo`).
+ */
+export async function exigirUsuario(req: Request, modulo?: string): Promise<
+  { ok: true; userId: string } | { ok: false; status: number; mensagem: string }
+> {
+  const userId = await usuarioDaRequisicao(req);
+  if (!userId) return { ok: false, status: 401, mensagem: "Sessão inválida." };
+
+  const admin = clienteAdmin();
+  const { data: perfil } = await admin
+    .from("profiles").select("ativo").eq("user_id", userId).maybeSingle();
+  if (!perfil?.ativo) return { ok: false, status: 403, mensagem: "Usuário inativo." };
+
+  if (modulo) {
+    const { data: tem } = await admin.rpc("has_modulo", { _user_id: userId, _modulo: modulo });
+    if (tem !== true) return { ok: false, status: 403, mensagem: "Você não tem acesso a este painel." };
+  }
+  return { ok: true, userId };
+}

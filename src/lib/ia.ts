@@ -1,12 +1,14 @@
 import type { AppRole } from "./types";
+import { temSupabase } from "@/integrations/supabase/client";
+import { consultarAssistenteRemoto, ErroFuncaoIA } from "@/integrations/supabase/ia";
 
 /**
  * Camada de IA da Central Interna.
  *
- * Hoje responde localmente, a partir da base de conhecimento abaixo e do contexto
- * que a tela envia. O ponto de troca é `consultarIA`: quando a edge function
- * `assistente-ia` existir, o corpo dessa função vira um fetch e todo o resto —
- * telas, histórico de conversa, sugestões — continua igual.
+ * Com o banco ligado, as perguntas vão para a função `assistente-ia`, que usa o
+ * manual abaixo (`base`) como referência. Sem banco, ou com a IA fora do ar, o
+ * próprio manual responde, pela palavra-chave. Mantenha o manual em dia: ele é
+ * a fonte das duas respostas.
  */
 
 export interface ContextoIA {
@@ -172,15 +174,47 @@ function pontuar(pergunta: string, verbete: Verbete): number {
 
 const MOTOR_LOCAL = "assistente local";
 
+/** Mensagens anteriores da conversa, para a IA entender "e como faço isso?". */
+export type HistoricoIA = { autor: "pessoa" | "ia"; texto: string }[];
+
+/**
+ * Com o banco ligado, pergunta à IA (função `assistente-ia`), mandando junto o
+ * manual abaixo como referência. Se a IA ainda não foi configurada ou estiver
+ * fora do ar, responde pelo manual local, avisando no motor.
+ */
 export async function consultarIA(
   pergunta: string,
-  contexto: ContextoIA
+  contexto: ContextoIA,
+  historico: HistoricoIA = []
 ): Promise<RespostaIA> {
+  if (temSupabase()) {
+    try {
+      const r = await consultarAssistenteRemoto({
+        pergunta,
+        contexto: { rota: contexto.rota, tela: contexto.tela, papel: contexto.papel },
+        historico,
+        referencias: base.map((v) => v.resposta),
+      });
+      return {
+        resposta: r.resposta,
+        sugestoes: r.sugestoes.length ? r.sugestoes : sugestoesDaTela(contexto.rota),
+        motor: `IA · ${r.motor}`,
+      };
+    } catch (e) {
+      // Limite de consultas é recado para a pessoa, não motivo para cair no manual.
+      if (e instanceof ErroFuncaoIA && e.status === 429) {
+        return { resposta: e.message, sugestoes: [], motor: "aviso" };
+      }
+      const local = responderLocal(pergunta, contexto);
+      return { ...local, motor: `${MOTOR_LOCAL} (IA indisponível)` };
+    }
+  }
+
   await new Promise((r) => setTimeout(r, 650));
+  return responderLocal(pergunta, contexto);
+}
 
-  // ⬇️ Ponto de troca: substituir por fetch na edge function `assistente-ia`,
-  // enviando { pergunta, contexto } e devolvendo { resposta, sugestoes, motor }.
-
+function responderLocal(pergunta: string, contexto: ContextoIA): RespostaIA {
   const ranking = base
     .map((v) => ({ v, nota: pontuar(pergunta, v) }))
     .filter((x) => x.nota > 0)

@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   buscarEmpresa, criarNota, criarRecurso, listarAnalises, listarAvaliacoes, listarNotas,
   listarProfiles, listarProjetosDaEmpresa, listarRecursos, listarTarefas, salvarAnalise,
+  gerarAnaliseIA, podeGerarAnaliseIA,
   salvarAvaliacao,
 } from "@/data/store";
 import {
@@ -48,6 +49,7 @@ export default function ClienteDetalhe() {
   const [comentarioChurn, setComentarioChurn] = useState("");
   const [pergunta, setPergunta] = useState("");
   const [gerando, setGerando] = useState(false);
+  const comIA = podeGerarAnaliseIA();
 
   const { data: cliente } = useQuery({ queryKey: ["empresa", id], queryFn: () => buscarEmpresa(id) });
   const { data: profiles } = useQuery({ queryKey: ["profiles"], queryFn: listarProfiles });
@@ -114,8 +116,25 @@ export default function ClienteDetalhe() {
   });
 
   async function gerarAnalise() {
-    if (!cliente) return;
+    if (!cliente || gerando) return;
     setGerando(true);
+    try {
+      if (comIA) await gerarAnaliseIA(id, userId, pergunta);
+      else await simularAnalise();
+      setPergunta("");
+      qc.invalidateQueries({ queryKey: ["analises", id] });
+      qc.invalidateQueries({ queryKey: ["historico", id] });
+      toast.success("Análise gerada");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setGerando(false);
+    }
+  }
+
+  /** Modo de demonstração (sem banco): monta a análise com regras fixas, sem IA. */
+  async function simularAnalise() {
+    if (!cliente) return;
     await new Promise((r) => setTimeout(r, 900));
 
     const ultima = avaliacoes?.[0];
@@ -146,12 +165,6 @@ export default function ClienteDetalhe() {
       modelo: "simulacao-local",
       gerado_por: userId,
     });
-
-    setGerando(false);
-    setPergunta("");
-    qc.invalidateQueries({ queryKey: ["analises", id] });
-    qc.invalidateQueries({ queryKey: ["historico", id] });
-    toast.success("Análise gerada");
   }
 
   if (!cliente) {
@@ -314,8 +327,9 @@ export default function ClienteDetalhe() {
                 </Button>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                Rodando com simulação local. Quando a edge function <code>analise-cliente-ia</code> entrar,
-                esta chamada passa a usar o modelo de verdade.
+                {comIA
+                  ? "A IA lê a ficha inteira (frentes, notas, avaliações de churn, reuniões, recursos e tarefas do ClickUp) e sugere a flag. Leva alguns segundos."
+                  : "Modo de demonstração: a análise é montada com regras fixas, sem IA."}
               </p>
             </CardContent>
           </Card>

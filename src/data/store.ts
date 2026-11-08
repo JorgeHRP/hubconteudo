@@ -51,6 +51,7 @@ import {
 import {
   criarDocumentoRemoto, linkDocumentoRemoto, listarDocumentosRemoto, removerDocumentoRemoto,
 } from "@/integrations/supabase/documentos";
+import { gerarAnaliseRemota } from "@/integrations/supabase/ia";
 import {
   alterarNegocioRemoto, criarNegocioRemoto, listarNegociosRemoto, removerNegocioRemoto,
   type DadosNegocio,
@@ -1044,6 +1045,18 @@ export async function salvarAvaliacao(dados: {
 export const listarAnalises = (cliente_id: string) =>
   wait(db.analises.filter((a) => a.cliente_id === cliente_id)
     .sort((a, b) => b.created_at.localeCompare(a.created_at)));
+
+/** Com o banco ligado, a análise é feita pela IA (função `analise-cliente-ia`). */
+export const podeGerarAnaliseIA = () => temSupabase();
+
+/**
+ * Pede a análise à IA e grava na ficha. Quem gerou é sempre quem está logado;
+ * o servidor lê os dados do cliente por conta própria.
+ */
+export async function gerarAnaliseIA(cliente_id: string, gerado_por: string | null, pergunta?: string) {
+  const a = await gerarAnaliseRemota(cliente_id, pergunta?.trim() || undefined);
+  return salvarAnalise({ cliente_id, ...a, gerado_por });
+}
 
 export async function salvarAnalise(analise: Omit<AnaliseIA, "id" | "created_at">) {
   const nova: AnaliseIA = { ...analise, id: `ia-${uid()}`, created_at: agora() };
