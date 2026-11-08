@@ -7,6 +7,7 @@ import { atualizarProfile, listarDocumentos } from "@/data/store";
 import { formatTelefone, getInitials, roleLabels } from "@/lib/mock-data";
 import { formatDate } from "@/lib/cs-data";
 import { PageHeader } from "@/components/PageHeader";
+import { BaixarDocumento } from "@/components/BaixarDocumento";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -143,12 +144,13 @@ export default function Perfil() {
               {meus.map((d) => (
                 <div key={d.id} className="flex items-center gap-2 rounded-md border p-2">
                   <FileText className="h-4 w-4 shrink-0 text-primary" />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-medium">{d.nome}</p>
                     <p className="text-[10px] text-muted-foreground">
                       {formatDate(d.created_at.slice(0, 10))}
                     </p>
                   </div>
+                  <BaixarDocumento doc={d} className="h-7 w-7" />
                 </div>
               ))}
               {meus.length === 0 && (

@@ -49,6 +49,9 @@ import {
   linkComprovanteRemoto,
 } from "@/integrations/supabase/viagens";
 import {
+  criarDocumentoRemoto, linkDocumentoRemoto, listarDocumentosRemoto, removerDocumentoRemoto,
+} from "@/integrations/supabase/documentos";
+import {
   alterarNegocioRemoto, criarNegocioRemoto, listarNegociosRemoto, removerNegocioRemoto,
   type DadosNegocio,
 } from "@/integrations/supabase/vendas";
@@ -576,17 +579,47 @@ export async function mudarStatusSolicitacao(id: string, status: SolicitacaoStat
 
 /* ---------------- documentos ---------------- */
 
-export const listarDocumentos = () => wait(db.documentos);
+// Com o banco ligado, vai direto ao servidor (src/integrations/supabase/documentos.ts):
+// cada pessoa recebe só os próprios documentos e os institucionais.
 
-export async function criarDocumento(dados: Omit<Documento, "id" | "created_at">) {
-  const novo: Documento = { ...dados, id: `d-${uid()}`, created_at: agora() };
+export const listarDocumentos = () =>
+  temSupabase() ? listarDocumentosRemoto() : wait(db.documentos);
+
+/** Upload de arquivo só existe com o banco ligado; na demonstração fica só o nome. */
+export const podeEnviarDocumento = () => temSupabase();
+
+export async function criarDocumento(
+  dados: Omit<Documento, "id" | "created_at">, arquivo?: File | null
+) {
+  if (temSupabase()) return criarDocumentoRemoto(dados, arquivo);
+  const novo: Documento = {
+    ...dados, arquivo_nome: arquivo?.name ?? dados.arquivo_nome, id: `d-${uid()}`, created_at: agora(),
+  };
   db.documentos.unshift(novo);
   return wait(novo);
 }
 
 export async function removerDocumento(id: string) {
+  if (temSupabase()) return removerDocumentoRemoto(id);
   db.documentos = db.documentos.filter((d) => d.id !== id);
   return wait(true);
+}
+
+/**
+ * Abre o arquivo numa aba nova. A aba é aberta antes de pedir o link, ainda
+ * dentro do clique: aberta depois da espera, o navegador a bloquearia como pop-up.
+ */
+export async function abrirDocumento(doc: Documento) {
+  if (!doc.arquivo_url) throw new Error("Este documento ainda não tem arquivo anexado.");
+  const aba = window.open("about:blank", "_blank");
+  try {
+    const url = await linkDocumentoRemoto(doc);
+    if (aba) aba.location.href = url;
+    else window.location.href = url;
+  } catch (e) {
+    aba?.close();
+    throw e;
+  }
 }
 
 /* ---------------- treinamentos ---------------- */

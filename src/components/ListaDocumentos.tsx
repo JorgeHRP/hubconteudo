@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, FileText, Plus, Search, Trash2, type LucideIcon } from "lucide-react";
+import { FileText, Plus, Search, Trash2, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { criarDocumento, listarDocumentos, removerDocumento } from "@/data/store";
+import { criarDocumento, listarDocumentos, podeEnviarDocumento, removerDocumento } from "@/data/store";
+import { DOCUMENTO_ACEITA, DOCUMENTO_MAX_BYTES } from "@/integrations/supabase/documentos";
+import { BaixarDocumento } from "@/components/BaixarDocumento";
 import type { DocumentoCategoria } from "@/lib/types";
 import { formatDate } from "@/lib/cs-data";
 import { PageHeader } from "@/components/PageHeader";
@@ -32,6 +34,8 @@ export function ListaDocumentos({
   const qc = useQueryClient();
   const [busca, setBusca] = useState("");
   const [aberto, setAberto] = useState(false);
+  const [arquivo, setArquivo] = useState<File | null>(null);
+  const comUpload = podeEnviarDocumento();
   const [form, setForm] = useState({ nome: "", descricao: "", arquivo_nome: "" });
 
   const { data: documentos } = useQuery({ queryKey: ["documentos"], queryFn: listarDocumentos });
@@ -44,18 +48,21 @@ export function ListaDocumentos({
         competencia: null,
         categoria, arquivo_url: null, arquivo_nome: form.arquivo_nome.trim() || null,
         uploaded_by: userId,
-      }),
+      }, arquivo),
     onSuccess: () => {
       setAberto(false);
       setForm({ nome: "", descricao: "", arquivo_nome: "" });
+      setArquivo(null);
       invalidar();
       toast.success("Documento publicado");
     },
+    onError: (e) => toast.error((e as Error).message),
   });
 
   const apagar = useMutation({
     mutationFn: (id: string) => removerDocumento(id),
     onSuccess: () => { invalidar(); toast.success("Documento removido"); },
+    onError: (e) => toast.error((e as Error).message),
   });
 
   const itens = (documentos ?? [])
@@ -73,7 +80,7 @@ export function ListaDocumentos({
         subtitulo={subtitulo}
         acao={
           isGestor && (
-            <Dialog open={aberto} onOpenChange={setAberto}>
+            <Dialog open={aberto} onOpenChange={(v) => { setAberto(v); if (!v) setArquivo(null); }}>
               <DialogTrigger asChild>
                 <Button><Plus /> Publicar</Button>
               </DialogTrigger>
@@ -96,15 +103,39 @@ export function ListaDocumentos({
                       onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
                   </div>
                   <div>
-                    <Label htmlFor="doc-arq">Nome do arquivo</Label>
-                    <Input id="doc-arq" className="mt-1.5" placeholder="manual.pdf" value={form.arquivo_nome}
-                      onChange={(e) => setForm({ ...form, arquivo_nome: e.target.value })} />
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      O upload real entra junto com o Storage do Supabase.
-                    </p>
+                    <Label htmlFor="doc-arq">Arquivo</Label>
+                    {comUpload ? (
+                      <>
+                        <Input id="doc-arq" type="file" className="mt-1.5" accept={DOCUMENTO_ACEITA}
+                          key={aberto ? "aberto" : "fechado"}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0] ?? null;
+                            if (f && f.size > DOCUMENTO_MAX_BYTES) {
+                              toast.error("O arquivo passa de 20 MB.");
+                              e.target.value = "";
+                              setArquivo(null);
+                              return;
+                            }
+                            setArquivo(f);
+                          }} />
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Até 20 MB. Todos os colaboradores conseguem baixar.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <Input id="doc-arq" className="mt-1.5" placeholder="manual.pdf" value={form.arquivo_nome}
+                          onChange={(e) => setForm({ ...form, arquivo_nome: e.target.value })} />
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          No modo de demonstração fica só o nome do arquivo.
+                        </p>
+                      </>
+                    )}
                   </div>
-                  <Button className="w-full" disabled={!form.nome.trim()} onClick={() => publicar.mutate()}>
-                    Publicar
+                  <Button className="w-full"
+                    disabled={!form.nome.trim() || (comUpload && !arquivo) || publicar.isPending}
+                    onClick={() => publicar.mutate()}>
+                    {publicar.isPending ? "Publicando…" : "Publicar"}
                   </Button>
                 </div>
               </DialogContent>
@@ -135,12 +166,10 @@ export function ListaDocumentos({
                 </p>
               </div>
               <div className="flex shrink-0 flex-col gap-1">
-                <Button variant="ghost" size="icon" className="h-7 w-7"
-                  onClick={() => toast.info("Download disponível quando o Storage for conectado")}>
-                  <Download className="h-3.5 w-3.5" />
-                </Button>
+                <BaixarDocumento doc={d} className="h-7 w-7" />
                 {isGestor && (
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => apagar.mutate(d.id)}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" title="Remover"
+                    disabled={apagar.isPending} onClick={() => apagar.mutate(d.id)}>
                     <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
                   </Button>
                 )}

@@ -1,6 +1,6 @@
 # Central Interna: onde estamos
 
-Atualizado em 04/11/2026.
+Atualizado em 08/11/2026.
 
 O sistema está no ar, com login de verdade e com as principais telas gravando
 no banco de dados. Abaixo, o que já dá para usar, o que está no ar só para
@@ -60,6 +60,14 @@ Tudo nesta lista grava no banco. O que uma pessoa cadastra, as outras veem.
   com a despesa e fica guardado em área privada. Só a própria pessoa e quem
   aprova viagens conseguem abrir.
 
+**Contracheques e documentos**
+
+- O RH envia o contracheque de cada pessoa, um por vez ou todos do mês de uma
+  vez, com o arquivo (até 20 MB). Cada pessoa baixa só os próprios, pela tela
+  de Contracheques ou pelo Meu perfil.
+- Manual interno, Políticas, Ativos de marca e Repositórios: o gestor publica
+  o arquivo e todos os colaboradores baixam.
+
 **Treinamentos**
 
 - Trilhas, cursos e questionários, cadastrados pelo master, valem para todo
@@ -96,7 +104,7 @@ Quando alguém altera alguma coisa, a mudança aparece para os outros em até
 - Só o master altera papéis, permissões e integrações.
 - Os dados de clientes não ficam mais dentro do código do site. Ficam no
   banco e só chegam a quem fez login.
-- Essas regras têm 194 testes automáticos, que rodam antes de qualquer
+- Essas regras têm 210 testes automáticos, que rodam antes de qualquer
   mudança no banco.
 
 ## O que está no ar só para navegar
@@ -105,7 +113,4 @@ Estas telas abrem e funcionam, mas ainda guardam os dados no navegador de
 cada pessoa. Servem para conhecer e validar, não para uso real ainda:
 
 - Financeiro
-- Repositórios e Contracheques
-
-Contracheques ainda não devem receber arquivo real.
 

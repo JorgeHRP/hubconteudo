@@ -55,6 +55,7 @@ As migrações já estão em `supabase/migrations/`, numeradas na ordem correta:
 | `20260901000008_viagens_vendas.sql` | Caminho do status das viagens e cadastro manual de negócios |
 | `20260901000009_treinamentos.sql` | Treinamentos: catálogo do master, progresso e certificado de cada pessoa |
 | `20260901000010_comprovantes.sql` | A despesa só aponta para arquivo na pasta do próprio relatório |
+| `20260901000011_documentos.sql` | Contracheque só aponta para a pasta da pessoa; institucional, para a da categoria |
 
 Antes de aplicar em qualquer banco, dá para conferir tudo sem Docker:
 
@@ -226,6 +227,24 @@ e é ele que faz a navegação funcionar ao dar F5 em qualquer rota.
 
 As variáveis `VITE_*` são embutidas no momento do build — buildar apontando
 para produção, não para o `127.0.0.1`.
+
+### Endereço do site no Supabase
+
+Os links que o Supabase manda por e-mail (convite e "esqueci minha senha")
+voltam para o endereço configurado em **Authentication → URL Configuration**:
+
+- **Site URL**: `https://hub.conteudomar.tech`
+- **Redirect URLs**: `https://hub.conteudomar.tech/**` (e `http://localhost:5173/**`
+  para testar local)
+
+Endereço que não está na lista é ignorado, e o link cai no Site URL. Foi assim
+que os e-mails passaram a levar ao endereço provisório do Easypanel. Nas
+funções, o segredo `SITE_URL` da `manage-users` também precisa ser o domínio.
+
+Para conferir sem mandar e-mail (troque `<projeto>`), abra
+`https://<projeto>.supabase.co/auth/v1/verify?type=recovery&token=x&redirect_to=https://hub.conteudomar.tech/definir-senha`.
+Se cair em `hub.conteudomar.tech/definir-senha#error=…`, está certo. Se cair em
+outro endereço, o domínio ainda não está liberado.
 
 ### Acesso ao site
 

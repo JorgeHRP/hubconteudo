@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Receipt, Download, Lock, Plus, Trash2, FileText } from "lucide-react";
+import { Receipt, Lock, Plus, Trash2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { criarDocumento, listarDocumentos, listarProfiles, removerDocumento } from "@/data/store";
+import {
+  criarDocumento, listarDocumentos, listarProfiles, podeEnviarDocumento, removerDocumento,
+} from "@/data/store";
+import { DOCUMENTO_ACEITA, DOCUMENTO_MAX_BYTES } from "@/integrations/supabase/documentos";
+import { BaixarDocumento } from "@/components/BaixarDocumento";
 import { formatDate } from "@/lib/cs-data";
 import { PageHeader } from "@/components/PageHeader";
 import { ContrachequesLote } from "@/components/ContrachequesLote";
@@ -24,7 +28,9 @@ export default function Contracheques() {
   const qc = useQueryClient();
   const podeGerir = temModulo("colaboradores");
 
+  const comUpload = podeEnviarDocumento();
   const [aberto, setAberto] = useState(false);
+  const [arquivo, setArquivo] = useState<File | null>(null);
   const [form, setForm] = useState({
     user_id: "", nome: "", categoria: "contracheque" as "contracheque" | "documento_pessoal",
     competencia: "", arquivo_nome: "",
@@ -38,20 +44,26 @@ export default function Contracheques() {
     mutationFn: () =>
       criarDocumento({
         user_id: form.user_id, nome: form.nome.trim(), descricao: null,
-        categoria: form.categoria, competencia: form.competencia || null, arquivo_url: null,
+        categoria: form.categoria,
+        // O campo é "AAAA-MM"; o banco guarda data.
+        competencia: form.competencia ? `${form.competencia}-01` : null,
+        arquivo_url: null,
         arquivo_nome: form.arquivo_nome.trim() || null, uploaded_by: userId,
-      }),
+      }, arquivo),
     onSuccess: () => {
       setAberto(false);
       setForm({ user_id: "", nome: "", categoria: "contracheque", competencia: "", arquivo_nome: "" });
+      setArquivo(null);
       invalidar();
       toast.success("Documento vinculado ao colaborador");
     },
+    onError: (e) => toast.error((e as Error).message),
   });
 
   const apagar = useMutation({
     mutationFn: (id: string) => removerDocumento(id),
     onSuccess: () => { invalidar(); toast.success("Documento removido"); },
+    onError: (e) => toast.error((e as Error).message),
   });
 
   const pessoais = (documentos ?? []).filter((d) => d.user_id !== null);
@@ -81,12 +93,10 @@ export default function Contracheques() {
             <Badge variant="secondary" className="hidden shrink-0 text-[9px] sm:inline-flex">
               {d.categoria === "contracheque" ? "Contracheque" : "Documento pessoal"}
             </Badge>
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"
-              onClick={() => toast.info("Download disponível quando o Storage for conectado")}>
-              <Download className="h-4 w-4" />
-            </Button>
+            <BaixarDocumento doc={d} />
             {podeGerir && (
-              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => apagar.mutate(d.id)}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" title="Remover"
+                disabled={apagar.isPending} onClick={() => apagar.mutate(d.id)}>
                 <Trash2 className="h-4 w-4 text-muted-foreground" />
               </Button>
             )}
@@ -117,7 +127,7 @@ export default function Contracheques() {
           podeGerir && (
             <div className="flex gap-2">
               <ContrachequesLote />
-            <Dialog open={aberto} onOpenChange={setAberto}>
+            <Dialog open={aberto} onOpenChange={(v) => { setAberto(v); if (!v) setArquivo(null); }}>
               <DialogTrigger asChild>
                 <Button><Plus /> Enviar documento</Button>
               </DialogTrigger>
@@ -160,14 +170,40 @@ export default function Contracheques() {
                       onChange={(e) => setForm({ ...form, competencia: e.target.value })} />
                   </div>
                   <div>
-                    <Label htmlFor="cc-arq">Nome do arquivo</Label>
-                    <Input id="cc-arq" className="mt-1.5" placeholder="holerite-09-2026.pdf"
-                      value={form.arquivo_nome}
-                      onChange={(e) => setForm({ ...form, arquivo_nome: e.target.value })} />
+                    <Label htmlFor="cc-arq">Arquivo</Label>
+                    {comUpload ? (
+                      <>
+                        <Input id="cc-arq" type="file" className="mt-1.5" accept={DOCUMENTO_ACEITA}
+                          key={aberto ? "aberto" : "fechado"}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0] ?? null;
+                            if (f && f.size > DOCUMENTO_MAX_BYTES) {
+                              toast.error("O arquivo passa de 20 MB.");
+                              e.target.value = "";
+                              setArquivo(null);
+                              return;
+                            }
+                            setArquivo(f);
+                          }} />
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Até 20 MB. Só a pessoa escolhida e o RH conseguem abrir.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <Input id="cc-arq" className="mt-1.5" placeholder="holerite-09-2026.pdf"
+                          value={form.arquivo_nome}
+                          onChange={(e) => setForm({ ...form, arquivo_nome: e.target.value })} />
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          No modo de demonstração fica só o nome do arquivo.
+                        </p>
+                      </>
+                    )}
                   </div>
-                  <Button className="w-full" disabled={!form.user_id || !form.nome.trim()}
+                  <Button className="w-full"
+                    disabled={!form.user_id || !form.nome.trim() || (comUpload && !arquivo) || enviar.isPending}
                     onClick={() => enviar.mutate()}>
-                    Enviar
+                    {enviar.isPending ? "Enviando…" : "Enviar"}
                   </Button>
                 </div>
               </DialogContent>
@@ -180,8 +216,8 @@ export default function Contracheques() {
       <div className="mb-4 flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-xs">
         <Lock className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
         <span className="text-muted-foreground">
-          Estes arquivos são pessoais. No Supabase eles precisam ficar em bucket privado —
-          veja o Bloco A de <code>docs/migrations/2026-09-01-correcoes.sql</code>.
+          Estes arquivos são pessoais. Cada pessoa abre só os próprios; quem cuida de
+          colaboradores abre todos. O link de download vale por 5 minutos.
         </span>
       </div>
 

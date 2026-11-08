@@ -507,6 +507,46 @@ await barrado("comprovante: colega não apaga o arquivo", BRUNO, `delete from st
 await permitido("comprovante: dono apaga o próprio arquivo", ANA, `delete from storage.objects where bucket_id = 'comprovantes' and name = '${ANA}/${RASCUNHO_ANA}/a1-taxi.pdf' returning id`);
 
 // ---------------------------------------------------------------------------
+// 13. Contracheques e documentos (arquivo nos buckets documentos e institucional)
+// ---------------------------------------------------------------------------
+
+const docPessoal = (dono, caminho) =>
+  `insert into public.documentos (user_id, nome, categoria, arquivo_url)
+   values ('${dono}', 'Contracheque', 'contracheque', '${caminho}') returning id, uploaded_by`;
+const docInstitucional = (categoria, caminho) =>
+  `insert into public.documentos (user_id, nome, categoria, arquivo_url)
+   values (null, 'Manual', '${categoria}', '${caminho}') returning id`;
+
+await permitido("documento: contracheque aponta para a pasta da pessoa", RH, docPessoal(ANA, `${ANA}/c1-holerite.pdf`));
+await barrado("documento: contracheque não aponta para a pasta de outra pessoa", RH, docPessoal(ANA, `${BRUNO}/c1.pdf`));
+await barrado("documento: caminho com subpasta é recusado", RH, docPessoal(ANA, `${ANA}/x/c1.pdf`));
+await barrado("documento: caminho com .. é recusado", RH, docPessoal(ANA, `${ANA}/..c1.pdf`));
+await barrado("documento: caminho sem nome de arquivo é recusado", RH, docPessoal(ANA, `${ANA}/`));
+{
+  const r = await como(RH, `insert into public.documentos (user_id, nome, uploaded_by)
+    values ('${ANA}', 'x', '${MASTER}') returning uploaded_by`);
+  conferir("documento: quem enviou é carimbado pelo servidor", !r.erro && r.linhas[0]?.uploaded_by === RH,
+    r.erro ?? `veio ${r.linhas[0]?.uploaded_by}`);
+}
+await permitido("documento: institucional aponta para a pasta da categoria", GERENTE, docInstitucional("manual", "manual/m1-manual.pdf"));
+await barrado("documento: institucional não aponta para outra categoria", GERENTE, docInstitucional("manual", "politica/p1.pdf"));
+await barrado("documento: institucional não aponta para pasta de pessoa", GERENTE, docInstitucional("manual", `${ANA}/c1.pdf`));
+await permitido("documento: registro sem arquivo continua valendo", RH,
+  `insert into public.documentos (user_id, nome) values ('${ANA}', 'Só registro') returning id`);
+await permitido("arquivo: quem tem colaboradores envia contracheque", RH,
+  `insert into storage.objects (bucket_id, name) values ('documentos', '${ANA}/c2.pdf') returning id`);
+await barrado("arquivo: funcionário não envia contracheque", ANA,
+  `insert into storage.objects (bucket_id, name) values ('documentos', '${ANA}/c2.pdf') returning id`);
+await barrado("arquivo: dono não apaga o próprio contracheque", BRUNO,
+  `delete from storage.objects where bucket_id = 'documentos' and name = '${BRUNO}/contracheque.pdf' returning id`);
+await permitido("arquivo: quem tem colaboradores apaga contracheque", RH,
+  `delete from storage.objects where bucket_id = 'documentos' and name = '${BRUNO}/contracheque.pdf' returning id`);
+await permitido("arquivo: gerente publica no institucional", GERENTE,
+  `insert into storage.objects (bucket_id, name) values ('institucional', 'manual/m2.pdf') returning id`);
+await barrado("arquivo: funcionário não publica no institucional", ANA,
+  `insert into storage.objects (bucket_id, name) values ('institucional', 'manual/m2.pdf') returning id`);
+
+// ---------------------------------------------------------------------------
 
 console.log(`\n${passou} conferências passaram, ${falhas.length} falharam.`);
 if (falhas.length) {

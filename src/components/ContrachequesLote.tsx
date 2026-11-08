@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarRange, Check, Upload, Users } from "lucide-react";
+import { CalendarRange, Check, Paperclip, Upload, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { criarDocumento, listarDocumentos, listarProfiles } from "@/data/store";
+import { criarDocumento, listarDocumentos, listarProfiles, podeEnviarDocumento } from "@/data/store";
+import { DOCUMENTO_ACEITA, DOCUMENTO_MAX_BYTES } from "@/integrations/supabase/documentos";
 import { getInitials } from "@/lib/mock-data";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +35,10 @@ export function ContrachequesLote() {
   const [aberto, setAberto] = useState(false);
   const [competencia, setCompetencia] = useState(competenciaAtual());
   const [selecionados, setSelecionados] = useState<string[]>([]);
+  /** Com o banco ligado, cada pessoa marcada precisa do próprio arquivo. */
+  const comUpload = podeEnviarDocumento();
+  const [arquivos, setArquivos] = useState<Record<string, File>>({});
+  const semArquivo = comUpload ? selecionados.filter((u) => !arquivos[u]) : [];
 
   const { data: profiles } = useQuery({ queryKey: ["profiles"], queryFn: listarProfiles });
   const { data: documentos } = useQuery({ queryKey: ["documentos"], queryFn: listarDocumentos });
@@ -51,6 +56,8 @@ export function ContrachequesLote() {
   const pendentes = ativos.filter((p) => !jaTem(p.user_id));
 
   const enviar = useMutation({
+    // Um por vez: se algum falhar, os anteriores ficam gravados e saem da lista
+    // de pendentes, e o RH reenvia só o que faltou.
     mutationFn: async () => {
       const mes = competenciaLegivel(competencia);
       for (const user_id of selecionados) {
@@ -66,7 +73,7 @@ export function ContrachequesLote() {
             .toLowerCase()
             .split(" ")[0]}.pdf`,
           uploaded_by: userId,
-        });
+        }, arquivos[user_id] ?? null);
       }
     },
     onSuccess: () => {
@@ -76,12 +83,30 @@ export function ContrachequesLote() {
       );
       setAberto(false);
       setSelecionados([]);
+      setArquivos({});
+    },
+    onError: (e) => {
+      qc.invalidateQueries({ queryKey: ["documentos"] });
+      toast.error((e as Error).message);
     },
   });
 
+  function escolherArquivo(user_id: string, f: File | null) {
+    if (f && f.size > DOCUMENTO_MAX_BYTES) {
+      toast.error(`"${f.name}" passa de 20 MB.`);
+      return;
+    }
+    setArquivos((a) => {
+      const novo = { ...a };
+      if (f) novo[user_id] = f; else delete novo[user_id];
+      return novo;
+    });
+    if (f) setSelecionados((s) => (s.includes(user_id) ? s : [...s, user_id]));
+  }
+
   function abrir(v: boolean) {
     setAberto(v);
-    if (v) setSelecionados([]);
+    if (v) { setSelecionados([]); setArquivos({}); }
   }
 
   return (
@@ -131,52 +156,76 @@ export function ContrachequesLote() {
             {ativos.map((p) => {
               const enviado = jaTem(p.user_id);
               const marcado = selecionados.includes(p.user_id);
+              const alternar = () =>
+                setSelecionados((s) =>
+                  s.includes(p.user_id) ? s.filter((x) => x !== p.user_id) : [...s, p.user_id]
+                );
               return (
-                <button
+                <div
                   key={p.user_id}
-                  disabled={enviado}
-                  onClick={() =>
-                    setSelecionados((s) =>
-                      s.includes(p.user_id)
-                        ? s.filter((x) => x !== p.user_id)
-                        : [...s, p.user_id]
-                    )
-                  }
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-md border p-2 text-left transition-colors",
+                    "flex w-full items-center gap-3 rounded-md border p-2 transition-colors",
                     enviado && "opacity-60",
                     marcado ? "border-primary bg-primary/5" : "hover:bg-muted/40"
                   )}
                 >
-                  <div className={cn(
-                    "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
-                    marcado ? "border-primary bg-primary" : "border-input"
-                  )}>
-                    {marcado && <Check className="h-3 w-3 text-primary-foreground" />}
-                  </div>
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="text-[10px]">{getInitials(p.nome)}</AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{p.nome}</p>
-                    <p className="truncate text-xs text-muted-foreground">{p.cargo ?? "—"}</p>
-                  </div>
-                  {enviado && (
+                  <button
+                    type="button" disabled={enviado} onClick={alternar}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  >
+                    <div className={cn(
+                      "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
+                      marcado ? "border-primary bg-primary" : "border-input"
+                    )}>
+                      {marcado && <Check className="h-3 w-3 text-primary-foreground" />}
+                    </div>
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="text-[10px]">{getInitials(p.nome)}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{p.nome}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {arquivos[p.user_id]?.name ?? p.cargo ?? "—"}
+                      </p>
+                    </div>
+                  </button>
+                  {enviado ? (
                     <Badge variant="success" className="shrink-0 text-[9px]">já enviado</Badge>
+                  ) : comUpload && (
+                    <label
+                      className={cn(
+                        "flex shrink-0 cursor-pointer items-center gap-1 rounded-md border px-2 py-1 text-xs",
+                        arquivos[p.user_id] ? "border-primary text-primary" : "text-muted-foreground hover:bg-muted"
+                      )}
+                      title="Escolher o arquivo desta pessoa"
+                    >
+                      <Paperclip className="h-3 w-3" />
+                      {arquivos[p.user_id] ? "Trocar" : "Arquivo"}
+                      <input
+                        type="file" className="sr-only" accept={DOCUMENTO_ACEITA}
+                        onChange={(e) => { escolherArquivo(p.user_id, e.target.files?.[0] ?? null); e.target.value = ""; }}
+                      />
+                    </label>
                   )}
-                </button>
+                </div>
               );
             })}
           </div>
 
           <p className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
-            Aqui é gerado o registro de cada contracheque. O upload dos PDFs entra junto
-            com o Storage do Supabase, no bucket privado <code>documentos</code>.
+            {comUpload
+              ? "Escolha o arquivo de cada pessoa (até 20 MB). Ao escolher, ela já fica marcada."
+              : "No modo de demonstração é gerado só o registro de cada contracheque, sem o arquivo."}
+            {semArquivo.length > 0 && (
+              <span className="mt-1 block text-destructive">
+                {semArquivo.length} pessoa(s) marcada(s) ainda sem arquivo.
+              </span>
+            )}
           </p>
 
           <Button
             className="w-full"
-            disabled={selecionados.length === 0 || !competencia || enviar.isPending}
+            disabled={selecionados.length === 0 || !competencia || semArquivo.length > 0 || enviar.isPending}
             onClick={() => enviar.mutate()}
           >
             <Upload />

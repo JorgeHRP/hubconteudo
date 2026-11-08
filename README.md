@@ -68,8 +68,8 @@ docs/
 
 O quadro do projeto fica no ClickUp. Em resumo, falta:
 
-1. Financeiro, Repositórios e Contracheques no banco.
-2. Arquivos de verdade em `documentos`, `avatars` e `posts` (os comprovantes de viagem já usam o Storage).
+1. Financeiro no banco.
+2. Arquivos de verdade em `avatars` e `posts` (comprovantes, contracheques e documentos já usam o Storage).
 3. Edge functions `assistente-ia` e `analise-cliente-ia`.
 4. Integrações: Sólides, Conta Azul, Alfaix, RD Station, Read.ai, Google Drive (ClickUp já sincroniza).
 5. Backup do Postgres, ambiente de homologação e revisão de segurança final.
