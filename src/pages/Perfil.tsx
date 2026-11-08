@@ -1,14 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { UserCircle, Save, FileText } from "lucide-react";
+import { Camera, UserCircle, Save, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { atualizarProfile, listarDocumentos } from "@/data/store";
-import { formatTelefone, getInitials, roleLabels } from "@/lib/mock-data";
+import { atualizarProfile, listarDocumentos, podeTrocarFoto, trocarFoto } from "@/data/store";
+import { AvatarPessoa } from "@/components/AvatarPessoa";
+import { formatTelefone, roleLabels } from "@/lib/mock-data";
 import { formatDate } from "@/lib/cs-data";
 import { PageHeader } from "@/components/PageHeader";
 import { BaixarDocumento } from "@/components/BaixarDocumento";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,6 +38,17 @@ export default function Perfil() {
   const { data: documentos } = useQuery({ queryKey: ["documentos"], queryFn: listarDocumentos });
   const meus = (documentos ?? []).filter((d) => d.user_id === userId);
 
+  const fotoRef = useRef<HTMLInputElement>(null);
+  const foto = useMutation({
+    mutationFn: (arquivo: File | null) => trocarFoto(userId!, arquivo),
+    onSuccess: async (nova) => {
+      await recarregarProfile();
+      qc.invalidateQueries({ queryKey: ["profiles"] });
+      toast.success(nova ? "Foto atualizada" : "Foto removida");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const salvar = useMutation({
     mutationFn: () =>
       atualizarProfile(userId!, {
@@ -63,17 +74,35 @@ export default function Perfil() {
         <Card className="lg:col-span-2">
           <CardContent className="p-5 pt-5">
             <div className="mb-5 flex items-center gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarFallback className="gradient-primary text-lg text-primary-foreground">
-                  {getInitials(profile?.nome ?? "?")}
-                </AvatarFallback>
-              </Avatar>
+              <AvatarPessoa nome={profile?.nome ?? "?"} foto={profile?.foto_url} className="h-16 w-16"
+                classeIniciais="gradient-primary text-lg text-primary-foreground" />
               <div>
                 <p className="font-semibold">{profile?.nome}</p>
                 <p className="text-sm text-muted-foreground">{profile?.email}</p>
                 <Badge variant="secondary" className="mt-1 text-[10px]">
                   {role ? roleLabels[role] : ""}
                 </Badge>
+                {podeTrocarFoto() && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <Button size="sm" variant="outline" className="h-7 text-xs" disabled={foto.isPending}
+                      onClick={() => fotoRef.current?.click()}>
+                      <Camera className="h-3.5 w-3.5" />
+                      {foto.isPending ? "Enviando…" : profile?.foto_url ? "Trocar foto" : "Pôr foto"}
+                    </Button>
+                    {profile?.foto_url && (
+                      <Button size="sm" variant="ghost" className="h-7 text-xs" disabled={foto.isPending}
+                        onClick={() => foto.mutate(null)}>
+                        Tirar foto
+                      </Button>
+                    )}
+                    <input ref={fotoRef} type="file" accept="image/*" className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) foto.mutate(f);
+                        e.target.value = "";
+                      }} />
+                  </div>
+                )}
               </div>
             </div>
 

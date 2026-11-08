@@ -547,6 +547,64 @@ await barrado("arquivo: funcionário não publica no institucional", ANA,
   `insert into storage.objects (bucket_id, name) values ('institucional', 'manual/m2.pdf') returning id`);
 
 // ---------------------------------------------------------------------------
+// 14. Foto de perfil, imagem do mural e anexos de tarefa
+// ---------------------------------------------------------------------------
+
+const pub = (bucket, dono, arq = "x.jpg") =>
+  `https://projeto.supabase.co/storage/v1/object/public/${bucket}/${dono}/${arq}`;
+
+await permitido("foto: pessoa põe a própria foto", ANA,
+  `update public.profiles set foto_url = '${pub("avatars", ANA)}' where user_id = '${ANA}' returning id`);
+await barrado("foto: não aponta para a pasta de outra pessoa", ANA,
+  `update public.profiles set foto_url = '${pub("avatars", BRUNO)}' where user_id = '${ANA}' returning id`);
+await barrado("foto: não aponta para endereço de fora", ANA,
+  `update public.profiles set foto_url = 'https://outro.site/foto.jpg' where user_id = '${ANA}' returning id`);
+await barrado("foto: não aponta para outro bucket", ANA,
+  `update public.profiles set foto_url = '${pub("posts", ANA)}' where user_id = '${ANA}' returning id`);
+await permitido("foto: pessoa tira a própria foto", ANA,
+  `update public.profiles set foto_url = null where user_id = '${ANA}' returning id`);
+await permitido("foto: editar outro campo não esbarra na conferência", ANA,
+  `update public.profiles set telefone = '1' where user_id = '${ANA}' returning id`);
+await db.exec(`insert into storage.objects (bucket_id, name) values
+  ('avatars', '${ANA}/f.jpg'), ('posts', '${ANA}/p.jpg')`);
+await permitido("foto: pessoa apaga o arquivo da própria foto", ANA,
+  `delete from storage.objects where bucket_id = 'avatars' and name = '${ANA}/f.jpg' returning id`);
+await barrado("foto: ninguém apaga a foto de outra pessoa", BRUNO,
+  `delete from storage.objects where bucket_id = 'avatars' and name = '${ANA}/f.jpg' returning id`);
+
+const postCom = (autor, url) =>
+  `insert into public.posts (autor_id, conteudo, imagem_url) values ('${autor}', 'oi', ${url ? `'${url}'` : "null"}) returning id`;
+await permitido("mural: post com imagem da própria pasta", ANA, postCom(ANA, pub("posts", ANA)));
+await barrado("mural: post com imagem da pasta de outra pessoa", ANA, postCom(ANA, pub("posts", BRUNO)));
+await barrado("mural: post com imagem de fora", ANA, postCom(ANA, "https://outro.site/x.png"));
+await permitido("mural: post sem imagem continua valendo", ANA, postCom(ANA, null));
+await permitido("mural: gestor apaga imagem de post alheio", GERENTE,
+  `delete from storage.objects where bucket_id = 'posts' and name = '${ANA}/p.jpg' returning id`);
+await barrado("mural: colega não apaga imagem de outra pessoa", BRUNO,
+  `delete from storage.objects where bucket_id = 'posts' and name = '${ANA}/p.jpg' returning id`);
+
+await db.exec(`insert into storage.objects (bucket_id, name) values ('anexos', 'tarefas/t1/briefing.pdf')`);
+const anexo = `select 1 from storage.objects where bucket_id = 'anexos' and name = 'tarefas/t1/briefing.pdf'`;
+await ve("anexo: quem tem painel de trabalho abre", GERENTE_CS, anexo, 1);
+await ve("anexo: master abre", MASTER, anexo, 1);
+await ve("anexo: funcionário sem painel de trabalho não abre", ANA, anexo, 0);
+await ve("anexo: visitante sem login não abre", null, anexo, 0);
+await permitido("anexo: quem tem painel de trabalho envia", GERENTE_CS,
+  `insert into storage.objects (bucket_id, name) values ('anexos', 'tarefas/t1/novo.pdf') returning id`);
+await barrado("anexo: funcionário sem painel não envia", ANA,
+  `insert into storage.objects (bucket_id, name) values ('anexos', 'tarefas/t1/novo.pdf') returning id`);
+await barrado("anexo: fora da pasta tarefas é recusado", GERENTE_CS,
+  `insert into storage.objects (bucket_id, name) values ('anexos', 'outra/t1/novo.pdf') returning id`);
+await barrado("anexo: caminho com .. é recusado", GERENTE_CS,
+  `insert into storage.objects (bucket_id, name) values ('anexos', 'tarefas/../x.pdf') returning id`);
+await permitido("anexo: quem tem painel de trabalho apaga", GERENTE_CS,
+  `delete from storage.objects where bucket_id = 'anexos' and name = 'tarefas/t1/briefing.pdf' returning id`);
+await barrado("anexo: funcionário sem painel não apaga", ANA,
+  `delete from storage.objects where bucket_id = 'anexos' and name = 'tarefas/t1/briefing.pdf' returning id`);
+await permitido("capa: gestor publica capa no institucional", GERENTE,
+  `insert into storage.objects (bucket_id, name) values ('institucional', 'capas/c1.jpg') returning id`);
+
+// ---------------------------------------------------------------------------
 
 console.log(`\n${passou} conferências passaram, ${falhas.length} falharam.`);
 if (falhas.length) {

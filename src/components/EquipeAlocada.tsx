@@ -5,10 +5,9 @@ import { UsersRound, Plus, Trash2, Star } from "lucide-react";
 import { toast } from "sonner";
 import { alocarNaEquipe, listarEquipe, listarProfiles, removerAlocacao } from "@/data/store";
 import { funcaoEquipeLabels, funcaoEquipeTom } from "@/lib/labels-clientes";
-import { getInitials } from "@/lib/mock-data";
 import type { FuncaoEquipe } from "@/lib/types";
 import { EstadoVazio } from "@/components/EstadoVazio";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { AvatarPessoa } from "@/components/AvatarPessoa";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -60,6 +59,7 @@ export function EquipeAlocada({ empresaId }: { empresaId: string }) {
 
   const ativos = (profiles ?? []).filter((p) => p.ativo);
   const nomeDe = (id: string) => profiles?.find((p) => p.user_id === id)?.nome ?? "—";
+  const fotoDe = (id: string) => profiles?.find((p) => p.user_id === id)?.foto_url ?? null;
   const cargoDe = (id: string) => profiles?.find((p) => p.user_id === id)?.cargo ?? null;
 
   const dialogo = (
@@ -146,9 +146,8 @@ export function EquipeAlocada({ empresaId }: { empresaId: string }) {
           {equipe?.map((a) => (
             <Card key={a.id}>
               <CardContent className="flex items-center gap-3 p-4 pt-4">
-                <Avatar className="h-10 w-10 shrink-0">
-                  <AvatarFallback className="text-[10px]">{getInitials(nomeDe(a.user_id))}</AvatarFallback>
-                </Avatar>
+                <AvatarPessoa nome={nomeDe(a.user_id)} foto={fotoDe(a.user_id)}
+                  className="h-10 w-10 shrink-0" classeIniciais="text-[10px]" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{nomeDe(a.user_id)}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-1">

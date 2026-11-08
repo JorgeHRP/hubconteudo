@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, ImagePlus, X } from "lucide-react";
 import { toast } from "sonner";
-import { salvarTrilha } from "@/data/store";
+import { enviarCapa, limiteCapa, salvarTrilha } from "@/data/store";
 import type { Trilha } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,9 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-
-/** Capa é imagem no navegador: acima disso o localStorage estoura. */
-const LIMITE_CAPA = 300 * 1024;
 
 /** Escolha de capa: arquivo do computador ou endereço de uma imagem na web. */
 export function EscolherCapa({
@@ -24,16 +21,19 @@ export function EscolherCapa({
   aoTrocar: (capa: string | null) => void;
 }) {
   const arquivo = useRef<HTMLInputElement>(null);
+  const [enviando, setEnviando] = useState(false);
+  const limite = limiteCapa();
+  const limiteLegivel = limite >= 1024 * 1024 ? `${limite / 1024 / 1024} MB` : `${limite / 1024} KB`;
 
-  const ler = (f: File) => {
-    if (f.size > LIMITE_CAPA) {
-      toast.error(`A imagem tem ${Math.round(f.size / 1024)} KB. O limite é 300 KB.`);
-      return;
+  const ler = async (f: File) => {
+    setEnviando(true);
+    try {
+      aoTrocar(await enviarCapa(f));
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setEnviando(false);
     }
-    const leitor = new FileReader();
-    leitor.onload = () => aoTrocar(String(leitor.result));
-    leitor.onerror = () => toast.error("Não foi possível ler a imagem.");
-    leitor.readAsDataURL(f);
   };
 
   return (
@@ -48,10 +48,10 @@ export function EscolherCapa({
           </button>
         </div>
       ) : (
-        <button type="button" onClick={() => arquivo.current?.click()}
+        <button type="button" onClick={() => arquivo.current?.click()} disabled={enviando}
           className="mt-1.5 flex h-32 w-full flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed text-muted-foreground transition-colors hover:bg-muted/50">
           <ImagePlus className="h-5 w-5" />
-          <span className="text-xs">Escolher imagem (até 300 KB)</span>
+          <span className="text-xs">{enviando ? "Enviando…" : `Escolher imagem (até ${limiteLegivel})`}</span>
         </button>
       )}
       <input ref={arquivo} type="file" accept="image/*" className="hidden"

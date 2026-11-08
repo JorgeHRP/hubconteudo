@@ -69,7 +69,6 @@ docs/
 O quadro do projeto fica no ClickUp. Em resumo, falta:
 
 1. Financeiro no banco.
-2. Arquivos de verdade em `avatars` e `posts` (comprovantes, contracheques e documentos já usam o Storage).
-3. Chave do provedor de IA nas Edge Functions (`IA_API_KEY`, `IA_API_URL`, `IA_MODELO`).
-4. Integrações: Sólides, Conta Azul, Alfaix, RD Station, Read.ai, Google Drive (ClickUp já sincroniza).
-5. Backup do Postgres, ambiente de homologação e revisão de segurança final.
+2. Chave do provedor de IA nas Edge Functions (`IA_API_KEY`, `IA_API_URL`, `IA_MODELO`).
+3. Integrações: Sólides, Conta Azul, Alfaix, RD Station, Read.ai, Google Drive (ClickUp já sincroniza).
+4. Backup do Postgres, ambiente de homologação e revisão de segurança final.

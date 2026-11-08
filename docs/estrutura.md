@@ -522,7 +522,7 @@ O passo 3 altera o enum `app_role`. Havendo usuários em produção, rodar antes
 - [ ] Edge function `manage-users` (criar usuário + disparar e-mail de primeiro acesso)
 - [x] Edge function `analise-cliente-ia`
 - [x] Edge function `assistente-ia`
-- [ ] Upload real de arquivos nos buckets `documentos`, `comprovantes`, `avatars`, `posts`
+- [x] Upload real de arquivos nos buckets `documentos`, `comprovantes`, `avatars`, `posts`, `anexos`
 - [ ] Sincronizações `sync-clickup`, `sync-solides`, `sync-conta-azul`, `sync-rd`, `sync-read`
 - [ ] URLs dos três painéis externos
 - [ ] Build de produção e hospedagem

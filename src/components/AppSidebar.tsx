@@ -7,8 +7,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import { getInitials, roleLabels } from "@/lib/mock-data";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { roleLabels } from "@/lib/mock-data";
+import { AvatarPessoa } from "@/components/AvatarPessoa";
 import { Marca } from "@/components/Marca";
 import type { AppModulo } from "@/lib/types";
 
@@ -146,11 +146,8 @@ export function AppSidebar({
           onClick={() => navigate("/perfil")}
           className="mb-1 flex w-full items-center gap-2.5 rounded-md p-1.5 text-left transition-colors hover:bg-sidebar-accent"
         >
-          <Avatar className="h-8 w-8 shrink-0">
-            <AvatarFallback className="bg-sidebar-accent text-[10px] text-white">
-              {getInitials(profile?.nome ?? "?")}
-            </AvatarFallback>
-          </Avatar>
+          <AvatarPessoa nome={profile?.nome ?? "?"} foto={profile?.foto_url}
+            className="h-8 w-8 shrink-0" classeIniciais="bg-sidebar-accent text-[10px] text-white" />
           {!recolhida && (
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-medium text-white">{profile?.nome}</p>

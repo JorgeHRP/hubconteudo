@@ -49,9 +49,11 @@ export async function listarPostsRemoto(): Promise<Post[]> {
   return ((data ?? []) as unknown as LinhaPost[]).map(montarPost);
 }
 
-export async function criarPostRemoto(autor_id: string, conteudo: string, tipo: PostTipo) {
+export async function criarPostRemoto(
+  autor_id: string, conteudo: string, tipo: PostTipo, imagem_url: string | null
+) {
   const linha = conferir(
-    await exigirSupabase().from("posts").insert({ autor_id, conteudo, tipo }).select(CAMPOS_POST)
+    await exigirSupabase().from("posts").insert({ autor_id, conteudo, tipo, imagem_url }).select(CAMPOS_POST)
   );
   return montarPost(linha as unknown as LinhaPost);
 }
@@ -85,8 +87,12 @@ export async function alternarFixadoRemoto(post_id: string) {
   );
 }
 
+/** Apaga o post e devolve o endereço da imagem dele, para o arquivo sair junto. */
 export async function removerPostRemoto(post_id: string) {
-  conferir(await exigirSupabase().from("posts").delete().eq("id", post_id).select("id"));
+  const removido = conferir(
+    await exigirSupabase().from("posts").delete().eq("id", post_id).select("imagem_url")
+  ) as { imagem_url: string | null };
+  return removido.imagem_url;
 }
 
 /* ---------------- calendário ---------------- */

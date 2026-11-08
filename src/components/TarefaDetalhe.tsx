@@ -7,7 +7,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  adicionarAnexo, adicionarLink, adicionarSubtarefa, alternarObservador,
+  abrirAnexo, adicionarLink, adicionarSubtarefa, alternarObservador, anexarArquivo, limiteAnexo,
   alternarSubtarefa, comentarTarefa, cronometroAtivo, iniciarCronometro,
   lancarTempoManual, listarComentarios, listarEmpresas, listarProfiles,
   listarStatus, listarTempos, listarTiposTarefa, moverTarefa, pararCronometro,
@@ -29,8 +29,6 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-/** Limite por arquivo enquanto os anexos moram no navegador. */
-const LIMITE_ANEXO = 400 * 1024;
 
 function duracao(segundos: number): string {
   const h = Math.floor(segundos / 3600);
@@ -151,22 +149,7 @@ export function TarefaDetalhe({
   });
 
   const anexar = useMutation({
-    mutationFn: async (arquivo: File) => {
-      if (arquivo.size > LIMITE_ANEXO) {
-        throw new Error(
-          `"${arquivo.name}" tem ${tamanhoLegivel(arquivo.size)}. O limite atual é ${tamanhoLegivel(LIMITE_ANEXO)} por arquivo.`
-        );
-      }
-      const caminho = await new Promise<string>((ok, erro) => {
-        const leitor = new FileReader();
-        leitor.onload = () => ok(String(leitor.result));
-        leitor.onerror = () => erro(new Error("Não foi possível ler o arquivo."));
-        leitor.readAsDataURL(arquivo);
-      });
-      return adicionarAnexo(id, {
-        nome: arquivo.name, tamanho: arquivo.size, tipo: arquivo.type || "arquivo", caminho,
-      }, userId);
-    },
+    mutationFn: (arquivo: File) => anexarArquivo(id, arquivo, userId),
     onSuccess: () => { recarregar(); toast.success("Anexo adicionado"); },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -332,10 +315,11 @@ export function TarefaDetalhe({
             <div className="mt-1.5 space-y-1">
               {tarefa.anexos.map((a) => (
                 <div key={a.id} className="group flex items-center gap-2 rounded border px-2 py-1.5">
-                  <a href={a.caminho} download={a.nome} className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium">{a.nome}</p>
+                  <button type="button" title="Abrir o arquivo" className="min-w-0 flex-1 text-left"
+                    onClick={() => abrirAnexo(a).catch((e) => toast.error((e as Error).message))}>
+                    <p className="truncate text-xs font-medium hover:underline">{a.nome}</p>
                     <p className="text-[10px] text-muted-foreground">{tamanhoLegivel(a.tamanho)}</p>
-                  </a>
+                  </button>
                   <button type="button" onClick={() => anexoDel.mutate(a.id)}
                     className="opacity-0 transition-opacity group-hover:opacity-100">
                     <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
@@ -354,11 +338,10 @@ export function TarefaDetalhe({
               }} />
             <Button size="sm" variant="outline" className="mt-2 h-8" disabled={anexar.isPending}
               onClick={() => arquivoRef.current?.click()}>
-              <Paperclip className="h-3.5 w-3.5" /> Anexar arquivo
+              <Paperclip className="h-3.5 w-3.5" /> {anexar.isPending ? "Enviando…" : "Anexar arquivo"}
             </Button>
             <p className="mt-1 text-[10px] text-muted-foreground">
-              Até {tamanhoLegivel(LIMITE_ANEXO)}. Os arquivos ficam neste navegador até o
-              armazenamento do servidor ser ligado.
+              Até {tamanhoLegivel(limiteAnexo())} por arquivo.
             </p>
           </div>
 

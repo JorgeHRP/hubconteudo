@@ -53,6 +53,10 @@ import {
 } from "@/integrations/supabase/documentos";
 import { gerarAnaliseRemota } from "@/integrations/supabase/ia";
 import {
+  apagarArquivos, caminhoDaUrl, conferirImagem, enviarArquivo, enviarPublico, linkTemporario,
+  LIMITE_ANEXO, MB,
+} from "@/integrations/supabase/arquivos";
+import {
   alterarNegocioRemoto, criarNegocioRemoto, listarNegociosRemoto, removerNegocioRemoto,
   type DadosNegocio,
 } from "@/integrations/supabase/vendas";
@@ -377,6 +381,30 @@ export async function atualizarProfile(user_id: string, dados: Partial<Profile>)
   return wait(db.profiles[i] ?? null);
 }
 
+/** Foto de perfil só com o banco ligado: na demonstração não há onde guardar. */
+export const podeTrocarFoto = () => temSupabase();
+
+/**
+ * Troca (ou tira, com null) a foto da própria pessoa. A nova sobe antes; a
+ * antiga só sai depois que o perfil foi gravado.
+ */
+export async function trocarFoto(user_id: string, arquivo: File | null) {
+  const antiga = db.profiles.find((p) => p.user_id === user_id)?.foto_url ?? null;
+  let nova: string | null = null;
+  if (arquivo) {
+    conferirImagem(arquivo);
+    nova = await enviarPublico("avatars", user_id, arquivo);
+  }
+  try {
+    await atualizarProfile(user_id, { foto_url: nova });
+  } catch (e) {
+    if (nova) await apagarArquivos("avatars", [caminhoDaUrl("avatars", nova)]);
+    throw e;
+  }
+  await apagarArquivos("avatars", [caminhoDaUrl("avatars", antiga)]);
+  return nova;
+}
+
 export interface NovoColaborador {
   nome: string;
   email: string;
@@ -491,8 +519,23 @@ export const listarPosts = () =>
         Number(b.fixado) - Number(a.fixado) || b.created_at.localeCompare(a.created_at)
       ));
 
-export async function criarPost(autor_id: string, conteudo: string, tipo: PostTipo) {
-  if (temSupabase()) return criarPostRemoto(autor_id, conteudo, tipo);
+/** Imagem no mural só com o banco ligado. */
+export const podeAnexarImagemPost = () => temSupabase();
+
+export async function criarPost(
+  autor_id: string, conteudo: string, tipo: PostTipo, imagem?: File | null
+) {
+  if (temSupabase()) {
+    if (!imagem) return criarPostRemoto(autor_id, conteudo, tipo, null);
+    conferirImagem(imagem, 10 * MB);
+    const url = await enviarPublico("posts", autor_id, imagem);
+    try {
+      return await criarPostRemoto(autor_id, conteudo, tipo, url);
+    } catch (e) {
+      await apagarArquivos("posts", [caminhoDaUrl("posts", url)]);
+      throw e;
+    }
+  }
   const novo: Post = {
     id: `post-${uid()}`, autor_id, conteudo, tipo, fixado: false,
     imagem_url: null, created_at: agora(), curtidas: [], comentarios: [],
@@ -527,7 +570,11 @@ export async function alternarFixado(post_id: string) {
 }
 
 export async function removerPost(post_id: string) {
-  if (temSupabase()) return removerPostRemoto(post_id);
+  if (temSupabase()) {
+    const imagem = await removerPostRemoto(post_id);
+    await apagarArquivos("posts", [caminhoDaUrl("posts", imagem)]);
+    return true;
+  }
   db.posts = db.posts.filter((p) => p.id !== post_id);
   return wait(true);
 }
@@ -624,6 +671,21 @@ export async function abrirDocumento(doc: Documento) {
 }
 
 /* ---------------- treinamentos ---------------- */
+
+/** Limite da capa: com o banco ligado vai para o Storage; sem ele, fica no navegador. */
+export const limiteCapa = () => (temSupabase() ? 5 * MB : 300 * 1024);
+
+/** Sobe a capa de trilha ou curso e devolve o endereço da imagem. */
+export async function enviarCapa(arquivo: File): Promise<string> {
+  conferirImagem(arquivo, limiteCapa());
+  if (temSupabase()) return enviarPublico("institucional", "capas", arquivo);
+  return new Promise((ok, erro) => {
+    const leitor = new FileReader();
+    leitor.onload = () => ok(String(leitor.result));
+    leitor.onerror = () => erro(new Error("Não foi possível ler a imagem."));
+    leitor.readAsDataURL(arquivo);
+  });
+}
 
 /* -- trilhas -- */
 
@@ -2846,6 +2908,68 @@ export async function alternarObservador(tarefa_id: string, user_id: string) {
 
 /* ---- anexos e links ---- */
 
+/** Com o banco ligado, o anexo vai para o Storage; sem ele, fica no navegador. */
+export const limiteAnexo = () => (temSupabase() ? LIMITE_ANEXO : 400 * 1024);
+
+/** Anexo antigo (ou da demonstração) guarda o arquivo inteiro como data URL. */
+const anexoNoNavegador = (caminho: string) => caminho.startsWith("data:");
+
+/** Lê o arquivo, sobe para o bucket `anexos` (ou guarda no navegador) e registra na tarefa. */
+export async function anexarArquivo(tarefa_id: string, arquivo: File, autor_id: string | null) {
+  const limite = limiteAnexo();
+  if (arquivo.size > limite) {
+    throw new Error(
+      `"${arquivo.name}" tem ${(arquivo.size / MB).toFixed(1)} MB. O limite é ${
+        limite >= MB ? `${limite / MB} MB` : `${Math.round(limite / 1024)} KB`} por arquivo.`
+    );
+  }
+  const dados = { nome: arquivo.name, tamanho: arquivo.size, tipo: arquivo.type || "arquivo" };
+
+  if (temSupabase()) {
+    const caminho = await enviarArquivo("anexos", `tarefas/${tarefa_id}`, arquivo);
+    try {
+      return await adicionarAnexo(tarefa_id, { ...dados, caminho }, autor_id);
+    } catch (e) {
+      await apagarArquivos("anexos", [caminho]);
+      throw e;
+    }
+  }
+  const caminho = await new Promise<string>((ok, erro) => {
+    const leitor = new FileReader();
+    leitor.onload = () => ok(String(leitor.result));
+    leitor.onerror = () => erro(new Error("Não foi possível ler o arquivo."));
+    leitor.readAsDataURL(arquivo);
+  });
+  return adicionarAnexo(tarefa_id, { ...dados, caminho }, autor_id);
+}
+
+/**
+ * Abre o anexo numa aba nova. A aba é aberta antes de pedir o link, ainda
+ * dentro do clique: aberta depois da espera, o navegador a bloquearia.
+ */
+export async function abrirAnexo(anexo: { nome: string; caminho: string }) {
+  if (anexoNoNavegador(anexo.caminho)) {
+    const a = document.createElement("a");
+    a.href = anexo.caminho;
+    a.download = anexo.nome;
+    a.click();
+    return;
+  }
+  const aba = window.open("about:blank", "_blank");
+  try {
+    const url = await linkTemporario("anexos", anexo.caminho, anexo.nome);
+    if (aba) aba.location.href = url;
+    else window.location.href = url;
+  } catch (e) {
+    aba?.close();
+    throw e;
+  }
+}
+
+/** Arquivos de anexos no Storage (os do navegador somem junto com o registro). */
+const arquivosNoStorage = (anexos: { caminho: string }[]) =>
+  anexos.map((a) => a.caminho).filter((c) => !anexoNoNavegador(c));
+
 export async function adicionarLink(tarefa_id: string, rotulo: string, url: string) {
   const t = db.tarefas_internas.find((x) => x.id === tarefa_id);
   if (!t) return wait(null);
@@ -2868,8 +2992,8 @@ export async function adicionarAnexo(
   const t = db.tarefas_internas.find((x) => x.id === tarefa_id);
   if (!t) return wait(null);
   t.anexos.push({ id: `ax-${uid()}`, ...dados });
-  // Enquanto o Storage do Supabase não está ligado, o arquivo mora no navegador.
-  // Se a cota estourar, desfaz em vez de fingir que salvou.
+  // Na demonstração o arquivo mora no navegador. Se a cota estourar, desfaz em
+  // vez de fingir que salvou.
   if (!persistir()) {
     t.anexos.pop();
     throw new Error(
@@ -2891,7 +3015,9 @@ export async function adicionarAnexo(
 export async function removerAnexo(tarefa_id: string, anexo_id: string) {
   const t = db.tarefas_internas.find((x) => x.id === tarefa_id);
   if (!t) return wait(null);
+  const saem = t.anexos.filter((a) => a.id === anexo_id);
   t.anexos = t.anexos.filter((a) => a.id !== anexo_id);
+  if (temSupabase()) await apagarArquivos("anexos", arquivosNoStorage(saem));
   return wait(t);
 }
 
@@ -2952,7 +3078,9 @@ export async function marcarNotificacoesLidas(empresa_id: string) {
 }
 
 export async function removerTarefa(id: string) {
+  const tarefa = db.tarefas_internas.find((t) => t.id === id);
   db.tarefas_internas = db.tarefas_internas.filter((t) => t.id !== id);
+  if (tarefa && temSupabase()) await apagarArquivos("anexos", arquivosNoStorage(tarefa.anexos ?? []));
   return wait(true);
 }
 

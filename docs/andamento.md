@@ -60,6 +60,16 @@ Tudo nesta lista grava no banco. O que uma pessoa cadastra, as outras veem.
   com a despesa e fica guardado em área privada. Só a própria pessoa e quem
   aprova viagens conseguem abrir.
 
+**Arquivos**
+
+- Cada pessoa põe a própria foto no Meu perfil. A foto aparece no menu, no
+  mural, no diretório do time e na equipe de cada cliente.
+- O mural aceita imagem junto com a publicação (até 10 MB).
+- Anexos do quadro de tarefas vão para o servidor, em área privada: só quem
+  trabalha com as tarefas abre. O limite passou de 400 KB para 25 MB por arquivo.
+- Capas de trilha e curso também vão para o servidor (até 5 MB).
+- Anexos e capas que já existiam continuam abrindo normalmente.
+
 **Contracheques e documentos**
 
 - O RH envia o contracheque de cada pessoa, um por vez ou todos do mês de uma
@@ -115,7 +125,7 @@ Quando alguém altera alguma coisa, a mudança aparece para os outros em até
 - Só o master altera papéis, permissões e integrações.
 - Os dados de clientes não ficam mais dentro do código do site. Ficam no
   banco e só chegam a quem fez login.
-- Essas regras têm 210 testes automáticos, que rodam antes de qualquer
+- Essas regras têm 235 testes automáticos, que rodam antes de qualquer
   mudança no banco.
 
 ## O que está no ar só para navegar

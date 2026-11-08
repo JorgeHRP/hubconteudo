@@ -56,6 +56,7 @@ As migrações já estão em `supabase/migrations/`, numeradas na ordem correta:
 | `20260901000009_treinamentos.sql` | Treinamentos: catálogo do master, progresso e certificado de cada pessoa |
 | `20260901000010_comprovantes.sql` | A despesa só aponta para arquivo na pasta do próprio relatório |
 | `20260901000011_documentos.sql` | Contracheque só aponta para a pasta da pessoa; institucional, para a da categoria |
+| `20260901000012_arquivos.sql` | Foto de perfil e imagem do mural só da pasta do dono; bucket privado `anexos` das tarefas |
 
 Antes de aplicar em qualquer banco, dá para conferir tudo sem Docker:
 

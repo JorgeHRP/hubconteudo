@@ -5,12 +5,12 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { listarIntegracoes, listarProfiles, papelDe } from "@/data/store";
-import { getInitials, roleLabels } from "@/lib/mock-data";
+import { roleLabels } from "@/lib/mock-data";
 import { formatDate } from "@/lib/cs-data";
 import { PageHeader } from "@/components/PageHeader";
 import { EstadoVazio } from "@/components/EstadoVazio";
 import { ColaboradorDialog } from "@/components/ColaboradorDialog";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { AvatarPessoa } from "@/components/AvatarPessoa";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -98,11 +98,8 @@ export default function Colaboradores() {
             <Card key={p.id}>
               <CardContent className="p-5 pt-5">
                 <div className="mb-3 flex items-center gap-3">
-                  <Avatar className="h-12 w-12">
-                    <AvatarFallback className="gradient-primary text-primary-foreground">
-                      {getInitials(p.nome)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <AvatarPessoa nome={p.nome} foto={p.foto_url} className="h-12 w-12"
+                    classeIniciais="gradient-primary text-primary-foreground" />
                   <div className="min-w-0">
                     <p className="truncate font-semibold">{p.nome}</p>
                     <p className="truncate text-xs text-muted-foreground">{p.cargo ?? "—"}</p>
