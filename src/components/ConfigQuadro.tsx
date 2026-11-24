@@ -8,12 +8,14 @@ import {
 } from "@/data/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+
+/** Rótulo pequeno que abre cada seção do diálogo. */
+const rotuloSecao = "text-xs font-semibold uppercase tracking-wide text-muted-foreground";
 
 /** Paleta sugerida — evita cor digitada à mão que não conversa com o resto da tela. */
 const cores = [
@@ -23,13 +25,14 @@ const cores = [
 
 function SeletorCor({ valor, aoTrocar }: { valor: string; aoTrocar: (c: string) => void }) {
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {cores.map((c) => (
+    <div className="flex flex-wrap gap-1.5" role="group" aria-label="Cor">
+      {cores.map((c, i) => (
         <button key={c} type="button" onClick={() => aoTrocar(c)}
+          aria-label={`Cor ${i + 1} de ${cores.length}`} aria-pressed={valor === c}
           style={{ backgroundColor: c }}
-          className={cn("flex h-6 w-6 items-center justify-center rounded-full transition-transform",
-            valor === c ? "scale-110 ring-2 ring-foreground ring-offset-2 ring-offset-background" : "hover:scale-110")}>
-          {valor === c && <Check className="h-3 w-3 text-white" />}
+          className={cn("flex h-7 w-7 items-center justify-center rounded-full transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-card",
+            valor === c ? "ring-2 ring-foreground ring-offset-2 ring-offset-card" : "hover:ring-2 hover:ring-border hover:ring-offset-1 hover:ring-offset-card")}>
+          {valor === c && <Check className="h-3.5 w-3.5 text-white" />}
         </button>
       ))}
     </div>
@@ -81,7 +84,7 @@ export function ConfigQuadro() {
           <Settings2 /> Configurar quadro
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl gap-5 overflow-y-auto p-5 sm:p-6">
         <DialogHeader>
           <DialogTitle>Configurar quadro</DialogTitle>
           <DialogDescription>
@@ -96,44 +99,58 @@ export function ConfigQuadro() {
             <TabsTrigger value="tipos">Tipos de trabalho</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="colunas" className="space-y-2">
-            {lista.map((c, i) => (
-              <div key={c.id} className="flex flex-wrap items-center gap-2 rounded-lg border p-2.5">
-                <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: c.cor }} />
-                <Input className="h-8 w-40" value={c.label}
-                  onChange={(e) => gravarStatus.mutate({ ...c, label: e.target.value })} />
-                <SeletorCor valor={c.cor} aoTrocar={(cor) => gravarStatus.mutate({ ...c, cor })} />
+          <TabsContent value="colunas" className="space-y-4">
+            <section className="space-y-2">
+              <p className={rotuloSecao}>Colunas do quadro</p>
+              {lista.length > 0 && (
+                <div className="divide-y overflow-hidden rounded-lg border">
+                  {lista.map((c, i) => (
+                    <div key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 p-3">
+                      <span className="h-8 w-1 shrink-0 rounded-full" style={{ backgroundColor: c.cor }} aria-hidden />
+                      <Input className="h-9 min-w-0 flex-1 basis-40 sm:max-w-[13rem]" value={c.label}
+                        aria-label="Nome da coluna"
+                        onChange={(e) => gravarStatus.mutate({ ...c, label: e.target.value })} />
+                      <SeletorCor valor={c.cor} aoTrocar={(cor) => gravarStatus.mutate({ ...c, cor })} />
 
-                <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
-                  <input type="checkbox" checked={c.concluido === true}
-                    onChange={(e) => gravarStatus.mutate({ ...c, concluido: e.target.checked })} />
-                  conta como entregue
-                </label>
+                      <label className="flex min-h-8 cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+                        <input type="checkbox" checked={c.concluido === true}
+                          className="h-4 w-4 accent-primary"
+                          onChange={(e) => gravarStatus.mutate({ ...c, concluido: e.target.checked })} />
+                        conta como entregue
+                      </label>
 
-                <div className="ml-auto flex items-center gap-0.5">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" disabled={i === 0}
-                    onClick={() => mover(i, -1)}>
-                    <ChevronUp className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" disabled={i === lista.length - 1}
-                    onClick={() => mover(i, 1)}>
-                    <ChevronDown className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7"
-                    onClick={() => apagarStatus.mutate(c.id)}>
-                    <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                  </Button>
+                      <div className="ml-auto flex items-center gap-0.5">
+                        <Button variant="ghost" size="icon" className="h-9 w-9" disabled={i === 0}
+                          title="Mover para cima" aria-label={`Mover a coluna ${c.label} para cima`}
+                          onClick={() => mover(i, -1)}>
+                          <ChevronUp className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-9 w-9" disabled={i === lista.length - 1}
+                          title="Mover para baixo" aria-label={`Mover a coluna ${c.label} para baixo`}
+                          onClick={() => mover(i, 1)}>
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon"
+                          className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                          title="Excluir coluna" aria-label={`Excluir a coluna ${c.label}`}
+                          onClick={() => apagarStatus.mutate(c.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            ))}
+              )}
+            </section>
 
-            <div className="rounded-lg border border-dashed p-3">
-              <Label className="text-xs">Nova coluna</Label>
-              <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                <Input className="h-8 w-48" placeholder="Ex.: Aguardando cliente" value={novoStatus}
+            <section className="space-y-2 rounded-lg border border-dashed bg-muted/50 p-4">
+              <p className={rotuloSecao}>Nova coluna</p>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <Input className="h-9 min-w-0 flex-1 basis-48 bg-card sm:max-w-[15rem]"
+                  placeholder="Ex.: Aguardando cliente" value={novoStatus} aria-label="Nome da nova coluna"
                   onChange={(e) => setNovoStatus(e.target.value)} />
                 <SeletorCor valor={corStatus} aoTrocar={setCorStatus} />
-                <Button size="sm" className="h-8" disabled={!novoStatus.trim()}
+                <Button size="sm" className="ml-auto h-9" disabled={!novoStatus.trim()}
                   onClick={() => {
                     gravarStatus.mutate({ label: novoStatus.trim(), cor: corStatus });
                     setNovoStatus("");
@@ -141,38 +158,49 @@ export function ConfigQuadro() {
                   <Plus className="h-3.5 w-3.5" /> Adicionar
                 </Button>
               </div>
-            </div>
+            </section>
 
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-xs leading-relaxed text-muted-foreground">
               Uma coluna só pode ser excluída depois que estiver vazia. A coluna marcada como
               “conta como entregue” é a que alimenta os indicadores de conclusão.
             </p>
           </TabsContent>
 
-          <TabsContent value="tipos" className="space-y-2">
-            {(tipos ?? []).map((t) => (
-              <div key={t.id} className="flex flex-wrap items-center gap-2 rounded-lg border p-2.5">
-                <span className="rounded px-1.5 py-0.5 text-[10px] font-medium"
-                  style={{ backgroundColor: `${t.cor}22`, color: t.cor }}>
-                  {t.label || "sem nome"}
-                </span>
-                <Input className="h-8 w-40" value={t.label}
-                  onChange={(e) => gravarTipo.mutate({ ...t, label: e.target.value })} />
-                <SeletorCor valor={t.cor} aoTrocar={(cor) => gravarTipo.mutate({ ...t, cor })} />
-                <Button variant="ghost" size="icon" className="ml-auto h-7 w-7"
-                  onClick={() => apagarTipo.mutate(t.id)}>
-                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                </Button>
-              </div>
-            ))}
+          <TabsContent value="tipos" className="space-y-4">
+            <section className="space-y-2">
+              <p className={rotuloSecao}>Tipos de trabalho</p>
+              {(tipos ?? []).length > 0 && (
+                <div className="divide-y overflow-hidden rounded-lg border">
+                  {(tipos ?? []).map((t) => (
+                    <div key={t.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 p-3">
+                      <span className="inline-flex max-w-[9rem] items-center truncate rounded-md px-2 py-0.5 text-xs font-medium"
+                        style={{ backgroundColor: `${t.cor}22`, color: t.cor }}>
+                        {t.label || "sem nome"}
+                      </span>
+                      <Input className="h-9 min-w-0 flex-1 basis-40 sm:max-w-[13rem]" value={t.label}
+                        aria-label="Nome do tipo de trabalho"
+                        onChange={(e) => gravarTipo.mutate({ ...t, label: e.target.value })} />
+                      <SeletorCor valor={t.cor} aoTrocar={(cor) => gravarTipo.mutate({ ...t, cor })} />
+                      <Button variant="ghost" size="icon"
+                        className="ml-auto h-9 w-9 text-muted-foreground hover:text-destructive"
+                        title="Excluir tipo" aria-label={`Excluir o tipo ${t.label}`}
+                        onClick={() => apagarTipo.mutate(t.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
 
-            <div className="rounded-lg border border-dashed p-3">
-              <Label className="text-xs">Novo tipo</Label>
-              <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                <Input className="h-8 w-48" placeholder="Ex.: Social media" value={novoTipo}
+            <section className="space-y-2 rounded-lg border border-dashed bg-muted/50 p-4">
+              <p className={rotuloSecao}>Novo tipo</p>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <Input className="h-9 min-w-0 flex-1 basis-48 bg-card sm:max-w-[15rem]"
+                  placeholder="Ex.: Social media" value={novoTipo} aria-label="Nome do novo tipo"
                   onChange={(e) => setNovoTipo(e.target.value)} />
                 <SeletorCor valor={corTipo} aoTrocar={setCorTipo} />
-                <Button size="sm" className="h-8" disabled={!novoTipo.trim()}
+                <Button size="sm" className="ml-auto h-9" disabled={!novoTipo.trim()}
                   onClick={() => {
                     gravarTipo.mutate({ label: novoTipo.trim(), cor: corTipo });
                     setNovoTipo("");
@@ -180,9 +208,9 @@ export function ConfigQuadro() {
                   <Plus className="h-3.5 w-3.5" /> Adicionar
                 </Button>
               </div>
-            </div>
+            </section>
 
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-xs leading-relaxed text-muted-foreground">
               Excluir um tipo não apaga tarefas — elas só ficam sem tipo.
             </p>
           </TabsContent>

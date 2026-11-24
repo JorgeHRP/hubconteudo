@@ -3,7 +3,7 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Globe2, Plus, ExternalLink, Trash2, Pencil, CheckCircle2, Rocket, Clock,
-  AlertTriangle, ArrowLeft,
+  AlertTriangle, ArrowLeft, ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,6 +18,7 @@ import { formatDate } from "@/lib/cs-data";
 import type { FaseSite, ProjetoSite, TipoSite } from "@/lib/types";
 import { PageHeader } from "@/components/PageHeader";
 import { EstadoVazio } from "@/components/EstadoVazio";
+import { EsqueletoIndicadores, EsqueletoLista } from "@/components/Esqueletos";
 import { CarteiraDaFrente } from "@/components/CarteiraDaFrente";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -112,7 +113,7 @@ function PainelSites({ empresaId, nomeEmpresa }: { empresaId: string; nomeEmpres
         titulo={nomeEmpresa}
         subtitulo="Sites e hotsites deste cliente"
         acao={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" asChild>
               <Link to={`/cs/${empresaId}`}>Ficha do cliente</Link>
             </Button>
@@ -121,7 +122,12 @@ function PainelSites({ empresaId, nomeEmpresa }: { empresaId: string; nomeEmpres
         }
       />
 
-      {sites.length === 0 ? (
+      {!todos ? (
+        <div role="status" aria-label="Carregando projetos" className="space-y-6">
+          <EsqueletoIndicadores quantidade={3} />
+          <EsqueletoLista linhas={3} />
+        </div>
+      ) : sites.length === 0 ? (
         <EstadoVazio
           icone={Globe2}
           titulo="Nenhum site em desenvolvimento"
@@ -130,19 +136,22 @@ function PainelSites({ empresaId, nomeEmpresa }: { empresaId: string; nomeEmpres
         />
       ) : (
         <>
-          <div className="mb-4 grid grid-cols-3 gap-4">
+          <div className="mb-6 grid gap-3 sm:grid-cols-3 sm:gap-4">
             {[
-              { rotulo: "Em desenvolvimento", valor: indicadores.emAndamento, icone: Clock, tom: "text-info" },
-              { rotulo: "No ar", valor: indicadores.publicados, icone: Rocket, tom: "text-success" },
-              { rotulo: "Fora do prazo", valor: indicadores.atrasados, icone: AlertTriangle, tom: "text-destructive" },
+              { rotulo: "Em desenvolvimento", valor: indicadores.emAndamento, icone: Clock, tom: "bg-info/10 text-info" },
+              { rotulo: "No ar", valor: indicadores.publicados, icone: Rocket, tom: "bg-success/10 text-success" },
+              { rotulo: "Fora do prazo", valor: indicadores.atrasados, icone: AlertTriangle, tom: "bg-destructive/10 text-destructive" },
             ].map((k) => (
               <Card key={k.rotulo}>
-                <CardContent className="p-4 pt-4">
-                  <div className="mb-2 flex items-center justify-between">
+                <CardContent className="flex items-start justify-between gap-3 p-4">
+                  <div className="min-w-0">
                     <p className="text-xs text-muted-foreground">{k.rotulo}</p>
-                    <k.icone className={cn("h-4 w-4", k.tom)} />
+                    <p className="mt-1.5 font-display text-2xl font-semibold leading-none tabular-nums">{k.valor}</p>
                   </div>
-                  <p className="text-2xl font-bold">{k.valor}</p>
+                  <span aria-hidden
+                    className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-md", k.tom)}>
+                    <k.icone className="h-4 w-4" />
+                  </span>
                 </CardContent>
               </Card>
             ))}
@@ -150,7 +159,7 @@ function PainelSites({ empresaId, nomeEmpresa }: { empresaId: string; nomeEmpres
 
           <div className="mb-4">
             <Select value={filtro} onValueChange={setFiltro}>
-              <SelectTrigger className="sm:w-56"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="bg-card sm:w-56" aria-label="Filtrar por fase"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas as fases</SelectItem>
                 {ordemFasesSite.map((f) => (
@@ -160,106 +169,122 @@ function PainelSites({ empresaId, nomeEmpresa }: { empresaId: string; nomeEmpres
             </Select>
           </div>
 
-          <div className="space-y-3">
-            {lista.map((s) => {
-              const pct = progressoSite(s);
-              const expandido = aberto === s.id;
-              return (
-                <Card key={s.id} className={cn(atrasado(s) && "ring-1 ring-destructive/40")}>
-                  <CardContent className="p-4 pt-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <button type="button" onClick={() => setAberto(expandido ? null : s.id)}
-                            className="font-medium hover:text-primary">
-                            {s.nome}
-                          </button>
-                          <Badge variant={faseSiteVariant[s.fase]} className="text-[9px]">
-                            {faseSiteLabels[s.fase]}
-                          </Badge>
-                          <span className="text-[10px] text-muted-foreground">
-                            {tipoSiteLabels[s.tipo]}
-                          </span>
+          {lista.length === 0 ? (
+            <p className="rounded-lg border border-dashed bg-card/60 px-4 py-10 text-center text-sm text-muted-foreground">
+              Nenhum site nesta fase.
+            </p>
+          ) : (
+            <Card className="overflow-hidden">
+              <ul className="divide-y">
+                {lista.map((s) => {
+                  const pct = progressoSite(s);
+                  const expandido = aberto === s.id;
+                  return (
+                    <li key={s.id} className="p-4 sm:p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                            <button type="button" onClick={() => setAberto(expandido ? null : s.id)}
+                              aria-expanded={expandido}
+                              className="min-w-0 break-words rounded-sm text-left text-sm font-semibold transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+                              {s.nome}
+                            </button>
+                            <Badge variant={faseSiteVariant[s.fase]}>
+                              {faseSiteLabels[s.fase]}
+                            </Badge>
+                            <Badge variant="outline" className="font-normal text-muted-foreground">
+                              {tipoSiteLabels[s.tipo]}
+                            </Badge>
+                            {atrasado(s) && (
+                              <Badge variant="destructive" className="gap-1">
+                                <AlertTriangle className="h-3 w-3" aria-hidden /> Fora do prazo
+                              </Badge>
+                            )}
+                          </div>
+
+                          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                            {s.plataforma && <span>{s.plataforma}</span>}
+                            {nomeDe(s.responsavel_id) && <span>{nomeDe(s.responsavel_id)}</span>}
+                            {s.previsao_entrega && (
+                              <span className={cn("tabular-nums", atrasado(s) && "font-medium text-destructive")}>
+                                entrega {formatDate(s.previsao_entrega)}
+                              </span>
+                            )}
+                            {s.url_producao && (
+                              <a href={s.url_producao} target="_blank" rel="noreferrer"
+                                className="flex items-center gap-1 rounded-sm font-medium text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+                                <ExternalLink className="h-3 w-3" aria-hidden /> no ar
+                              </a>
+                            )}
+                            {s.url_homologacao && (
+                              <a href={s.url_homologacao} target="_blank" rel="noreferrer"
+                                className="flex items-center gap-1 rounded-sm font-medium text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+                                <ExternalLink className="h-3 w-3" aria-hidden /> homologação
+                              </a>
+                            )}
+                          </div>
                         </div>
 
-                        <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
-                          {s.plataforma && <span>{s.plataforma}</span>}
-                          {nomeDe(s.responsavel_id) && <span>{nomeDe(s.responsavel_id)}</span>}
-                          {s.previsao_entrega && (
-                            <span className={cn(atrasado(s) && "font-medium text-destructive")}>
-                              entrega {formatDate(s.previsao_entrega)}
-                            </span>
-                          )}
-                          {s.url_producao && (
-                            <a href={s.url_producao} target="_blank" rel="noreferrer"
-                              className="flex items-center gap-1 hover:underline">
-                              <ExternalLink className="h-3 w-3" /> no ar
-                            </a>
-                          )}
-                          {s.url_homologacao && (
-                            <a href={s.url_homologacao} target="_blank" rel="noreferrer"
-                              className="flex items-center gap-1 hover:underline">
-                              <ExternalLink className="h-3 w-3" /> homologação
-                            </a>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex shrink-0 items-center gap-1">
-                        <SiteDialog site={s} aoSalvar={recarregar} gatilho={
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Pencil className="h-4 w-4" />
+                        <div className="-mr-1.5 -mt-1 flex shrink-0 items-center gap-0.5">
+                          <SiteDialog site={s} aoSalvar={recarregar} gatilho={
+                            <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground"
+                              title="Editar projeto" aria-label="Editar projeto">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          } />
+                          <Button variant="ghost" size="icon"
+                            className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                            title="Encerrar projeto" aria-label="Encerrar projeto"
+                            onClick={() => apagar.mutate(s.id)}>
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        } />
-                        <Button variant="ghost" size="icon" className="h-8 w-8"
-                          onClick={() => apagar.mutate(s.id)}>
-                          <Trash2 className="h-4 w-4 text-muted-foreground" />
-                        </Button>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="mt-3">
-                      <div className="flex h-2 overflow-hidden rounded-full bg-muted">
-                        <div className={cn("h-full transition-all",
-                          pct === 100 ? "bg-success" : "gradient-primary")}
-                          style={{ width: `${pct}%` }} />
+                      <div className="mt-3">
+                        <div className="h-1.5 overflow-hidden rounded-full bg-muted"
+                          role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}
+                          aria-label={`Progresso de ${s.nome}`}>
+                          <div className={cn("h-full rounded-full transition-all",
+                            pct === 100 ? "bg-success" : "bg-primary")}
+                            style={{ width: `${pct}%` }} />
+                        </div>
+                        <button type="button" onClick={() => setAberto(expandido ? null : s.id)}
+                          aria-expanded={expandido}
+                          className="mt-1 inline-flex min-h-9 items-center gap-1 rounded-sm text-xs tabular-nums text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 sm:min-h-0 sm:py-1">
+                          {s.checklist.filter((e) => e.feito).length} de {s.checklist.length} etapas ·{" "}
+                          {expandido ? "esconder" : "ver etapas"}
+                          <ChevronDown aria-hidden
+                            className={cn("h-3.5 w-3.5 transition-transform", expandido && "rotate-180")} />
+                        </button>
                       </div>
-                      <button type="button" onClick={() => setAberto(expandido ? null : s.id)}
-                        className="mt-1 text-[11px] text-muted-foreground hover:text-foreground">
-                        {s.checklist.filter((e) => e.feito).length} de {s.checklist.length} etapas ·{" "}
-                        {expandido ? "esconder" : "ver etapas"}
-                      </button>
-                    </div>
 
-                    {expandido && (
-                      <div className="mt-3 grid gap-1.5 border-t pt-3 sm:grid-cols-2">
-                        {s.checklist.map((e, i) => (
-                          <label key={i} className="flex cursor-pointer items-center gap-2 text-sm">
-                            <Checkbox checked={e.feito}
-                              onCheckedChange={() => etapa.mutate({ id: s.id, i })} />
-                            <span className={cn(e.feito && "text-muted-foreground line-through")}>
-                              {e.titulo}
-                            </span>
-                          </label>
-                        ))}
-                        {s.observacoes && (
-                          <p className="whitespace-pre-wrap pt-2 text-xs text-muted-foreground sm:col-span-2">
-                            {s.observacoes}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-
-            {lista.length === 0 && (
-              <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-                Nenhum site nesta fase.
-              </p>
-            )}
-          </div>
+                      {expandido && (
+                        <div className="mt-2 rounded-md border bg-muted/50 p-3">
+                          <div className="grid gap-x-4 sm:grid-cols-2">
+                            {s.checklist.map((e, i) => (
+                              <label key={i} className="flex min-h-9 cursor-pointer items-center gap-2.5 text-sm">
+                                <Checkbox checked={e.feito}
+                                  onCheckedChange={() => etapa.mutate({ id: s.id, i })} />
+                                <span className={cn(e.feito && "text-muted-foreground line-through")}>
+                                  {e.titulo}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                          {s.observacoes && (
+                            <p className="mt-2 whitespace-pre-wrap border-t pt-2 text-xs leading-relaxed text-muted-foreground">
+                              {s.observacoes}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </Card>
+          )}
         </>
       )}
     </div>

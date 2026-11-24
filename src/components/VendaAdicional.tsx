@@ -10,7 +10,8 @@ import { formatDate } from "@/lib/cs-data";
 import type { RespostaOferta, TipoProjeto } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
@@ -70,56 +71,73 @@ export function VendaAdicional({ empresaId }: { empresaId: string }) {
   const pendentes = lista.filter((o) => !o.ofertado).length;
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <Card className="overflow-hidden">
+      <CardHeader className="flex-row flex-wrap items-center justify-between gap-x-4 gap-y-2 space-y-0 pb-4">
         <CardTitle className="flex items-center gap-2 text-base">
-          <TrendingUp className="h-4 w-4 text-success" />
+          <TrendingUp className="h-4 w-4 shrink-0 text-accent" aria-hidden />
           Possibilidade de venda adicional
-          {pendentes > 0 && (
-            <Badge variant="outline" className="ml-1 text-[10px]">
-              {pendentes} {pendentes === 1 ? "não ofertado" : "não ofertados"}
-            </Badge>
-          )}
         </CardTitle>
+        {pendentes > 0 && (
+          <Badge variant="warning">
+            {pendentes} {pendentes === 1 ? "não ofertado" : "não ofertados"}
+          </Badge>
+        )}
       </CardHeader>
 
-      <CardContent className="space-y-2">
-        {lista.length === 0 ? (
-          <div className="flex items-center gap-2 rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-            <PartyPopper className="h-4 w-4 shrink-0 text-success" />
-            Este cliente já contrata todas as frentes que a agência vende.
-          </div>
-        ) : (
-          lista.map((o) => (
-            <div key={o.tipo}
-              className={cn("rounded-lg border p-3 transition-colors",
-                o.ofertado ? "bg-muted/30" : "bg-card")}>
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <span className={cn("rounded px-2 py-0.5 text-[10px] font-medium",
+      {!oportunidades ? (
+        <div className="divide-y border-t" aria-hidden>
+          {[0, 1].map((i) => (
+            <div key={i} className="space-y-2 px-5 py-3">
+              <Skeleton className="h-3.5 w-1/4" />
+              <Skeleton className="h-3 w-3/5" />
+            </div>
+          ))}
+        </div>
+      ) : lista.length === 0 ? (
+        <div className="flex items-center gap-3 border-t px-5 py-4 text-sm text-muted-foreground">
+          <span
+            aria-hidden
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-success/10 text-success"
+          >
+            <PartyPopper className="h-4 w-4" />
+          </span>
+          Este cliente já contrata todas as frentes que a agência vende.
+        </div>
+      ) : (
+        <ul className="divide-y border-t">
+          {lista.map((o) => (
+            <li key={o.tipo}
+              className={cn("px-5 py-3 transition-colors", o.ofertado && "bg-muted/50")}>
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                <div className="min-w-0 flex-1 basis-56">
+                  <span className={cn("inline-flex rounded-md px-2 py-0.5 text-xs font-medium",
                     tipoProjetoTom[o.tipo])}>
                     {tipoProjetoLabels[o.tipo]}
                   </span>
-                  <p className="mt-1.5 text-xs text-muted-foreground">{argumento[o.tipo]}</p>
+                  <p className="mt-1.5 text-sm text-muted-foreground">{argumento[o.tipo]}</p>
                 </div>
 
                 <Button
                   size="sm"
                   variant={o.ofertado ? "outline" : "default"}
-                  className="h-7 shrink-0 text-xs"
+                  className="shrink-0"
+                  aria-pressed={o.ofertado}
                   onClick={() => ofertar.mutate({ tipo: o.tipo, ofertado: !o.ofertado })}
                 >
                   {o.ofertado
-                    ? <><Check className="h-3.5 w-3.5" /> Ofertado</>
-                    : <><CircleDashed className="h-3.5 w-3.5" /> Marcar como ofertado</>}
+                    ? <><Check className="text-success" /> Ofertado</>
+                    : <><CircleDashed /> Marcar como ofertado</>}
                 </Button>
               </div>
 
               {o.ofertado && (
-                <div className="mt-2.5 flex flex-wrap items-center gap-2 border-t pt-2.5">
+                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
                   <Select value={o.resposta}
                     onValueChange={(v) => responder.mutate({ tipo: o.tipo, resposta: v as RespostaOferta })}>
-                    <SelectTrigger className="h-7 w-52 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-9 w-full bg-card text-sm sm:w-56"
+                      aria-label={`Resposta do cliente para ${tipoProjetoLabels[o.tipo]}`}>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       {(Object.keys(respostaLabels) as RespostaOferta[]).map((r) => (
                         <SelectItem key={r} value={r}>{respostaLabels[r]}</SelectItem>
@@ -127,21 +145,21 @@ export function VendaAdicional({ empresaId }: { empresaId: string }) {
                     </SelectContent>
                   </Select>
 
-                  <span className="text-[11px] text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     {o.ofertado_em && `ofertado em ${formatDate(o.ofertado_em.slice(0, 10))}`}
                     {nomeDe(o.ofertado_por) && ` por ${nomeDe(o.ofertado_por)}`}
                   </span>
                 </div>
               )}
-            </div>
-          ))
-        )}
+            </li>
+          ))}
+        </ul>
+      )}
 
-        <p className="pt-1 text-[11px] text-muted-foreground">
-          A lista se ajusta sozinha: assim que a frente é lançada, o serviço sai daqui
-          e passa a aparecer em Projetos por frente.
-        </p>
-      </CardContent>
+      <p className="border-t px-5 py-3 text-xs leading-relaxed text-muted-foreground">
+        A lista se ajusta sozinha: assim que a frente é lançada, o serviço sai daqui
+        e passa a aparecer em Projetos por frente.
+      </p>
     </Card>
   );
 }

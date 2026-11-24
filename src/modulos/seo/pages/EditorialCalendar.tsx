@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { EstadoVazio } from "@/components/EstadoVazio";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -41,16 +42,16 @@ const initialData: CalendarEntry[] = [
 const STORAGE_KEY = "editorial-calendar";
 
 const statusConfig = {
-  "Publicado": { icon: Check, className: "badge-active" },
-  "Em produção": { icon: Clock, className: "badge-pending" },
-  "Revisão": { icon: AlertCircle, className: "badge-status bg-blue-100 text-blue-700" },
-  "Agendado": { icon: CalendarIcon, className: "badge-status bg-muted text-muted-foreground" },
+  "Publicado": { icon: Check, className: "border-success/20 bg-success/10 text-success" },
+  "Em produção": { icon: Clock, className: "border-warning/30 bg-warning/15 text-warning-strong" },
+  "Revisão": { icon: AlertCircle, className: "border-info/20 bg-info/10 text-info" },
+  "Agendado": { icon: CalendarIcon, className: "border-border bg-muted text-muted-foreground" },
 };
 
 const typeConfig = {
-  "Blog": "bg-eseg-blue/10 text-eseg-blue",
-  "Página": "bg-eseg-navy/10 text-eseg-navy",
-  "Landing Page": "bg-eseg-cyan/10 text-eseg-cyan",
+  "Blog": "bg-info/10 text-info",
+  "Página": "bg-primary/10 text-primary",
+  "Landing Page": "bg-accent/10 text-accent",
 };
 
 const EditorialCalendar = () => {
@@ -161,29 +162,29 @@ const EditorialCalendar = () => {
 
   return (
     <div className="space-y-6 max-w-7xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold gradient-text">Calendário Editorial</h1>
-          <p className="text-muted-foreground text-sm mt-1">Cronograma de publicações e entregas</p>
-          <div className="mt-2 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold leading-tight text-foreground sm:text-xl">Calendário Editorial</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">Cronograma de publicações e entregas</p>
+          <div className="mt-3 flex items-start gap-2 rounded-md border border-warning/30 bg-warning/15 px-3 py-2 text-xs text-warning-strong">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             <span>Os artigos <strong>Backlinks</strong> podem sofrer alteração de data de acordo com a postagem de cada plataforma.</span>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             onClick={handleSave}
             variant={hasChanges ? "default" : "outline"}
             size="sm"
-            className={hasChanges ? "bg-primary" : ""}
+            className="h-9"
           >
-            <Save className="h-4 w-4 mr-1" />
+            <Save className="mr-1 h-4 w-4" />
             Salvar
           </Button>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="bg-primary">
-                <Plus className="h-4 w-4 mr-1" />
+              <Button size="sm" className="h-9">
+                <Plus className="mr-1 h-4 w-4" />
                 Adicionar
               </Button>
             </DialogTrigger>
@@ -220,36 +221,36 @@ const EditorialCalendar = () => {
                     <SelectItem value="Backlink">Backlink</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button onClick={handleAdd} className="w-full bg-primary">Adicionar</Button>
+                <Button onClick={handleAdd} className="w-full">Adicionar</Button>
               </div>
             </DialogContent>
           </Dialog>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="glass-card p-4 text-center animate-fade-in-up">
-          <p className="stat-value">{stats.total}</p>
-          <p className="stat-label">Total</p>
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="rounded-lg border bg-card p-4 shadow-card">
+          <p className="text-xs text-muted-foreground">Total</p>
+          <p className="mt-1 font-display text-2xl font-semibold text-foreground">{stats.total}</p>
         </div>
-        <div className="glass-card p-4 text-center animate-fade-in-up-delay-1">
-          <p className="stat-value text-emerald-600">{stats.published}</p>
-          <p className="stat-label">Publicados</p>
+        <div className="rounded-lg border bg-card p-4 shadow-card">
+          <p className="text-xs text-muted-foreground">Publicados</p>
+          <p className="mt-1 font-display text-2xl font-semibold text-success">{stats.published}</p>
         </div>
-        <div className="glass-card p-4 text-center animate-fade-in-up-delay-2">
-          <p className="stat-value text-amber-500">{stats.inProgress}</p>
-          <p className="stat-label">Em andamento</p>
+        <div className="rounded-lg border bg-card p-4 shadow-card">
+          <p className="text-xs text-muted-foreground">Em andamento</p>
+          <p className="mt-1 font-display text-2xl font-semibold text-warning-strong">{stats.inProgress}</p>
         </div>
-        <div className="glass-card p-4 text-center animate-fade-in-up-delay-3">
-          <p className="stat-value text-muted-foreground">{stats.scheduled}</p>
-          <p className="stat-label">Agendados</p>
+        <div className="rounded-lg border bg-card p-4 shadow-card">
+          <p className="text-xs text-muted-foreground">Agendados</p>
+          <p className="mt-1 font-display text-2xl font-semibold text-muted-foreground">{stats.scheduled}</p>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3 items-center">
+      <div className="flex flex-wrap items-center gap-3">
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="justify-start text-left font-normal">
+            <Button variant="outline" className="h-9 w-full justify-start text-left font-normal sm:w-auto">
               <CalendarIcon className="mr-2 h-4 w-4" />
               {dateRange.from ? (
                 dateRange.to ? (
@@ -275,36 +276,39 @@ const EditorialCalendar = () => {
           </PopoverContent>
         </Popover>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {["all", "Publicado", "Em produção", "Revisão", "Agendado"].map((status) => (
             <Button
               key={status}
               variant={statusFilter === status ? "default" : "outline"}
               size="sm"
               onClick={() => setStatusFilter(status)}
-              className={statusFilter === status ? "bg-primary" : ""}
+              aria-pressed={statusFilter === status}
+              className="h-9"
             >
               {status === "all" ? "Todos" : status}
             </Button>
           ))}
         </div>
 
-        <div className="ml-auto inline-flex rounded-md border border-input overflow-hidden">
+        <div className="inline-flex overflow-hidden rounded-md border border-input bg-card sm:ml-auto">
           <Button
             variant={viewMode === "list" ? "default" : "ghost"}
             size="sm"
-            className="rounded-none"
+            className="h-9 rounded-none"
+            aria-pressed={viewMode === "list"}
             onClick={() => setViewMode("list")}
           >
-            <List className="h-4 w-4 mr-1" /> Lista
+            <List className="mr-1 h-4 w-4" /> Lista
           </Button>
           <Button
             variant={viewMode === "calendar" ? "default" : "ghost"}
             size="sm"
-            className="rounded-none"
+            className="h-9 rounded-none"
+            aria-pressed={viewMode === "calendar"}
             onClick={() => setViewMode("calendar")}
           >
-            <LayoutGrid className="h-4 w-4 mr-1" /> Calendário
+            <LayoutGrid className="mr-1 h-4 w-4" /> Calendário
           </Button>
         </div>
       </div>
@@ -316,39 +320,41 @@ const EditorialCalendar = () => {
           const monthLabel = format(new Date(y, m - 1, 1), "MMMM 'de' yyyy", { locale: ptBR });
           return (
             <div key={monthKey} className="space-y-3">
-              <div className="flex items-center gap-3 sticky top-0 z-10 bg-background/80 backdrop-blur py-2">
-                <h2 className="text-lg font-semibold capitalize text-eseg-navy">{monthLabel}</h2>
-                <span className="text-xs text-muted-foreground">{groupedByMonth[monthKey].length} publicações</span>
-                <div className="flex-1 h-px bg-border" />
+              <div className="sticky top-0 z-10 flex items-center gap-3 bg-background py-2">
+                <h3 className="text-base font-semibold capitalize text-foreground">{monthLabel}</h3>
+                <span className="whitespace-nowrap text-xs text-muted-foreground">{groupedByMonth[monthKey].length} publicações</span>
+                <div className="h-px flex-1 bg-border" />
               </div>
               <div className="space-y-3">
                 {groupedByMonth[monthKey].map((entry) => {
           const StatusIcon = statusConfig[entry.status].icon;
           return (
-            <div key={entry.id} className="glass-card-hover p-5">
-              <div className="flex items-start gap-4">
-                <div className="text-center min-w-[70px]">
+            <div key={entry.id} className="rounded-lg border bg-card p-4 shadow-card">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-4">
+                <div className="flex items-center gap-2 lg:w-[140px] lg:shrink-0 lg:flex-col lg:items-stretch lg:gap-1">
                   <Input
                     type="date"
                     value={entry.date}
                     onChange={(e) => updateEntry(entry.id, { date: e.target.value })}
-                    className="h-8 text-xs px-1 text-center"
+                    aria-label="Data da publicação"
+                    className="h-9 w-[150px] px-2 text-xs lg:w-full"
                   />
-                  <p className="text-xs text-muted-foreground uppercase mt-1">
+                  <p className="text-xs uppercase text-muted-foreground lg:text-center">
                     {format(new Date(entry.date), "MMM/yy", { locale: ptBR })}
                   </p>
                 </div>
 
-                <div className="flex-1 min-w-0 space-y-2">
-                  <div className="flex items-center gap-2 flex-wrap">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Input
                       value={entry.title}
                       onChange={(e) => updateEntry(entry.id, { title: e.target.value })}
-                      className="h-8 font-semibold flex-1 min-w-[200px]"
+                      className="h-9 min-w-0 flex-1 basis-[200px] font-semibold"
                       placeholder="Título"
+                      aria-label="Título"
                     />
                     <Select value={entry.type} onValueChange={(v) => updateEntry(entry.id, { type: v as CalendarEntry["type"] })}>
-                      <SelectTrigger className={`h-7 w-auto px-2 text-xs border-0 ${typeConfig[entry.type]}`}>
+                      <SelectTrigger aria-label="Tipo" className={`h-9 w-auto gap-1 border-0 px-2.5 text-xs font-medium ${typeConfig[entry.type]}`}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -358,25 +364,27 @@ const EditorialCalendar = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex gap-2 flex-wrap">
+                  <div className="flex flex-wrap gap-2">
                     <Input
                       value={entry.keyword}
                       onChange={(e) => updateEntry(entry.id, { keyword: e.target.value })}
                       placeholder="Palavra-chave"
-                      className="h-7 text-xs flex-1 min-w-[180px]"
+                      aria-label="Palavra-chave"
+                      className="h-9 min-w-0 flex-1 basis-[180px] text-xs"
                     />
                     <Input
                       value={entry.author}
                       onChange={(e) => updateEntry(entry.id, { author: e.target.value })}
                       placeholder="Autor"
-                      className="h-7 text-xs flex-1 min-w-[140px]"
+                      aria-label="Autor"
+                      className="h-9 min-w-0 flex-1 basis-[140px] text-xs"
                     />
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Select value={entry.destino} onValueChange={(v) => updateEntry(entry.id, { destino: v as CalendarEntry["destino"] })}>
-                    <SelectTrigger className={`h-8 w-auto px-2 text-xs ${entry.destino === "Backlink" ? "bg-amber-100 text-amber-700 border-amber-300" : "bg-eseg-blue/10 text-eseg-blue border-eseg-blue/30"}`}>
+                    <SelectTrigger aria-label="Destino" className={`h-9 w-auto gap-1 px-2.5 text-xs font-medium ${entry.destino === "Backlink" ? "border-warning/30 bg-warning/15 text-warning-strong" : "border-info/20 bg-info/10 text-info"}`}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -385,8 +393,8 @@ const EditorialCalendar = () => {
                     </SelectContent>
                   </Select>
                   <Select value={entry.status} onValueChange={(v) => updateEntry(entry.id, { status: v as CalendarEntry["status"] })}>
-                    <SelectTrigger className={`h-8 w-auto px-2 text-xs ${statusConfig[entry.status].className}`}>
-                      <StatusIcon className="inline h-3 w-3 mr-1" />
+                    <SelectTrigger aria-label="Status" className={`h-9 w-auto gap-1 px-2.5 text-xs font-medium ${statusConfig[entry.status].className}`}>
+                      <StatusIcon className="inline h-3 w-3 shrink-0" aria-hidden />
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -396,7 +404,7 @@ const EditorialCalendar = () => {
                       <SelectItem value="Publicado">Publicado</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(entry.id)}>
+                  <Button variant="ghost" size="icon" aria-label="Remover publicação" className="ml-auto h-9 w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive lg:ml-0" onClick={() => handleDelete(entry.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -410,9 +418,11 @@ const EditorialCalendar = () => {
         })}
 
         {filtered.length === 0 && (
-          <div className="glass-card p-12 text-center">
-            <p className="text-muted-foreground">Nenhuma publicação encontrada para o filtro selecionado.</p>
-          </div>
+          <EstadoVazio
+            icone={CalendarIcon}
+            titulo="Nenhuma publicação encontrada"
+            descricao="Nenhuma publicação encontrada para o filtro selecionado."
+          />
         )}
       </div>
       )}
@@ -437,54 +447,79 @@ const EditorialCalendar = () => {
             while (cells.length % 7 !== 0) cells.push(null);
 
             return (
-              <div key={monthKey} className="glass-card p-4">
-                <h2 className="text-lg font-semibold capitalize text-eseg-navy mb-3">{monthLabel}</h2>
-                <div className="grid grid-cols-7 gap-1 text-xs font-medium text-muted-foreground mb-1">
-                  {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((d) => (
-                    <div key={d} className="text-center py-1">{d}</div>
-                  ))}
+              <div key={monthKey} className="overflow-hidden rounded-lg border bg-card shadow-card">
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-4 py-3">
+                  <h3 className="text-base font-semibold capitalize text-foreground">{monthLabel}</h3>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span aria-hidden className="h-2.5 w-2.5 rounded-sm border border-info/30 bg-info/20" />
+                      Blog ESEG
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span aria-hidden className="h-2.5 w-2.5 rounded-sm border border-warning/40 bg-warning/30" />
+                      Backlink
+                    </span>
+                  </div>
                 </div>
-                <div className="grid grid-cols-7 gap-1">
-                  {cells.map((cell, idx) => (
-                    <div
-                      key={idx}
-                      className={cn(
-                        "min-h-[90px] rounded-md border border-border/50 p-1.5 text-xs",
-                        cell ? "bg-card" : "bg-muted/30"
-                      )}
-                    >
-                      {cell && (
-                        <>
-                          <div className="text-right text-[11px] font-semibold text-muted-foreground mb-1">{cell.day}</div>
-                          <div className="space-y-1">
-                            {cell.entries.map((e) => (
+                <div className="overflow-x-auto">
+                  <div className="min-w-[700px]">
+                    <div className="grid grid-cols-7 border-b bg-muted/50 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((d) => (
+                        <div key={d} className="px-2 py-2 text-center">{d}</div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-7 gap-px bg-border">
+                      {cells.map((cell, idx) => (
+                        <div
+                          key={idx}
+                          className={cn(
+                            "min-h-[92px] min-w-0 p-1.5 text-xs",
+                            cell ? "bg-card" : "bg-muted/60"
+                          )}
+                        >
+                          {cell && (
+                            <>
                               <div
-                                key={e.id}
-                                title={`${e.title} — ${e.status}`}
                                 className={cn(
-                                  "truncate rounded px-1.5 py-0.5 text-[10px] leading-tight cursor-default",
-                                  e.destino === "Backlink"
-                                    ? "bg-amber-100 text-amber-800 border-l-2 border-amber-500"
-                                    : "bg-eseg-blue/10 text-eseg-blue border-l-2 border-eseg-blue"
+                                  "mb-1 text-right text-xs tabular-nums",
+                                  cell.entries.length > 0 ? "font-semibold text-foreground" : "text-muted-foreground"
                                 )}
                               >
-                                {e.title}
+                                {cell.day}
                               </div>
-                            ))}
-                          </div>
-                        </>
-                      )}
+                              <div className="space-y-1">
+                                {cell.entries.map((e) => (
+                                  <div
+                                    key={e.id}
+                                    title={`${e.title} — ${e.status}`}
+                                    className={cn(
+                                      "cursor-default truncate rounded-sm border-l-2 px-1.5 py-0.5 text-xs leading-snug",
+                                      e.destino === "Backlink"
+                                        ? "border-warning bg-warning/15 text-warning-strong"
+                                        : "border-info bg-info/10 text-info"
+                                    )}
+                                  >
+                                    {e.title}
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
                 </div>
               </div>
             );
           })}
 
           {filtered.length === 0 && (
-            <div className="glass-card p-12 text-center">
-              <p className="text-muted-foreground">Nenhuma publicação encontrada para o filtro selecionado.</p>
-            </div>
+            <EstadoVazio
+              icone={CalendarIcon}
+              titulo="Nenhuma publicação encontrada"
+              descricao="Nenhuma publicação encontrada para o filtro selecionado."
+            />
           )}
         </div>
       )}

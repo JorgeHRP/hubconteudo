@@ -13,7 +13,7 @@ const renderLink = (maxW: string) => (value: any) => {
       target="_blank"
       rel="noopener noreferrer"
       onClick={(e) => e.stopPropagation()}
-      className={`text-xs text-eseg-blue underline hover:text-eseg-blue/80 truncate inline-block ${maxW}`}
+      className={`inline-block truncate rounded-sm text-xs text-accent underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${maxW}`}
     >
       {v}
     </a>
@@ -46,7 +46,7 @@ const Articles = () => {
   return (
     <div className="space-y-6 max-w-7xl">
       <div>
-        <h1 className="text-2xl font-bold gradient-text">Artigos</h1>
+        <h2 className="text-lg font-semibold leading-tight text-foreground sm:text-xl">Artigos</h2>
         <p className="text-muted-foreground text-sm mt-1">Clique em qualquer célula para editar</p>
       </div>
       <EditableDataTable

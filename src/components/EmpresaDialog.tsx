@@ -87,8 +87,8 @@ export function EmpresaDialog({
         {gatilho ?? <Button><Building2 /> Nova empresa</Button>}
       </DialogTrigger>
 
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl p-5 sm:p-6">
+        <DialogHeader className="pr-6">
           <DialogTitle>{empresa ? "Editar empresa" : "Nova empresa"}</DialogTitle>
           <DialogDescription>
             Os projetos — CS, tráfego, SEO e RD — são cadastrados depois, dentro da empresa.
@@ -100,7 +100,7 @@ export function EmpresaDialog({
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Identificação
             </p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <Label htmlFor="emp-razao">Razão social *</Label>
                 <Input id="emp-razao" className="mt-1.5" value={form.razao_social}
@@ -117,11 +117,15 @@ export function EmpresaDialog({
                 <Label htmlFor="emp-cnpj">CNPJ *</Label>
                 <Input
                   id="emp-cnpj" inputMode="numeric" placeholder="00.000.000/0000-00"
-                  className={cn("mt-1.5", cnpjInvalido && "border-destructive")}
+                  className={cn("mt-1.5 tabular-nums", cnpjInvalido && "border-destructive")}
+                  aria-invalid={cnpjInvalido || undefined}
+                  aria-describedby={cnpjInvalido ? "emp-cnpj-erro" : undefined}
                   value={form.cnpj}
                   onChange={(e) => set("cnpj", formatCNPJ(e.target.value))}
                 />
-                {cnpjInvalido && <p className="mt-1 text-xs text-destructive">CNPJ inválido.</p>}
+                {cnpjInvalido && (
+                  <p id="emp-cnpj-erro" className="mt-1 text-xs text-destructive">CNPJ inválido.</p>
+                )}
               </div>
               <div>
                 <Label htmlFor="emp-seg">Segmento</Label>
@@ -143,14 +147,14 @@ export function EmpresaDialog({
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Endereço
             </p>
-            <div className="grid gap-3 sm:grid-cols-6">
-              <div className="sm:col-span-2">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-6">
+              <div className="col-span-2">
                 <Label htmlFor="emp-cep">CEP</Label>
-                <Input id="emp-cep" inputMode="numeric" className="mt-1.5" value={form.cep}
+                <Input id="emp-cep" inputMode="numeric" className="mt-1.5 tabular-nums" value={form.cep}
                   placeholder="00000-000"
                   onChange={(e) => set("cep", formatCEP(e.target.value))} />
               </div>
-              <div className="sm:col-span-3">
+              <div className="col-span-2 sm:col-span-4">
                 <Label htmlFor="emp-log">Logradouro</Label>
                 <Input id="emp-log" className="mt-1.5" value={form.logradouro}
                   onChange={(e) => set("logradouro", e.target.value)} />
@@ -165,20 +169,20 @@ export function EmpresaDialog({
                 <Input id="emp-comp" className="mt-1.5" value={form.complemento}
                   onChange={(e) => set("complemento", e.target.value)} />
               </div>
-              <div className="sm:col-span-2">
+              <div className="col-span-2 sm:col-span-3">
                 <Label htmlFor="emp-bairro">Bairro</Label>
                 <Input id="emp-bairro" className="mt-1.5" value={form.bairro}
                   onChange={(e) => set("bairro", e.target.value)} />
               </div>
-              <div className="sm:col-span-1">
+              <div className="sm:col-span-4">
                 <Label htmlFor="emp-cidade">Cidade</Label>
                 <Input id="emp-cidade" className="mt-1.5" value={form.cidade}
                   onChange={(e) => set("cidade", e.target.value)} />
               </div>
-              <div className="sm:col-span-1">
-                <Label>UF</Label>
+              <div className="sm:col-span-2">
+                <Label htmlFor="emp-uf">UF</Label>
                 <Select value={form.estado} onValueChange={(v) => set("estado", v)}>
-                  <SelectTrigger className="mt-1.5"><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectTrigger id="emp-uf" className="mt-1.5"><SelectValue placeholder="—" /></SelectTrigger>
                   <SelectContent>
                     {estadosBR.map((uf) => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
                   </SelectContent>
@@ -193,11 +197,11 @@ export function EmpresaDialog({
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Relação com a agência
             </p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
               <div>
-                <Label>Status</Label>
+                <Label htmlFor="emp-status">Status</Label>
                 <Select value={form.status} onValueChange={(v) => set("status", v as StatusEmpresa)}>
-                  <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="emp-status" className="mt-1.5"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {(Object.keys(statusEmpresaLabels) as StatusEmpresa[]).map((s) => (
                       <SelectItem key={s} value={s}>{statusEmpresaLabels[s]}</SelectItem>
@@ -206,12 +210,12 @@ export function EmpresaDialog({
                 </Select>
               </div>
               <div>
-                <Label>Responsável na agência</Label>
+                <Label htmlFor="emp-resp">Responsável na agência</Label>
                 <Select
                   value={form.responsavel_id ?? "nenhum"}
                   onValueChange={(v) => set("responsavel_id", v === "nenhum" ? null : v)}
                 >
-                  <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="emp-resp" className="mt-1.5"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="nenhum">Não definido</SelectItem>
                     {profiles?.filter((p) => p.ativo).map((p) => (
@@ -229,16 +233,20 @@ export function EmpresaDialog({
           </section>
 
           {erro && (
-            <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div role="alert"
+              className="flex items-start gap-2 rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
               {erro}
             </div>
           )}
 
-          <Button className="w-full" disabled={!podeSalvar || salvar.isPending}
-            onClick={() => salvar.mutate()}>
-            {salvar.isPending ? "Salvando…" : empresa ? "Salvar alterações" : "Cadastrar empresa"}
-          </Button>
+          <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-muted-foreground">Campos com * são obrigatórios.</p>
+            <Button className="w-full sm:w-auto sm:min-w-44" disabled={!podeSalvar || salvar.isPending}
+              onClick={() => salvar.mutate()}>
+              {salvar.isPending ? "Salvando…" : empresa ? "Salvar alterações" : "Cadastrar empresa"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

@@ -8,7 +8,8 @@ export default {
     container: { center: true, padding: "2rem", screens: { "2xl": "1400px" } },
     extend: {
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', "system-ui", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        display: ["Poppins", "Inter", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -51,6 +52,7 @@ export default {
         warning: {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
+          strong: "hsl(var(--warning-strong))",
         },
         info: {
           DEFAULT: "hsl(var(--info))",
@@ -72,6 +74,10 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      boxShadow: {
+        card: "0 1px 2px 0 hsl(211 42% 15% / 0.04)",
+        pop: "0 12px 32px -8px hsl(211 42% 15% / 0.18), 0 2px 6px -2px hsl(211 42% 15% / 0.08)",
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
@@ -85,8 +91,24 @@ export default {
           from: { opacity: "0", transform: "translateY(6px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        flutuar: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-8px)" },
+        },
+        crescer: {
+          from: { transform: "scaleY(0)" },
+          to: { transform: "scaleY(1)" },
+        },
+        brilho: {
+          "0%, 100%": { transform: "translate(0, 0) scale(1)", opacity: "0.8" },
+          "50%": { transform: "translate(-24px, 18px) scale(1.12)", opacity: "1" },
+        },
       },
       animation: {
+        flutuar: "flutuar 7s ease-in-out infinite",
+        "flutuar-lento": "flutuar 9s ease-in-out -3s infinite",
+        crescer: "crescer 0.7s cubic-bezier(0.22, 1, 0.36, 1) both",
+        brilho: "brilho 12s ease-in-out infinite",
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.3s ease-out",

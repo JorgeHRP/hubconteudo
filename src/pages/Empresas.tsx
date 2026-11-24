@@ -18,10 +18,11 @@ import { formatDate } from "@/lib/cs-data";
 import type { StatusEmpresa } from "@/lib/types";
 import { PageHeader } from "@/components/PageHeader";
 import { EstadoVazio } from "@/components/EstadoVazio";
+import { EsqueletoLista } from "@/components/Esqueletos";
 import { EmpresaDialog } from "@/components/EmpresaDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -37,7 +38,7 @@ export default function Empresas() {
   const [status, setStatus] = useState("todos");
   const [confirmando, setConfirmando] = useState<string | null>(null);
 
-  const { data: empresas } = useQuery({ queryKey: ["empresas"], queryFn: listarEmpresas });
+  const { data: empresas, isLoading: carregando } = useQuery({ queryKey: ["empresas"], queryFn: listarEmpresas });
   const { data: projetos } = useQuery({ queryKey: ["projetos"], queryFn: listarProjetos });
   const { data: contatos } = useQuery({ queryKey: ["contatos"], queryFn: listarContatosTodos });
   const { data: profiles } = useQuery({ queryKey: ["profiles"], queryFn: listarProfiles });
@@ -101,7 +102,11 @@ export default function Empresas() {
         acao={<EmpresaDialog />}
       />
 
-      {lista.length === 0 ? (
+      {carregando ? (
+        <div role="status" aria-label="Carregando empresas">
+          <EsqueletoLista />
+        </div>
+      ) : lista.length === 0 ? (
         <EstadoVazio
           icone={Building2}
           titulo="Nenhuma empresa cadastrada"
@@ -110,18 +115,19 @@ export default function Empresas() {
         />
       ) : (
         <>
-          <div className="mb-5 flex flex-col gap-2 sm:flex-row">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search aria-hidden className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                className="pl-9"
+                className="bg-card pl-9"
                 placeholder="Buscar por nome, razão social ou CNPJ…"
+                aria-label="Buscar empresa"
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
               />
             </div>
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="sm:w-52"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="bg-card sm:w-52" aria-label="Filtrar por status"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os status</SelectItem>
                 {(Object.keys(statusEmpresaLabels) as StatusEmpresa[]).map((st) => (
@@ -131,7 +137,7 @@ export default function Empresas() {
             </Select>
           </div>
 
-          <p className="mb-3 text-xs text-muted-foreground">
+          <p className="mb-3 text-xs tabular-nums text-muted-foreground">
             {filtradas.length === lista.length
               ? `${lista.length} ${lista.length === 1 ? "empresa cadastrada" : "empresas cadastradas"}`
               : `${filtradas.length} de ${lista.length}`}
@@ -144,44 +150,46 @@ export default function Empresas() {
               descricao="Ajuste a busca ou o status."
             />
           ) : (
-            <div className="space-y-2">
+            <Card className="overflow-hidden">
+              <ul className="divide-y">
               {filtradas.map((e) => {
                 const frentes = frentesDe(e.id);
                 const contato = contatoPrincipal(e.id);
                 const equipe = equipeDe(e.id);
                 return (
-                  <Card key={e.id} className="group">
-                    <CardContent className="flex flex-wrap items-start gap-4 p-4 pt-4">
-                      <div className="min-w-0 flex-1">
+                  <li key={e.id} className="transition-colors hover:bg-muted/40">
+                    <div className="flex flex-wrap items-start gap-x-4 gap-y-3 px-4 py-3 sm:px-5">
+                      <div className="min-w-0 flex-1 basis-64">
                         <div className="flex flex-wrap items-center gap-2">
-                          <Link to={`/cs/${e.id}`} className="font-medium hover:text-primary">
+                          <Link to={`/cs/${e.id}`}
+                            className="rounded-sm font-medium text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
                             {e.nome_fantasia}
                           </Link>
-                          <Badge variant={statusEmpresaVariant[e.status]} className="text-[9px]">
+                          <Badge variant={statusEmpresaVariant[e.status]}>
                             {statusEmpresaLabels[e.status]}
                           </Badge>
                         </div>
 
-                        <p className="truncate text-xs text-muted-foreground">
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
                           {e.razao_social}
-                          {e.cnpj && ` · ${e.cnpj}`}
+                          {e.cnpj && <span className="tabular-nums">{` · ${e.cnpj}`}</span>}
                         </p>
 
-                        <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+                        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                           {enderecoDe(e) && (
                             <span className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3" /> {enderecoDe(e)}
+                              <MapPin className="h-3 w-3 shrink-0" aria-hidden /> {enderecoDe(e)}
                             </span>
                           )}
                           {e.site && (
                             <a href={e.site} target="_blank" rel="noreferrer"
-                              className="flex items-center gap-1 hover:underline">
-                              <Globe className="h-3 w-3" /> site
+                              className="flex items-center gap-1 rounded-sm text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+                              <Globe className="h-3 w-3 shrink-0" aria-hidden /> site
                             </a>
                           )}
                           {contato && (
                             <span className="flex items-center gap-1">
-                              <Users className="h-3 w-3" /> {contato.nome}
+                              <Users className="h-3 w-3 shrink-0" aria-hidden /> {contato.nome}
                             </span>
                           )}
                           {/* O responsável já aparece com estrela na equipe abaixo;
@@ -197,7 +205,7 @@ export default function Empresas() {
                           <div className="mt-2 flex flex-wrap gap-1">
                             {frentes.map((p) => (
                               <span key={p.id}
-                                className={cn("rounded px-1.5 py-0.5 text-[9px] font-medium",
+                                className={cn("rounded-md px-1.5 py-0.5 text-xs font-medium",
                                   tipoProjetoTom[p.tipo])}>
                                 {tipoProjetoLabels[p.tipo]}
                               </span>
@@ -209,14 +217,14 @@ export default function Empresas() {
                             um bloco vazio em toda empresa seria só ruído. */}
                         {equipe.length > 0 && (
                           <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                            <span className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-                              <UsersRound className="h-3 w-3" /> Equipe
+                            <span className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              <UsersRound className="h-3 w-3" aria-hidden /> Equipe
                             </span>
                             {equipe.slice(0, 4).map((a) => (
                               <span key={a.id}
                                 className={cn(
-                                  "flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px]",
-                                  a.respondePelaConta && "border-primary/40 bg-primary/5"
+                                  "flex items-center gap-1 rounded-md border bg-card px-2 py-0.5 text-xs",
+                                  a.respondePelaConta && "border-primary/30 bg-primary/10"
                                 )}
                                 title={
                                   `${a.pessoa!.nome} — ${funcaoEquipeLabels[a.funcao]}` +
@@ -224,7 +232,7 @@ export default function Empresas() {
                                 }
                               >
                                 {a.respondePelaConta && (
-                                  <Star className="h-2.5 w-2.5 fill-primary text-primary" />
+                                  <Star className="h-3 w-3 shrink-0 fill-primary text-primary" aria-hidden />
                                 )}
                                 {a.pessoa!.nome.split(" ")[0]}
                                 <span className="text-muted-foreground">
@@ -233,7 +241,7 @@ export default function Empresas() {
                               </span>
                             ))}
                             {equipe.length > 4 && (
-                              <span className="text-[10px] text-muted-foreground">
+                              <span className="text-xs tabular-nums text-muted-foreground">
                                 +{equipe.length - 4}
                               </span>
                             )}
@@ -241,15 +249,15 @@ export default function Empresas() {
                         )}
                       </div>
 
-                      <div className="flex shrink-0 items-center gap-1">
+                      <div className="-ml-2 flex shrink-0 items-center gap-1 sm:ml-0">
                         {confirmando === e.id ? (
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[11px] text-muted-foreground">Remover?</span>
-                            <Button variant="destructive" size="sm" className="h-7 px-2 text-[10px]"
+                          <div className="ml-2 flex items-center gap-1.5 sm:ml-0">
+                            <span className="text-xs text-muted-foreground">Remover?</span>
+                            <Button variant="destructive" size="sm" className="px-3 text-xs"
                               onClick={() => apagar.mutate(e.id)}>
                               Sim
                             </Button>
-                            <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px]"
+                            <Button variant="ghost" size="sm" className="px-3 text-xs"
                               onClick={() => setConfirmando(null)}>
                               Não
                             </Button>
@@ -257,26 +265,29 @@ export default function Empresas() {
                         ) : (
                           <>
                             <EmpresaDialog empresa={e} gatilho={
-                              <Button variant="ghost" size="icon" className="h-8 w-8" title="Editar cadastro">
+                              <Button variant="ghost" size="icon" className="h-9 w-9"
+                                title="Editar cadastro" aria-label={`Editar cadastro de ${e.nome_fantasia}`}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
                             } />
-                            <Button variant="ghost" size="icon" className="h-8 w-8"
-                              title="Remover da carteira"
+                            <Button variant="ghost" size="icon"
+                              className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                              title="Remover da carteira" aria-label={`Remover ${e.nome_fantasia} da carteira`}
                               onClick={() => setConfirmando(e.id)}>
-                              <Trash2 className="h-4 w-4 text-muted-foreground" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
-                            <Button asChild variant="ghost" size="sm" className="h-8 text-xs">
+                            <Button asChild variant="ghost" size="sm" className="text-xs">
                               <Link to={`/cs/${e.id}`}>Abrir ficha <ArrowRight /></Link>
                             </Button>
                           </>
                         )}
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </li>
                 );
               })}
-            </div>
+              </ul>
+            </Card>
           )}
         </>
       )}

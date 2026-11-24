@@ -1,20 +1,22 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Receipt, Lock, Plus, Trash2, FileText } from "lucide-react";
+import { Receipt, Lock, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   criarDocumento, listarDocumentos, listarProfiles, podeEnviarDocumento, removerDocumento,
 } from "@/data/store";
 import { DOCUMENTO_ACEITA, DOCUMENTO_MAX_BYTES } from "@/integrations/supabase/documentos";
-import { BaixarDocumento } from "@/components/BaixarDocumento";
+import { BaixarDocumento, IconeDocumento } from "@/components/BaixarDocumento";
 import { formatDate } from "@/lib/cs-data";
 import { PageHeader } from "@/components/PageHeader";
 import { ContrachequesLote } from "@/components/ContrachequesLote";
 import { EstadoVazio } from "@/components/EstadoVazio";
+import { EsqueletoTabela } from "@/components/Esqueletos";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -71,39 +73,73 @@ export default function Contracheques() {
   const nomeDe = (id: string | null) => profiles?.find((p) => p.user_id === id)?.nome ?? "—";
 
   const Lista = ({ itens, mostrarDono }: { itens: typeof pessoais; mostrarDono?: boolean }) => (
-    <div className="space-y-2">
-      {itens.map((d) => (
-        <Card key={d.id}>
-          <CardContent className="flex items-center gap-3 p-4 pt-4">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10">
-              <FileText className="h-4 w-4 text-primary" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{d.nome}</p>
-              <p className="text-xs text-muted-foreground">
-                {mostrarDono && <span className="font-medium">{nomeDe(d.user_id)} · </span>}
-                {d.competencia
-                  ? new Date(d.competencia + "T12:00:00").toLocaleDateString("pt-BR", {
-                      month: "long", year: "numeric",
-                    })
-                  : (d.arquivo_nome ?? "—")}{" "}
-                · enviado em {formatDate(d.created_at.slice(0, 10))}
-              </p>
-            </div>
-            <Badge variant="secondary" className="hidden shrink-0 text-[9px] sm:inline-flex">
-              {d.categoria === "contracheque" ? "Contracheque" : "Documento pessoal"}
-            </Badge>
-            <BaixarDocumento doc={d} />
-            {podeGerir && (
-              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" title="Remover"
-                disabled={apagar.isPending} onClick={() => apagar.mutate(d.id)}>
-                <Trash2 className="h-4 w-4 text-muted-foreground" />
-              </Button>
-            )}
-          </CardContent>
+    <div>
+      {!documentos && (
+        <div role="status" aria-label="Carregando documentos">
+          <EsqueletoTabela linhas={4} colunas={mostrarDono ? 5 : 4} />
+        </div>
+      )}
+      {itens.length > 0 && (
+        <Card className="overflow-hidden">
+          <Table className={mostrarDono ? "min-w-[46rem]" : "min-w-[38rem]"}>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="pl-4 sm:pl-5">Documento</TableHead>
+                {mostrarDono && <TableHead>Colaborador</TableHead>}
+                <TableHead>Competência</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Enviado em</TableHead>
+                <TableHead className="pr-4 text-right sm:pr-5">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {itens.map((d) => (
+                <TableRow key={d.id}>
+                  <TableCell className="py-2.5 pl-4 sm:pl-5">
+                    <div className="flex items-center gap-3">
+                      <IconeDocumento doc={d} className="h-9 w-9 [&_svg]:h-4 [&_svg]:w-4" />
+                      <span className="max-w-[16rem] truncate font-medium" title={d.nome}>{d.nome}</span>
+                    </div>
+                  </TableCell>
+                  {mostrarDono && (
+                    <TableCell className="whitespace-nowrap py-2.5">{nomeDe(d.user_id)}</TableCell>
+                  )}
+                  <TableCell className="whitespace-nowrap py-2.5 text-muted-foreground">
+                    <span className="inline-block max-w-[14rem] truncate align-middle first-letter:uppercase">
+                      {d.competencia
+                        ? new Date(d.competencia + "T12:00:00").toLocaleDateString("pt-BR", {
+                            month: "long", year: "numeric",
+                          })
+                        : (d.arquivo_nome ?? "—")}
+                    </span>
+                  </TableCell>
+                  <TableCell className="py-2.5">
+                    <Badge variant={d.categoria === "contracheque" ? "info" : "secondary"} className="whitespace-nowrap">
+                      {d.categoria === "contracheque" ? "Contracheque" : "Documento pessoal"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap py-2.5 tabular-nums text-muted-foreground">
+                    {formatDate(d.created_at.slice(0, 10))}
+                  </TableCell>
+                  <TableCell className="py-2.5 pr-4 sm:pr-5">
+                    <div className="flex items-center justify-end gap-1">
+                      <BaixarDocumento doc={d} />
+                      {podeGerir && (
+                        <Button variant="ghost" size="icon" title="Remover" aria-label={`Remover ${d.nome}`}
+                          className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+                          disabled={apagar.isPending} onClick={() => apagar.mutate(d.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </Card>
-      ))}
-      {itens.length === 0 && (
+      )}
+      {documentos && itens.length === 0 && (
         <EstadoVazio
           icone={Receipt}
           titulo="Nenhum documento"
@@ -125,7 +161,7 @@ export default function Contracheques() {
         subtitulo="Área restrita — cada pessoa vê apenas os próprios documentos"
         acao={
           podeGerir && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <ContrachequesLote />
             <Dialog open={aberto} onOpenChange={(v) => { setAberto(v); if (!v) setArquivo(null); }}>
               <DialogTrigger asChild>
@@ -213,12 +249,12 @@ export default function Contracheques() {
         }
       />
 
-      <div className="mb-4 flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-xs">
-        <Lock className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-        <span className="text-muted-foreground">
+      <div className="mb-6 flex items-start gap-2.5 rounded-md border border-warning/30 bg-warning/15 px-3.5 py-3 text-sm">
+        <Lock aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-warning-strong" />
+        <p className="leading-relaxed text-foreground/80">
           Estes arquivos são pessoais. Cada pessoa abre só os próprios; quem cuida de
           colaboradores abre todos. O link de download vale por 5 minutos.
-        </span>
+        </p>
       </div>
 
       {podeGerir ? (

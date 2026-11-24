@@ -6,12 +6,12 @@ import { toast } from "sonner";
 import { alocarNaEquipe, listarEquipe, listarProfiles, removerAlocacao } from "@/data/store";
 import { funcaoEquipeLabels, funcaoEquipeTom } from "@/lib/labels-clientes";
 import type { FuncaoEquipe } from "@/lib/types";
-import { EstadoVazio } from "@/components/EstadoVazio";
 import { AvatarPessoa } from "@/components/AvatarPessoa";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -90,10 +90,11 @@ export function EquipeAlocada({ empresaId }: { empresaId: string }) {
             </Select>
             {/* Só o master cadastrado: a lista parece quebrada sem esta explicação. */}
             {ativos.length <= 1 && (
-              <p className="mt-1.5 text-[11px] text-muted-foreground">
+              <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
                 A lista mostra os colaboradores ativos do sistema. Para alocar mais gente,
                 cadastre em{" "}
-                <Link to="/colaboradores" className="underline hover:text-foreground">
+                <Link to="/colaboradores"
+                  className="rounded-sm font-medium text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
                   Colaboradores
                 </Link>
                 .
@@ -112,10 +113,10 @@ export function EquipeAlocada({ empresaId }: { empresaId: string }) {
               </SelectContent>
             </Select>
           </div>
-          <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+          <label className="flex min-h-9 cursor-pointer items-center gap-2 text-sm text-muted-foreground">
             <input type="checkbox" checked={form.principal}
               onChange={(e) => setForm({ ...form, principal: e.target.checked })}
-              className="h-3.5 w-3.5 accent-[hsl(var(--primary))]" />
+              className="h-4 w-4 shrink-0 accent-[hsl(var(--primary))]" />
             Principal desta função
             {form.funcao === "cs" && " (vira o responsável da conta)"}
           </label>
@@ -128,51 +129,74 @@ export function EquipeAlocada({ empresaId }: { empresaId: string }) {
   );
 
   return (
-    <section>
-      <div className="mb-3 flex items-center justify-between">
-        <p className="text-sm font-semibold">Equipe alocada</p>
+    <Card className="overflow-hidden">
+      <CardHeader className="flex-row flex-wrap items-center justify-between gap-x-4 gap-y-2 space-y-0 pb-4">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <UsersRound className="h-4 w-4 text-accent" aria-hidden /> Equipe alocada
+        </CardTitle>
         {dialogo}
-      </div>
+      </CardHeader>
 
-      {equipe?.length === 0 ? (
-        <EstadoVazio
-          icone={UsersRound}
-          titulo="Ninguém alocado nesta conta"
-          descricao="Defina quem atende este cliente em cada frente. Quem está alocado aparece primeiro ao escolher o responsável de uma tarefa."
-          acao={dialogo}
-        />
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {equipe?.map((a) => (
-            <Card key={a.id}>
-              <CardContent className="flex items-center gap-3 p-4 pt-4">
-                <AvatarPessoa nome={nomeDe(a.user_id)} foto={fotoDe(a.user_id)}
-                  className="h-10 w-10 shrink-0" classeIniciais="text-[10px]" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{nomeDe(a.user_id)}</p>
-                  <div className="mt-1 flex flex-wrap items-center gap-1">
-                    <span className={cn("rounded px-1.5 py-0.5 text-[9px] font-medium", funcaoEquipeTom[a.funcao])}>
-                      {funcaoEquipeLabels[a.funcao]}
-                    </span>
-                    {a.principal && (
-                      <Badge variant="info" className="gap-1 text-[9px]">
-                        <Star className="h-2.5 w-2.5" /> Principal
-                      </Badge>
-                    )}
-                  </div>
-                  {cargoDe(a.user_id) && (
-                    <p className="mt-1 truncate text-[10px] text-muted-foreground">{cargoDe(a.user_id)}</p>
-                  )}
-                </div>
-                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0"
-                  onClick={() => remover.mutate(a.id)}>
-                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                </Button>
-              </CardContent>
-            </Card>
+      {!equipe ? (
+        <div className="divide-y border-t" aria-hidden>
+          {[0, 1].map((i) => (
+            <div key={i} className="flex items-center gap-3 px-5 py-3">
+              <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-3.5 w-2/5" />
+                <Skeleton className="h-3 w-3/5" />
+              </div>
+            </div>
           ))}
         </div>
+      ) : equipe.length === 0 ? (
+        <div className="flex items-start gap-3 border-t px-5 py-4">
+          <span
+            aria-hidden
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground"
+          >
+            <UsersRound className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-medium">Ninguém alocado nesta conta</p>
+            <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
+              Defina quem atende este cliente em cada frente. Quem está alocado aparece primeiro ao
+              escolher o responsável de uma tarefa.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <ul className="divide-y border-t">
+          {equipe.map((a) => (
+            <li key={a.id} className="flex items-center gap-3 px-5 py-3">
+              <AvatarPessoa nome={nomeDe(a.user_id)} foto={fotoDe(a.user_id)}
+                className="h-9 w-9 shrink-0" classeIniciais="bg-primary/10 text-xs font-semibold text-primary" />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <p className="min-w-0 truncate text-sm font-medium">{nomeDe(a.user_id)}</p>
+                  <span className={cn("rounded-md px-2 py-0.5 text-xs font-medium", funcaoEquipeTom[a.funcao])}>
+                    {funcaoEquipeLabels[a.funcao]}
+                  </span>
+                  {a.principal && (
+                    <Badge variant="info" className="gap-1">
+                      <Star className="h-3 w-3" aria-hidden /> Principal
+                    </Badge>
+                  )}
+                </div>
+                {cargoDe(a.user_id) && (
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{cargoDe(a.user_id)}</p>
+                )}
+              </div>
+              <Button variant="ghost" size="icon"
+                className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+                title="Remover alocação" aria-label={`Remover alocação de ${nomeDe(a.user_id)}`}
+                onClick={() => remover.mutate(a.id)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </li>
+          ))}
+        </ul>
       )}
-    </section>
+    </Card>
   );
 }

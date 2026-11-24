@@ -9,7 +9,7 @@ export interface EtapaFunilDados {
 }
 
 const fundo: Record<EtapaFunilDados["tom"], string> = {
-  primary: "gradient-primary",
+  primary: "bg-primary",
   success: "bg-success",
   destructive: "bg-destructive",
 };
@@ -22,23 +22,23 @@ export function FunilBarras({ dados }: { dados: EtapaFunilDados[] }) {
   const maximo = Math.max(...dados.map((d) => d.valor), 1);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {dados.map((d) => {
         const pct = (d.valor / maximo) * 100;
         return (
-          <div key={d.etapa} className="group">
-            <div className="mb-1 flex items-baseline justify-between gap-2">
-              <span className="text-xs font-medium">{d.etapa}</span>
-              <span className="shrink-0 text-xs text-muted-foreground">
-                {formatCurrency(d.valor)}
-                <span className="ml-2 text-[10px]">
+          <div key={d.etapa}>
+            <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+              <span className="text-xs font-medium text-foreground">{d.etapa}</span>
+              <span className="text-xs tabular-nums text-muted-foreground">
+                <span className="font-medium text-foreground">{formatCurrency(d.valor)}</span>
+                <span className="ml-2">
                   {d.quantidade} {d.quantidade === 1 ? "negócio" : "negócios"}
                 </span>
               </span>
             </div>
-            <div className="h-6 overflow-hidden rounded-md bg-muted">
+            <div className="h-3 overflow-hidden rounded-full bg-muted">
               <div
-                className={cn("h-full rounded-md transition-all duration-500", fundo[d.tom])}
+                className={cn("h-full rounded-full transition-all duration-500", fundo[d.tom])}
                 style={{ width: `${Math.max(pct, d.valor > 0 ? 2 : 0)}%` }}
                 title={`${d.etapa}: ${formatCurrency(d.valor)}`}
               />

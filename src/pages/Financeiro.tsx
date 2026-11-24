@@ -10,22 +10,38 @@ import { EstadoVazio } from "@/components/EstadoVazio";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EsqueletoIndicadores, EsqueletoLista } from "@/components/Esqueletos";
+import { cn } from "@/lib/utils";
 
 function Kpi({
-  icone: Icone, rotulo, valor, pendente,
+  icone: Icone, rotulo, valor, pendente, tom = "bg-primary/10 text-primary",
 }: {
-  icone: typeof Wallet; rotulo: string; valor: string; pendente?: boolean;
+  icone: typeof Wallet; rotulo: string; valor: string; pendente?: boolean; tom?: string;
 }) {
   return (
     <Card>
-      <CardContent className="p-4 pt-4">
-        <div className="mb-2 flex items-center justify-between">
+      <CardContent className="flex items-start justify-between gap-3 p-4">
+        <div className="min-w-0">
           <p className="text-xs text-muted-foreground">{rotulo}</p>
-          <Icone className="h-4 w-4 text-primary" />
+          <p
+            className={cn(
+              "mt-1.5 break-words font-display text-xl font-semibold leading-tight tabular-nums sm:text-2xl",
+              pendente && "text-muted-foreground/50"
+            )}
+          >
+            {valor}
+          </p>
+          {pendente && <p className="mt-1 text-xs text-muted-foreground">Sem fonte conectada</p>}
         </div>
-        <p className={pendente ? "text-2xl font-bold text-muted-foreground/40" : "text-2xl font-bold"}>
-          {valor}
-        </p>
+        <span
+          aria-hidden
+          className={cn(
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-md",
+            pendente ? "bg-muted text-muted-foreground" : tom
+          )}
+        >
+          <Icone className="h-4 w-4" />
+        </span>
       </CardContent>
     </Card>
   );
@@ -53,15 +69,22 @@ export default function Financeiro() {
         subtitulo="Receitas, despesas e reembolsos da operação"
       />
 
+      {!integracoes || !viagens ? (
+        <div role="status" aria-label="Carregando dados financeiros" className="space-y-6">
+          <EsqueletoIndicadores />
+          <EsqueletoLista linhas={4} />
+        </div>
+      ) : (
+      <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Kpi icone={TrendingUp} rotulo="Receita do mês" valor={contabilConectada ? formatCurrency(0) : "—"} pendente={!contabilConectada} />
-        <Kpi icone={TrendingDown} rotulo="Despesa do mês" valor={contabilConectada ? formatCurrency(0) : "—"} pendente={!contabilConectada} />
+        <Kpi icone={TrendingUp} rotulo="Receita do mês" valor={contabilConectada ? formatCurrency(0) : "—"} pendente={!contabilConectada} tom="bg-success/10 text-success" />
+        <Kpi icone={TrendingDown} rotulo="Despesa do mês" valor={contabilConectada ? formatCurrency(0) : "—"} pendente={!contabilConectada} tom="bg-destructive/10 text-destructive" />
         <Kpi icone={PiggyBank} rotulo="Resultado" valor={contabilConectada ? formatCurrency(0) : "—"} pendente={!contabilConectada} />
-        <Kpi icone={Plane} rotulo="Reembolsos a pagar" valor={formatCurrency(totalReembolso)} />
+        <Kpi icone={Plane} rotulo="Reembolsos a pagar" valor={formatCurrency(totalReembolso)} tom="bg-accent/10 text-accent" />
       </div>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+      <div className="grid gap-4 lg:grid-cols-3 lg:items-start">
+        <div className="min-w-0 lg:col-span-2">
           {!contabilConectada ? (
             <EstadoVazio
               icone={Plug}
@@ -75,11 +98,13 @@ export default function Financeiro() {
             />
           ) : (
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Movimentação</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <TrendingUp className="h-4 w-4 text-accent" aria-hidden /> Movimentação
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="py-8 text-center text-sm text-muted-foreground">
+                <p className="rounded-md border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">
                   Aguardando a primeira sincronização.
                 </p>
               </CardContent>
@@ -87,67 +112,76 @@ export default function Financeiro() {
           )}
         </div>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Reembolsos de viagem</CardTitle>
+        <Card className="min-w-0 overflow-hidden">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Plane className="h-4 w-4 text-accent" aria-hidden /> Reembolsos de viagem
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between rounded-md bg-muted/40 p-3">
-              <div>
-                <p className="text-xs text-muted-foreground">Aguardando aprovação</p>
-                <p className="text-lg font-bold">{aguardando.length}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">Aprovados a pagar</p>
-                <p className="text-lg font-bold">{aReembolsar.length}</p>
-              </div>
-            </div>
 
-            {[...aguardando, ...aReembolsar].slice(0, 5).map((v) => (
-              <div key={v.id} className="flex items-center justify-between border-b pb-2 text-sm last:border-0">
-                <span className="min-w-0 truncate">{v.titulo}</span>
-                <div className="flex shrink-0 items-center gap-2">
-                  <span className="text-xs">
-                    {formatCurrency(v.despesas.reduce((s, d) => s + d.valor, 0))}
-                  </span>
-                  <Badge variant={viagemStatusVariant[v.status]} className="text-[9px]">
+          <div className="grid grid-cols-2 divide-x border-t bg-muted/50">
+            <div className="px-5 py-3">
+              <p className="text-xs text-muted-foreground">Aguardando aprovação</p>
+              <p className="mt-1 font-display text-xl font-semibold leading-none tabular-nums">{aguardando.length}</p>
+            </div>
+            <div className="px-5 py-3">
+              <p className="text-xs text-muted-foreground">Aprovados a pagar</p>
+              <p className="mt-1 font-display text-xl font-semibold leading-none tabular-nums">{aReembolsar.length}</p>
+            </div>
+          </div>
+
+          {aguardando.length === 0 && aReembolsar.length === 0 ? (
+            <p className="border-t px-5 py-6 text-center text-sm text-muted-foreground">
+              Nenhum reembolso em aberto.
+            </p>
+          ) : (
+            <ul className="divide-y border-t">
+              {[...aguardando, ...aReembolsar].slice(0, 5).map((v) => (
+                <li key={v.id} className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{v.titulo}</p>
+                    <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+                      {formatCurrency(v.despesas.reduce((s, d) => s + d.valor, 0))}
+                    </p>
+                  </div>
+                  <Badge variant={viagemStatusVariant[v.status]} className="shrink-0 whitespace-nowrap">
                     {viagemStatusLabels[v.status]}
                   </Badge>
-                </div>
-              </div>
-            ))}
+                </li>
+              ))}
+            </ul>
+          )}
 
-            {aguardando.length === 0 && aReembolsar.length === 0 && (
-              <p className="py-4 text-center text-sm text-muted-foreground">
-                Nenhum reembolso em aberto.
-              </p>
-            )}
-
+          <div className="border-t p-4">
             <Button variant="outline" className="w-full" asChild>
-              <Link to="/viagens">Abrir relatórios de viagem</Link>
+              <Link to="/viagens">Abrir relatórios de viagem <ArrowRight /></Link>
             </Button>
-          </CardContent>
+          </div>
         </Card>
       </div>
 
-      <Card className="mt-4">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Fontes de dados</CardTitle>
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Plug className="h-4 w-4 text-accent" aria-hidden /> Fontes de dados
+          </CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2">
+        <ul className="divide-y border-t">
           {[contaAzul, alfaix].filter(Boolean).map((i) => (
-            <div key={i!.chave} className="flex items-start justify-between gap-3 rounded-md border p-3">
-              <div className="min-w-0">
+            <li key={i!.chave} className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-5 py-3">
+              <div className="min-w-0 flex-1 basis-56">
                 <p className="text-sm font-medium">{i!.nome}</p>
-                <p className="text-xs text-muted-foreground">{i!.descricao}</p>
+                <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{i!.descricao}</p>
               </div>
-              <Badge variant={i!.conectada ? "success" : "secondary"} className="shrink-0 text-[9px]">
+              <Badge variant={i!.conectada ? "success" : "secondary"} className="shrink-0 whitespace-nowrap">
                 {i!.conectada ? "Conectada" : "Não conectada"}
               </Badge>
-            </div>
+            </li>
           ))}
-        </CardContent>
+        </ul>
       </Card>
+      </div>
+      )}
     </div>
   );
 }

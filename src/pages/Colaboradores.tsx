@@ -14,6 +14,7 @@ import { AvatarPessoa } from "@/components/AvatarPessoa";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Colaboradores() {
@@ -42,6 +43,8 @@ export default function Colaboradores() {
     return bate && (departamento === "todos" || p.departamento === departamento) && p.ativo;
   });
 
+  const carregando = profiles === undefined;
+
   return (
     <div className="animate-fade-in">
       <PageHeader
@@ -51,108 +54,139 @@ export default function Colaboradores() {
         acao={podeCadastrar ? <ColaboradorDialog /> : undefined}
       />
 
-      {solides && !solides.conectada && isGestor && (
-        <div className="mb-5 flex items-start gap-2 rounded-md border border-dashed p-3 text-xs text-muted-foreground">
-          <Plug className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          <span>
-            <strong className="text-foreground">Sólides não conectada.</strong> Ao ligar a
-            integração, o ponto registrado de cada pessoa aparece aqui e na ficha individual.
-            Configure em Painel Admin → Integrações.
-          </span>
-        </div>
-      )}
+      <div className="space-y-4">
+        {solides && !solides.conectada && isGestor && (
+          <div className="flex items-start gap-3 rounded-lg border border-info/20 bg-info/10 p-4 text-sm text-muted-foreground">
+            <Plug className="mt-0.5 h-4 w-4 shrink-0 text-info" aria-hidden />
+            <span>
+              <strong className="font-semibold text-foreground">Sólides não conectada.</strong> Ao ligar a
+              integração, o ponto registrado de cada pessoa aparece aqui e na ficha individual.
+              Configure em Painel Admin → Integrações.
+            </span>
+          </div>
+        )}
 
-      <div className="mb-5 flex flex-col gap-2 sm:flex-row">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome, cargo ou departamento…"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Select value={departamento} onValueChange={setDepartamento}>
-          <SelectTrigger className="sm:w-56"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os departamentos</SelectItem>
-            {departamentos.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
+        <Card>
+          <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+              <Input
+                placeholder="Buscar por nome, cargo ou departamento…"
+                aria-label="Buscar colaborador"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={departamento} onValueChange={setDepartamento}>
+              <SelectTrigger className="sm:w-60" aria-label="Filtrar por departamento"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os departamentos</SelectItem>
+                {departamentos.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </Card>
 
-      {filtrados.length === 0 ? (
-        <EstadoVazio
-          icone={UserPlus}
-          titulo={busca || departamento !== "todos" ? "Ninguém com esse filtro" : "Nenhum colaborador cadastrado"}
-          descricao={
-            busca || departamento !== "todos"
-              ? "Ajuste a busca ou o departamento para ver outras pessoas."
-              : "Cadastre a primeira pessoa do time. O acesso ao sistema e o repositório de contracheques são criados junto."
-          }
-          acao={podeCadastrar && !busca ? <ColaboradorDialog /> : undefined}
-        />
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtrados.map((p) => (
-            <Card key={p.id}>
-              <CardContent className="p-5 pt-5">
-                <div className="mb-3 flex items-center gap-3">
-                  <AvatarPessoa nome={p.nome} foto={p.foto_url} className="h-12 w-12"
-                    classeIniciais="gradient-primary text-primary-foreground" />
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold">{p.nome}</p>
-                    <p className="truncate text-xs text-muted-foreground">{p.cargo ?? "—"}</p>
+        {carregando ? (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" role="status" aria-label="Carregando">
+            {Array.from({ length: 6 }, (_, i) => (
+              <Card key={i}>
+                <CardContent className="space-y-4 p-5">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-12 w-12 shrink-0 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-3/5" />
+                      <Skeleton className="h-3 w-2/5" />
+                    </div>
                   </div>
-                </div>
+                  <Skeleton className="h-5 w-24 rounded-md" />
+                  <div className="space-y-2 border-t pt-4">
+                    <Skeleton className="h-3 w-4/5" />
+                    <Skeleton className="h-3 w-3/5" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : filtrados.length === 0 ? (
+          <EstadoVazio
+            icone={UserPlus}
+            titulo={busca || departamento !== "todos" ? "Ninguém com esse filtro" : "Nenhum colaborador cadastrado"}
+            descricao={
+              busca || departamento !== "todos"
+                ? "Ajuste a busca ou o departamento para ver outras pessoas."
+                : "Cadastre a primeira pessoa do time. O acesso ao sistema e o repositório de contracheques são criados junto."
+            }
+            acao={podeCadastrar && !busca ? <ColaboradorDialog /> : undefined}
+          />
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {filtrados.map((p) => (
+              <Card key={p.id} className="flex flex-col">
+                <CardContent className="flex flex-1 flex-col p-5">
+                  <div className="flex items-center gap-3">
+                    <AvatarPessoa nome={p.nome} foto={p.foto_url} className="h-12 w-12 shrink-0"
+                      classeIniciais="bg-primary/10 text-primary font-semibold" />
+                    <div className="min-w-0">
+                      <p className="truncate font-display font-semibold leading-tight text-foreground" title={p.nome}>
+                        {p.nome}
+                      </p>
+                      <p className="mt-0.5 truncate text-sm text-muted-foreground">{p.cargo ?? "—"}</p>
+                    </div>
+                  </div>
 
-                <div className="mb-3 flex flex-wrap gap-1">
-                  {p.departamento && (
-                    <Badge variant="secondary" className="text-[10px]">{p.departamento}</Badge>
-                  )}
-                  <Badge variant="outline" className="text-[10px]">
-                    {roleLabels[papelDe(p.user_id)]}
-                  </Badge>
-                  {p.convite_enviado_em && (
-                    <Badge variant="info" className="text-[10px]">Convite enviado</Badge>
-                  )}
-                </div>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {p.departamento && (
+                      <Badge variant="secondary">{p.departamento}</Badge>
+                    )}
+                    <Badge variant="outline">
+                      {roleLabels[papelDe(p.user_id)]}
+                    </Badge>
+                    {p.convite_enviado_em && (
+                      <Badge variant="info">Convite enviado</Badge>
+                    )}
+                  </div>
 
-                <div className="space-y-1.5 text-xs text-muted-foreground">
-                  <p className="flex items-center gap-2 truncate">
-                    <Mail className="h-3.5 w-3.5 shrink-0" /> {p.email}
-                  </p>
-                  {p.telefone && (
+                  <div className="mt-4 space-y-2 border-t pt-4 text-sm text-muted-foreground">
+                    <p className="flex min-w-0 items-center gap-2">
+                      <Mail className="h-4 w-4 shrink-0" aria-hidden />
+                      <span className="truncate" title={p.email}>{p.email}</span>
+                    </p>
+                    {p.telefone && (
+                      <p className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 shrink-0" aria-hidden /> {p.telefone}
+                      </p>
+                    )}
+                    {veDadosPessoais && p.cpf && (
+                      <p className="flex items-center gap-2">
+                        <IdCard className="h-4 w-4 shrink-0" aria-hidden /> {p.cpf}
+                      </p>
+                    )}
+                    {veDadosPessoais && p.contato_emergencia_nome && (
+                      <p className="flex min-w-0 items-center gap-2">
+                        <HeartPulse className="h-4 w-4 shrink-0 text-destructive" aria-label="Contato de emergência" />
+                        <span className="truncate">
+                          {p.contato_emergencia_nome} · {p.contato_emergencia_telefone}
+                        </span>
+                      </p>
+                    )}
                     <p className="flex items-center gap-2">
-                      <Phone className="h-3.5 w-3.5 shrink-0" /> {p.telefone}
+                      <Briefcase className="h-4 w-4 shrink-0" aria-hidden />
+                      {p.data_admissao ? `Desde ${formatDate(p.data_admissao)}` : "Admissão não informada"}
                     </p>
-                  )}
-                  {veDadosPessoais && p.cpf && (
-                    <p className="flex items-center gap-2">
-                      <IdCard className="h-3.5 w-3.5 shrink-0" /> {p.cpf}
-                    </p>
-                  )}
-                  {veDadosPessoais && p.contato_emergencia_nome && (
-                    <p className="flex items-center gap-2 truncate">
-                      <HeartPulse className="h-3.5 w-3.5 shrink-0 text-destructive" />
-                      {p.contato_emergencia_nome} · {p.contato_emergencia_telefone}
-                    </p>
-                  )}
-                  <p className="flex items-center gap-2">
-                    <Briefcase className="h-3.5 w-3.5 shrink-0" />
-                    {p.data_admissao ? `Desde ${formatDate(p.data_admissao)}` : "Admissão não informada"}
-                  </p>
-                  {solides?.conectada && (
-                    <p className="flex items-center gap-2">
-                      <Clock className="h-3.5 w-3.5 shrink-0" /> Ponto sincronizado
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+                    {solides?.conectada && (
+                      <p className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 shrink-0 text-success" aria-hidden /> Ponto sincronizado
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

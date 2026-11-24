@@ -14,14 +14,14 @@ export function EstadoVazio({
   acao?: ReactNode;
 }) {
   return (
-    <Card className="border border-dashed bg-transparent shadow-none">
-      <CardContent className="flex flex-col items-center justify-center gap-3 px-6 py-14 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-          <Icone className="h-6 w-6 text-muted-foreground" />
+    <Card className="border-dashed bg-card/60 shadow-none">
+      <CardContent className="flex flex-col items-center justify-center gap-4 px-6 py-14 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-xl border bg-card shadow-card">
+          <Icone className="h-6 w-6 text-accent" />
         </div>
         <div>
-          <p className="font-medium">{titulo}</p>
-          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">{descricao}</p>
+          <p className="font-display text-base font-semibold">{titulo}</p>
+          <p className="mx-auto mt-1.5 max-w-md text-sm leading-relaxed text-muted-foreground">{descricao}</p>
         </div>
         {acao}
       </CardContent>

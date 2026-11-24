@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Mail, UserPlus, AlertCircle } from "lucide-react";
+import { Mail, UserPlus, AlertCircle, Check } from "lucide-react";
 import { toast } from "sonner";
 import { criarColaborador, type NovoColaborador } from "@/data/store";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -84,7 +84,7 @@ export function ColaboradorDialog({ gatilho }: { gatilho?: ReactNode }) {
         {gatilho ?? <Button><UserPlus /> Novo colaborador</Button>}
       </DialogTrigger>
 
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl gap-5">
         <DialogHeader>
           <DialogTitle>Novo colaborador</DialogTitle>
           <DialogDescription>
@@ -92,12 +92,12 @@ export function ColaboradorDialog({ gatilho }: { gatilho?: ReactNode }) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5">
+        <div className="space-y-6">
           <section>
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Dados pessoais
             </p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <Label htmlFor="col-nome">Nome completo *</Label>
                 <Input id="col-nome" className="mt-1.5" value={form.nome}
@@ -143,7 +143,7 @@ export function ColaboradorDialog({ gatilho }: { gatilho?: ReactNode }) {
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Contato de emergência
             </p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label htmlFor="col-emerg-nome">Nome *</Label>
                 <Input id="col-emerg-nome" className="mt-1.5" value={form.contato_emergencia_nome}
@@ -165,7 +165,7 @@ export function ColaboradorDialog({ gatilho }: { gatilho?: ReactNode }) {
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Cargo e acesso
             </p>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label htmlFor="col-cargo">Cargo</Label>
                 <Input id="col-cargo" className="mt-1.5" value={form.cargo}
@@ -182,14 +182,14 @@ export function ColaboradorDialog({ gatilho }: { gatilho?: ReactNode }) {
                 <Input id="col-email" type="email" className="mt-1.5" value={form.email}
                   placeholder="nome@conteudomartech.com.br"
                   onChange={(e) => set("email", e.target.value)} />
-                <label className="mt-2 flex cursor-pointer items-start gap-2 text-xs text-muted-foreground">
+                <label className="mt-2 flex min-h-9 cursor-pointer items-center gap-2.5 text-sm text-muted-foreground">
                   <input
                     type="checkbox" checked={form.enviar_convite}
                     onChange={(e) => set("enviar_convite", e.target.checked)}
-                    className="mt-0.5 h-3.5 w-3.5 accent-[hsl(var(--primary))]"
+                    className="h-4 w-4 shrink-0 accent-[hsl(var(--primary))]"
                   />
                   <span className="flex items-center gap-1.5">
-                    <Mail className="h-3.5 w-3.5" />
+                    <Mail className="h-4 w-4 shrink-0" aria-hidden />
                     Enviar e-mail com a senha de primeiro acesso
                   </span>
                 </label>
@@ -198,7 +198,7 @@ export function ColaboradorDialog({ gatilho }: { gatilho?: ReactNode }) {
               <div className="sm:col-span-2">
                 <Label>Papel no sistema</Label>
                 <Select value={form.role} onValueChange={(v) => set("role", v as AppRole)}>
-                  <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="mt-1.5" aria-label="Papel no sistema"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {(Object.keys(roleLabels) as AppRole[])
                       .filter((r) => r !== "master" || isMaster)
@@ -224,7 +224,7 @@ export function ColaboradorDialog({ gatilho }: { gatilho?: ReactNode }) {
                 ? "Master enxerga todos os painéis por definição."
                 : "Marque o que esta pessoa poderá acessar. O hub interno e os documentos próprios já vêm liberados."}
             </p>
-            <div className="grid gap-1.5 sm:grid-cols-2">
+            <div className="grid gap-2 sm:grid-cols-2">
               {modulosDisponiveis.map((m) => {
                 const ativo = form.role === "master" || form.modulos.includes(m);
                 return (
@@ -232,21 +232,22 @@ export function ColaboradorDialog({ gatilho }: { gatilho?: ReactNode }) {
                     key={m}
                     type="button"
                     disabled={form.role === "master"}
+                    aria-pressed={ativo}
                     onClick={() => alternarModulo(m)}
                     className={cn(
-                      "flex items-start gap-2.5 rounded-md border p-2.5 text-left transition-colors disabled:opacity-60",
-                      ativo ? "border-primary bg-primary/5" : "hover:bg-muted/40"
+                      "flex items-start gap-3 rounded-md border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60",
+                      ativo ? "border-primary bg-primary/5" : "hover:bg-muted/50"
                     )}
                   >
                     <div className={cn(
                       "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border",
                       ativo ? "border-primary bg-primary" : "border-input"
                     )}>
-                      {ativo && <span className="text-[10px] leading-none text-primary-foreground">✓</span>}
+                      {ativo && <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} aria-hidden />}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-medium">{moduloLabels[m]}</p>
-                      <p className="text-[10px] text-muted-foreground">{moduloDescricoes[m]}</p>
+                      <p className="text-sm font-medium leading-tight text-foreground">{moduloLabels[m]}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{moduloDescricoes[m]}</p>
                     </div>
                   </button>
                 );
@@ -254,20 +255,26 @@ export function ColaboradorDialog({ gatilho }: { gatilho?: ReactNode }) {
             </div>
           </section>
 
-          <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
+          <div className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
             O repositório de contracheques da pessoa é criado junto com o cadastro e fica
-            visível <strong>apenas para ela</strong> e para quem tem o painel de Colaboradores.
+            visível <strong className="font-semibold text-foreground">apenas para ela</strong> e para quem tem o painel de Colaboradores.
           </div>
 
           {erro && (
-            <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div role="alert" className="flex items-start gap-2 rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
               {erro}
             </div>
           )}
+        </div>
 
+        {/* Rodapé de ações preso à base do diálogo enquanto o formulário rola. */}
+        <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-col-reverse gap-2 border-t bg-card px-6 py-4 sm:flex-row sm:items-center sm:justify-end">
+          <p className="text-xs text-muted-foreground sm:mr-auto">* Preenchimento obrigatório</p>
+          <DialogClose asChild>
+            <Button type="button" variant="outline">Cancelar</Button>
+          </DialogClose>
           <Button
-            className="w-full"
             disabled={!camposObrigatorios || criar.isPending}
             onClick={() => criar.mutate()}
           >

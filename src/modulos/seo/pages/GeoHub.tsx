@@ -56,18 +56,18 @@ const GeoHub = () => {
   return (
     <div className="space-y-6 max-w-7xl">
       <div>
-        <h1 className="text-2xl font-bold gradient-text">GEO — Generative Engine Optimization</h1>
-        <p className="text-muted-foreground text-sm mt-1">Otimização para mecanismos de busca generativos (IA)</p>
+        <h1 className="text-lg font-semibold leading-tight text-foreground sm:text-xl">GEO — Generative Engine Optimization</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Otimização para mecanismos de busca generativos (IA)</p>
       </div>
       <Tabs defaultValue="overview" className="w-full">
         <div className="relative mb-6">
           {canScrollLeft && (
-            <button onClick={() => scroll("left")} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-background/80 border border-border/50 shadow-sm hover:bg-muted transition-colors">
-              <ChevronLeft className="h-4 w-4 text-foreground" />
+            <button type="button" aria-label="Rolar abas para a esquerda" onClick={() => scroll("left")} className="absolute left-0 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-foreground shadow-pop transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+              <ChevronLeft className="h-4 w-4" aria-hidden />
             </button>
           )}
           <div ref={scrollRef} className="overflow-x-auto" style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}>
-            <TabsList className="bg-muted/50 backdrop-blur-sm border border-border/50 flex-nowrap w-max gap-1 p-1">
+            <TabsList className="w-max flex-nowrap gap-1">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="checklist">Checklist GEO</TabsTrigger>
               <TabsTrigger value="faculdade-sp">Faculdade Particular SP</TabsTrigger>
@@ -84,8 +84,8 @@ const GeoHub = () => {
             </TabsList>
           </div>
           {canScrollRight && (
-            <button onClick={() => scroll("right")} className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-background/80 border border-border/50 shadow-sm hover:bg-muted transition-colors">
-              <ChevronRight className="h-4 w-4 text-foreground" />
+            <button type="button" aria-label="Rolar abas para a direita" onClick={() => scroll("right")} className="absolute right-0 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-foreground shadow-pop transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+              <ChevronRight className="h-4 w-4" aria-hidden />
             </button>
           )}
         </div>

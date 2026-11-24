@@ -26,16 +26,16 @@ const createEmptyRow = (): KeywordAnalysisRow => ({
 
 const getRowClassName = (row: KeywordAnalysisRow): string => {
   const val = row.valeInvestir || "";
-  if (val.includes("✅")) return "bg-emerald-100 dark:bg-emerald-900/40";
-  if (val.includes("⚠️")) return "bg-amber-100 dark:bg-amber-900/40";
-  if (row.dificuldade?.includes("ESEG")) return "bg-blue-100 dark:bg-blue-900/40";
+  if (val.includes("✅")) return "bg-success/10";
+  if (val.includes("⚠️")) return "bg-warning/15";
+  if (row.dificuldade?.includes("ESEG")) return "bg-info/10";
   return "";
 };
 
 const KeywordsESEG = () => (
   <div className="space-y-6">
-    <div className="glass-card p-5">
-      <h3 className="text-sm font-medium text-muted-foreground mb-1">Sobre esta aba</h3>
+    <div className="rounded-lg border bg-card p-4 shadow-card">
+      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sobre esta aba</h3>
       <p className="text-sm text-foreground/80">
         Palavras-chave com <strong>menção direta à marca ESEG</strong> — termos institucionais e branded.
       </p>

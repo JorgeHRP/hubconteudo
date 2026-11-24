@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { allKeywords, type KeywordAnalysisRow } from "@/modulos/seo/data/keywordsAnalysisData";
 import EditableDataTable, { type EditableColumn } from "@/modulos/seo/components/EditableDataTable";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Save } from "lucide-react";
@@ -30,9 +31,9 @@ const createEmptyRow = (): KeywordAnalysisRow => ({
 
 const getRowClassName = (row: KeywordAnalysisRow): string => {
   const val = row.valeInvestir || "";
-  if (val.includes("✅")) return "bg-emerald-100 dark:bg-emerald-900/40";
-  if (val.includes("⚠️")) return "bg-amber-100 dark:bg-amber-900/40";
-  if (row.dificuldade?.includes("ESEG")) return "bg-blue-100 dark:bg-blue-900/40";
+  if (val.includes("✅")) return "bg-success/10";
+  if (val.includes("⚠️")) return "bg-warning/15";
+  if (row.dificuldade?.includes("ESEG")) return "bg-info/10";
   return "";
 };
 
@@ -133,32 +134,32 @@ const KeywordsEscolhidas = () => {
   return (
     <div className="space-y-6">
       {/* Confirmation box - always visible at top */}
-      <div className="glass-card p-5 border-2 border-primary/30">
-        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+      <div className="rounded-lg border border-primary/30 bg-card p-4 shadow-card sm:p-5">
+        <h3 className="mb-3 flex items-center gap-2 font-display text-sm font-semibold text-foreground">
           📋 Selecionadas ({selectedSimWords.length + selectedConsiderarWords.length})
         </h3>
         {selectedSimWords.length > 0 || selectedConsiderarWords.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {selectedSimWords.length > 0 && (
               <div>
-                <p className="text-xs font-medium text-emerald-700 dark:text-emerald-300 mb-2">✅ Sim ({selectedSimWords.length})</p>
+                <p className="mb-2 text-xs font-medium text-success">✅ Sim ({selectedSimWords.length})</p>
                 <div className="flex flex-wrap gap-1.5">
                   {selectedSimWords.map((kw, i) => (
-                    <span key={i} className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 text-xs">
+                    <Badge key={i} variant="success" className="font-normal">
                       {kw}
-                    </span>
+                    </Badge>
                   ))}
                 </div>
               </div>
             )}
             {selectedConsiderarWords.length > 0 && (
               <div>
-                <p className="text-xs font-medium text-amber-700 dark:text-amber-300 mb-2">⚠️ Considerar ({selectedConsiderarWords.length})</p>
+                <p className="mb-2 text-xs font-medium text-warning-strong">⚠️ Considerar ({selectedConsiderarWords.length})</p>
                 <div className="flex flex-wrap gap-1.5">
                   {selectedConsiderarWords.map((kw, i) => (
-                    <span key={i} className="px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 text-xs">
+                    <Badge key={i} variant="warning" className="font-normal">
                       {kw}
-                    </span>
+                    </Badge>
                   ))}
                 </div>
               </div>
@@ -168,83 +169,84 @@ const KeywordsEscolhidas = () => {
           <p className="text-xs text-muted-foreground">Nenhuma palavra-chave selecionada ainda. Marque nas listas abaixo.</p>
         )}
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="glass-card p-5">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="rounded-lg border bg-card p-4 shadow-card">
           <p className="text-xs text-muted-foreground">Total de keywords</p>
-          <p className="text-3xl font-bold text-foreground mt-1">{simList.length + considerarList.length}</p>
-          <p className="text-xs text-muted-foreground mt-1">analisadas</p>
+          <p className="mt-1 font-display text-2xl font-semibold text-foreground">{simList.length + considerarList.length}</p>
+          <p className="mt-1 text-xs text-muted-foreground">analisadas</p>
         </div>
-        <div className="glass-card p-5">
+        <div className="rounded-lg border bg-card p-4 shadow-card">
           <p className="text-xs text-muted-foreground">Volume total/mês</p>
-          <p className="text-3xl font-bold text-foreground mt-1">{totalVolume.toLocaleString("pt-BR")}</p>
-          <p className="text-xs text-muted-foreground mt-1">buscas estimadas</p>
+          <p className="mt-1 font-display text-2xl font-semibold text-foreground">{totalVolume.toLocaleString("pt-BR")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">buscas estimadas</p>
         </div>
-        <div className="glass-card p-5">
+        <div className="rounded-lg border bg-card p-4 shadow-card">
           <p className="text-xs text-muted-foreground">SEO Difficulty médio</p>
-          <p className="text-3xl font-bold text-foreground mt-1">{avgKd.toFixed(1).replace(".", ",")}</p>
-          <p className="text-xs text-muted-foreground mt-1">dificuldade baixa</p>
+          <p className="mt-1 font-display text-2xl font-semibold text-foreground">{avgKd.toFixed(1).replace(".", ",")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">dificuldade baixa</p>
         </div>
-        <div className="glass-card p-5">
+        <div className="rounded-lg border bg-card p-4 shadow-card">
           <p className="text-xs text-muted-foreground">CPC médio</p>
-          <p className="text-3xl font-bold text-foreground mt-1">R$3,79</p>
-          <p className="text-xs text-muted-foreground mt-1">valor comercial médio</p>
+          <p className="mt-1 font-display text-2xl font-semibold text-foreground">R$3,79</p>
+          <p className="mt-1 text-xs text-muted-foreground">valor comercial médio</p>
         </div>
       </div>
 
       {/* Classification */}
-      <div className="glass-card p-5">
-        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Classificação das Keywords</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="rounded-xl bg-emerald-200 dark:bg-emerald-800/40 p-4 text-center">
-            <p className="text-3xl font-bold text-emerald-900 dark:text-emerald-200">{simList.length}</p>
-            <p className="text-sm text-emerald-700 dark:text-emerald-300 mt-1">✅ Sim</p>
+      <div className="rounded-lg border bg-card p-4 shadow-card sm:p-5">
+        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Classificação das Keywords</h3>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="rounded-md border border-success/20 bg-success/10 p-4 text-center">
+            <p className="font-display text-2xl font-semibold text-success">{simList.length}</p>
+            <p className="mt-1 text-sm text-success">✅ Sim</p>
           </div>
-          <div className="rounded-xl bg-amber-200 dark:bg-amber-800/40 p-4 text-center">
-            <p className="text-3xl font-bold text-amber-900 dark:text-amber-200">{considerarList.length}</p>
-            <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">⚠️ Considerar</p>
+          <div className="rounded-md border border-warning/30 bg-warning/15 p-4 text-center">
+            <p className="font-display text-2xl font-semibold text-warning-strong">{considerarList.length}</p>
+            <p className="mt-1 text-sm text-warning-strong">⚠️ Considerar</p>
           </div>
         </div>
       </div>
 
       {/* Keyword Lists with checkboxes */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* SIM list */}
-        <div className="glass-card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+        <div className="rounded-lg border bg-card p-4 shadow-card sm:p-5">
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <h3 className="font-display text-sm font-semibold text-success">
               ✅ Sim ({simList.length})
             </h3>
             <div className="flex gap-1.5">
-              <Button size="sm" variant="outline" onClick={handleSave} className="h-7 px-2 text-xs">
-                <Save className="w-3 h-3 mr-1" /> Salvar
+              <Button size="sm" variant="outline" onClick={handleSave} className="h-9 px-3 text-xs">
+                <Save className="mr-1 h-3.5 w-3.5" /> Salvar
               </Button>
             </div>
           </div>
-          <div className="flex gap-2 mb-3">
+          <div className="mb-3 flex gap-2">
             <Input
               value={newSim}
               onChange={e => setNewSim(e.target.value)}
               placeholder="Nova palavra-chave..."
-              className="h-8 text-sm"
+              aria-label="Nova palavra-chave para a lista Sim"
+              className="h-9 text-sm"
               onKeyDown={e => e.key === "Enter" && addSim()}
             />
-            <Button size="sm" onClick={addSim} className="h-8 px-3">
-              <Plus className="w-3.5 h-3.5" />
+            <Button size="sm" onClick={addSim} className="h-9 w-9 shrink-0 px-0" aria-label="Adicionar palavra-chave à lista Sim">
+              <Plus className="h-4 w-4" />
             </Button>
           </div>
-          <div className="space-y-1 max-h-[400px] overflow-y-auto">
+          <div className="max-h-[400px] space-y-0.5 overflow-y-auto">
             {simList.map((kw, i) => (
               <label
                 key={`${kw}-${i}`}
-                className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg cursor-pointer transition-colors text-sm ${
-                  selectedSim.has(kw) ? "bg-emerald-100 dark:bg-emerald-900/40" : "hover:bg-muted/50"
+                className={`flex min-h-9 cursor-pointer items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors ${
+                  selectedSim.has(kw) ? "bg-success/10" : "hover:bg-muted/50"
                 }`}
               >
                 <input
                   type="checkbox"
                   checked={selectedSim.has(kw)}
                   onChange={() => toggleSim(kw)}
-                  className="w-3.5 h-3.5 rounded border-emerald-400 text-emerald-600 accent-emerald-600"
+                  className="h-4 w-4 shrink-0 rounded border-input accent-[hsl(var(--success))]"
                 />
                 <span className="text-foreground">{kw}</span>
               </label>
@@ -253,42 +255,43 @@ const KeywordsEscolhidas = () => {
         </div>
 
         {/* CONSIDERAR list */}
-        <div className="glass-card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+        <div className="rounded-lg border bg-card p-4 shadow-card sm:p-5">
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <h3 className="font-display text-sm font-semibold text-warning-strong">
               ⚠️ Considerar ({considerarList.length})
             </h3>
             <div className="flex gap-1.5">
-              <Button size="sm" variant="outline" onClick={handleSave} className="h-7 px-2 text-xs">
-                <Save className="w-3 h-3 mr-1" /> Salvar
+              <Button size="sm" variant="outline" onClick={handleSave} className="h-9 px-3 text-xs">
+                <Save className="mr-1 h-3.5 w-3.5" /> Salvar
               </Button>
             </div>
           </div>
-          <div className="flex gap-2 mb-3">
+          <div className="mb-3 flex gap-2">
             <Input
               value={newConsiderar}
               onChange={e => setNewConsiderar(e.target.value)}
               placeholder="Nova palavra-chave..."
-              className="h-8 text-sm"
+              aria-label="Nova palavra-chave para a lista Considerar"
+              className="h-9 text-sm"
               onKeyDown={e => e.key === "Enter" && addConsiderar()}
             />
-            <Button size="sm" onClick={addConsiderar} className="h-8 px-3">
-              <Plus className="w-3.5 h-3.5" />
+            <Button size="sm" onClick={addConsiderar} className="h-9 w-9 shrink-0 px-0" aria-label="Adicionar palavra-chave à lista Considerar">
+              <Plus className="h-4 w-4" />
             </Button>
           </div>
-          <div className="space-y-1 max-h-[400px] overflow-y-auto">
+          <div className="max-h-[400px] space-y-0.5 overflow-y-auto">
             {considerarList.map((kw, i) => (
               <label
                 key={`${kw}-${i}`}
-                className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg cursor-pointer transition-colors text-sm ${
-                  selectedConsiderar.has(kw) ? "bg-amber-100 dark:bg-amber-900/40" : "hover:bg-muted/50"
+                className={`flex min-h-9 cursor-pointer items-center gap-2.5 rounded-md px-3 py-1.5 text-sm transition-colors ${
+                  selectedConsiderar.has(kw) ? "bg-warning/15" : "hover:bg-muted/50"
                 }`}
               >
                 <input
                   type="checkbox"
                   checked={selectedConsiderar.has(kw)}
                   onChange={() => toggleConsiderar(kw)}
-                  className="w-3.5 h-3.5 rounded border-amber-400 text-amber-600 accent-amber-600"
+                  className="h-4 w-4 shrink-0 rounded border-input accent-[hsl(var(--warning))]"
                 />
                 <span className="text-foreground">{kw}</span>
               </label>

@@ -16,6 +16,7 @@ import { flagBadgeVariant, flagLabels, formatCurrency, formatDate } from "@/lib/
 import type { ChurnFlag, TipoProjeto } from "@/lib/types";
 import { PageHeader } from "@/components/PageHeader";
 import { EstadoVazio } from "@/components/EstadoVazio";
+import { EsqueletoIndicadores, EsqueletoLista } from "@/components/Esqueletos";
 import { EmpresaDialog } from "@/components/EmpresaDialog";
 import { ControleCliente } from "@/components/ControleCliente";
 import { Badge } from "@/components/ui/badge";
@@ -29,12 +30,22 @@ function Kpi({ icone: Icone, rotulo, valor, tom }: {
 }) {
   return (
     <Card>
-      <CardContent className="p-4 pt-4">
-        <div className="mb-2 flex items-center justify-between">
+      <CardContent className="flex items-start justify-between gap-3 p-4">
+        <div className="min-w-0">
           <p className="text-xs text-muted-foreground">{rotulo}</p>
-          <Icone className={cn("h-4 w-4", tom ?? "text-primary")} />
+          <p className="mt-1.5 break-words font-display text-xl font-semibold leading-tight tabular-nums sm:text-2xl">
+            {valor}
+          </p>
         </div>
-        <p className="text-2xl font-bold">{valor}</p>
+        <span
+          aria-hidden
+          className={cn(
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-md",
+            tom ?? "bg-primary/10 text-primary"
+          )}
+        >
+          <Icone className="h-4 w-4" />
+        </span>
       </CardContent>
     </Card>
   );
@@ -47,7 +58,7 @@ export default function CS() {
   const [frente, setFrente] = useState("todas");
   const [flag, setFlag] = useState("todas");
 
-  const { data: empresas } = useQuery({ queryKey: ["empresas"], queryFn: listarEmpresas });
+  const { data: empresas, isLoading: carregando } = useQuery({ queryKey: ["empresas"], queryFn: listarEmpresas });
   const { data: projetos } = useQuery({ queryKey: ["projetos"], queryFn: listarProjetos });
   const { data: contatos } = useQuery({ queryKey: ["contatos"], queryFn: listarContatosTodos });
   const { data: profiles } = useQuery({ queryKey: ["profiles"], queryFn: listarProfiles });
@@ -103,7 +114,12 @@ export default function CS() {
         acao={<EmpresaDialog />}
       />
 
-      {listaEmpresas.length === 0 ? (
+      {carregando ? (
+        <div role="status" aria-label="Carregando carteira" className="space-y-6">
+          <EsqueletoIndicadores />
+          <EsqueletoLista />
+        </div>
+      ) : listaEmpresas.length === 0 ? (
         <EstadoVazio
           icone={Users}
           titulo="Nenhum cliente na carteira"
@@ -115,18 +131,18 @@ export default function CS() {
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <Kpi icone={Users} rotulo="Clientes na carteira" valor={listaEmpresas.length} />
             <Kpi icone={TrendingUp} rotulo="MRR somado" valor={formatCurrency(mrrTotal)} />
-            <Kpi icone={AlertTriangle} rotulo="Sinais de atenção" valor={amarelas.length} tom="text-warning" />
-            <Kpi icone={ShieldAlert} rotulo="Em risco" valor={vermelhas.length} tom="text-destructive" />
+            <Kpi icone={AlertTriangle} rotulo="Sinais de atenção" valor={amarelas.length} tom="bg-warning/15 text-warning-strong" />
+            <Kpi icone={ShieldAlert} rotulo="Em risco" valor={vermelhas.length} tom="bg-destructive/10 text-destructive" />
           </div>
 
-          <div className="my-5 flex flex-col gap-2 sm:flex-row">
+          <div className="my-6 flex flex-col gap-2 sm:flex-row">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Buscar cliente…" value={busca}
-                onChange={(e) => setBusca(e.target.value)} className="pl-9" />
+              <Search aria-hidden className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input placeholder="Buscar cliente…" value={busca} aria-label="Buscar cliente"
+                onChange={(e) => setBusca(e.target.value)} className="bg-card pl-9" />
             </div>
             <Select value={frente} onValueChange={setFrente}>
-              <SelectTrigger className="sm:w-48"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="bg-card sm:w-48" aria-label="Filtrar por frente"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas as frentes</SelectItem>
                 {(Object.keys(tipoProjetoLabels) as TipoProjeto[]).map((t) => (
@@ -135,7 +151,7 @@ export default function CS() {
               </SelectContent>
             </Select>
             <Select value={flag} onValueChange={setFlag}>
-              <SelectTrigger className="sm:w-40"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="bg-card sm:w-40" aria-label="Filtrar por flag"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas as flags</SelectItem>
                 <SelectItem value="green">Saudável</SelectItem>
@@ -155,25 +171,26 @@ export default function CS() {
                 const contato = contatoPrincipal(e.id);
                 const f = flagDaConta(e.id);
                 return (
-                  <Card key={e.id} className="flex flex-col">
-                    <CardContent className="flex flex-1 flex-col p-5 pt-5">
-                      <Link to={`/cs/${e.id}`} className="group min-w-0">
+                  <Card key={e.id} className="flex flex-col transition-colors hover:border-primary/30">
+                    <CardContent className="flex flex-1 flex-col p-5">
+                      <Link to={`/cs/${e.id}`}
+                        className="group min-w-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
                         <div className="mb-3 flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <p className="truncate font-semibold group-hover:text-primary">
+                            <p className="truncate font-display font-semibold transition-colors group-hover:text-primary">
                               {e.nome_fantasia}
                             </p>
                             <p className="truncate text-xs text-muted-foreground">
                               {e.segmento ?? statusEmpresaLabels[e.status]}
                             </p>
                           </div>
-                          <Badge variant={flagBadgeVariant[f]} className="shrink-0 text-[9px]">
+                          <Badge variant={flagBadgeVariant[f]} className="shrink-0">
                             {flagLabels[f]}
                           </Badge>
                         </div>
                       </Link>
 
-                      <div className="mb-3">
+                      <div className="mb-4">
                         <ControleCliente
                           empresa={e}
                           flagAtual={f}
@@ -183,65 +200,67 @@ export default function CS() {
                       </div>
 
                       {/* Frentes ativas da conta: é o que o time precisa ver de relance. */}
-                      <div className="mb-3">
-                        <p className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                      <div className="mb-4">
+                        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                           Projetos ativos
                         </p>
                         <div className="flex flex-wrap gap-1">
                           {seus.map((p) => (
                             <span key={p.id}
-                              className={cn("rounded px-2 py-0.5 text-[10px] font-medium",
+                              className={cn("rounded-md px-2 py-0.5 text-xs font-medium",
                                 tipoProjetoTom[p.tipo])}>
                               {tipoProjetoLabels[p.tipo]}
                             </span>
                           ))}
                           {seus.length === 0 && (
-                            <span className="text-[11px] text-muted-foreground">
+                            <span className="text-xs text-muted-foreground">
                               Nenhuma frente contratada
                             </span>
                           )}
                         </div>
                       </div>
 
-                      <div className="space-y-1 border-t pt-3 text-xs text-muted-foreground">
-                        <p className="flex items-center gap-2 truncate">
-                          <User className="h-3.5 w-3.5 shrink-0" />
-                          {contato?.nome ?? "Contato não cadastrado"}
+                      <div className="space-y-1.5 border-t pb-3 pt-3 text-xs text-muted-foreground">
+                        <p className="flex min-w-0 items-center gap-2">
+                          <User className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          <span className="truncate">{contato?.nome ?? "Contato não cadastrado"}</span>
                         </p>
                         {contato?.email && (
-                          <p className="flex items-center gap-2 truncate">
-                            <Mail className="h-3.5 w-3.5 shrink-0" /> {contato.email}
+                          <p className="flex min-w-0 items-center gap-2">
+                            <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            <span className="truncate">{contato.email}</span>
                           </p>
                         )}
-                        <p className="flex items-center gap-2 truncate">
-                          <UserCog className="h-3.5 w-3.5 shrink-0" /> {nomeDe(e.responsavel_id)}
+                        <p className="flex min-w-0 items-center gap-2">
+                          <UserCog className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          <span className="truncate">{nomeDe(e.responsavel_id)}</span>
                         </p>
                       </div>
 
                       <Link to={`/cs/${e.id}`}
-                        className="group mt-auto flex items-center justify-between border-t pt-3">
-                        <div>
-                          <p className="text-[10px] text-muted-foreground">
+                        className="group mt-auto flex items-center justify-between gap-3 rounded-sm border-t pt-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+                        <div className="min-w-0">
+                          <p className="text-xs text-muted-foreground">
                             {seus.length > 0 ? "MRR" : "Tarefas em aberto"}
                           </p>
-                          <p className="text-sm font-bold">
+                          <p className="font-display text-base font-semibold tabular-nums">
                             {seus.length > 0
                               ? formatCurrency(seus.reduce((s, p) => s + p.mrr, 0))
                               : abertas(e.id)}
                           </p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex shrink-0 items-center gap-2">
                           {abertas(e.id) > 0 && seus.length > 0 && (
-                            <span className="flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                              <ListChecks className="h-3 w-3" /> {abertas(e.id)}
+                            <span className="flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-xs tabular-nums text-muted-foreground">
+                              <ListChecks className="h-3 w-3" aria-hidden /> {abertas(e.id)}
                             </span>
                           )}
-                          <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                          <ArrowRight className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden />
                         </div>
                       </Link>
 
                       {seus.some((p) => p.renovacao) && (
-                        <p className="mt-2 text-[10px] text-muted-foreground">
+                        <p className="mt-2 text-xs text-muted-foreground">
                           Renova em {formatDate(seus.find((p) => p.renovacao)?.renovacao ?? null)}
                         </p>
                       )}

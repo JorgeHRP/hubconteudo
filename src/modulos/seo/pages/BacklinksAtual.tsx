@@ -1,10 +1,13 @@
 import { Link2, Globe, Shield } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, Legend } from "recharts";
 
 const topMetrics = [
-  { label: "Domain Authority", value: "40", badge: "GOOD", badgeColor: "text-emerald-400 border-emerald-400/30 bg-emerald-400/10", icon: Shield },
+  { label: "Domain Authority", value: "40", badge: "GOOD", badgeColor: "border-success/20 bg-success/10 text-success", icon: Shield },
   { label: "Referring Domains", value: "469", icon: Globe },
-  { label: "Backlinks", value: "14,800", badge: "GOOD", badgeColor: "text-emerald-400 border-emerald-400/30 bg-emerald-400/10", icon: Link2, sub: "NoFollow: 529" },
+  { label: "Backlinks", value: "14,800", badge: "GOOD", badgeColor: "border-success/20 bg-success/10 text-success", icon: Link2, sub: "NoFollow: 529" },
 ];
 
 const backlinksOverTime = [
@@ -78,8 +81,8 @@ const backlinksList = [
 const CustomTooltipLine = ({ active, payload, label }: any) => {
   if (!active || !payload) return null;
   return (
-    <div className="glass-card p-3 text-xs border border-border/30">
-      <p className="font-semibold text-foreground mb-1">{label}</p>
+    <div className="rounded-md border bg-popover p-3 text-xs shadow-pop">
+      <p className="mb-1 font-semibold text-foreground">{label}</p>
       {payload.map((p: any) => (
         <p key={p.dataKey} style={{ color: p.color }}>{p.name}: {p.value?.toLocaleString()}</p>
       ))}
@@ -91,61 +94,63 @@ const BacklinksAtual = () => {
   return (
     <div className="space-y-6 max-w-7xl">
       <div>
-        <h1 className="text-2xl font-bold gradient-text">Backlinks Atual</h1>
-        <p className="text-muted-foreground text-sm mt-1">eseg.edu.br — Dados atualizados em Abril 2026</p>
+        <h2 className="text-lg font-semibold leading-tight text-foreground sm:text-xl">Backlinks Atual</h2>
+        <p className="mt-0.5 text-sm text-muted-foreground">eseg.edu.br — Dados atualizados em Abril 2026</p>
       </div>
 
       {/* Top Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {topMetrics.map((m) => (
-          <div key={m.label} className="glass-card-hover p-5 space-y-2">
-            <div className="flex items-center gap-2">
-              <m.icon className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{m.label}</span>
+          <div key={m.label} className="flex items-start justify-between gap-3 rounded-lg border bg-card p-4 shadow-card">
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">{m.label}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <span className="font-display text-2xl font-semibold text-foreground">{m.value}</span>
+                {m.badge && (
+                  <Badge variant="outline" className={`uppercase ${m.badgeColor}`}>{m.badge}</Badge>
+                )}
+              </div>
+              {m.sub && <p className="mt-1 text-xs text-muted-foreground">{m.sub}</p>}
             </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-foreground">{m.value}</span>
-              {m.badge && (
-                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${m.badgeColor}`}>{m.badge}</span>
-              )}
-            </div>
-            {m.sub && <p className="text-xs text-muted-foreground">{m.sub}</p>}
+            <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <m.icon className="h-4 w-4" />
+            </span>
           </div>
         ))}
       </div>
 
       {/* Backlinks Over Time */}
-      <div className="glass-card p-6 space-y-4">
-        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Backlinks Over Time</p>
+      <div className="space-y-4 rounded-lg border bg-card p-4 shadow-card sm:p-5">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Backlinks Over Time</p>
         <div className="h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={backlinksOverTime}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
               <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
               <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
               <Tooltip content={<CustomTooltipLine />} />
               <Legend />
-              <Line yAxisId="left" type="monotone" dataKey="backlinks" name="Backlinks" stroke="#7C3AED" strokeWidth={2} dot={{ r: 3, fill: "#7C3AED" }} />
-              <Line yAxisId="right" type="monotone" dataKey="domains" name="Referring Domains" stroke="#06B6D4" strokeWidth={2} dot={{ r: 3, fill: "#06B6D4" }} />
+              <Line yAxisId="left" type="monotone" dataKey="backlinks" name="Backlinks" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--primary))" }} />
+              <Line yAxisId="right" type="monotone" dataKey="domains" name="Referring Domains" stroke="hsl(var(--accent))" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--accent))" }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
 
       {/* New & Lost Referring Domains */}
-      <div className="glass-card p-6 space-y-4">
-        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">New & Lost Referring Domains</p>
+      <div className="space-y-4 rounded-lg border bg-card p-4 shadow-card sm:p-5">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">New & Lost Referring Domains</p>
         <div className="h-[220px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={newLostDomains}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
               <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
               <Tooltip content={<CustomTooltipLine />} />
               <Legend />
-              <Bar dataKey="new" name="New" fill="#06B6D4" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="lost" name="Lost" fill="#f87171" radius={[0, 0, 4, 4]} />
+              <Bar dataKey="new" name="New" fill="hsl(var(--success))" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="lost" name="Lost" fill="hsl(var(--destructive))" radius={[0, 0, 3, 3]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -153,18 +158,18 @@ const BacklinksAtual = () => {
 
       {/* Referring Domains by DA + Anchor Text */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="glass-card p-6 space-y-4">
-          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Referring Domains by DA</p>
+        <div className="space-y-4 rounded-lg border bg-card p-4 shadow-card sm:p-5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Referring Domains by DA</p>
           <div className="h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={domainsByDA}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="range" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
                 <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                 <Tooltip content={<CustomTooltipLine />} />
-                <Bar dataKey="count" name="Domains" radius={[4, 4, 0, 0]}>
+                <Bar dataKey="count" name="Domains" radius={[3, 3, 0, 0]}>
                   {domainsByDA.map((_, i) => (
-                    <Cell key={i} fill={`hsl(${260 - i * 8}, 60%, ${50 + i * 2}%)`} />
+                    <Cell key={i} fill="hsl(var(--primary))" fillOpacity={1 - i * 0.06} />
                   ))}
                 </Bar>
               </BarChart>
@@ -172,13 +177,13 @@ const BacklinksAtual = () => {
           </div>
         </div>
 
-        <div className="glass-card p-6 space-y-4">
-          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Anchor Text Distribution</p>
-          <div className="space-y-1">
+        <div className="rounded-lg border bg-card p-4 shadow-card sm:p-5">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Anchor Text Distribution</p>
+          <div className="divide-y">
             {anchorTexts.map((a) => (
-              <div key={a.text} className="flex items-center justify-between p-2.5 rounded-lg hover:bg-muted/10 transition-colors">
-                <span className="text-sm text-foreground">{a.text}</span>
-                <span className="text-sm font-bold text-foreground">{a.backlinks.toLocaleString()}</span>
+              <div key={a.text} className="flex items-center justify-between gap-3 py-3">
+                <span className="min-w-0 break-words text-sm text-foreground">{a.text}</span>
+                <span className="text-sm font-semibold tabular-nums text-foreground">{a.backlinks.toLocaleString()}</span>
               </div>
             ))}
           </div>
@@ -186,55 +191,55 @@ const BacklinksAtual = () => {
       </div>
 
       {/* Spam Backlinks Table */}
-      <div className="glass-card p-6 space-y-4">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Spam Backlinks</p>
-          <p className="text-xs text-muted-foreground/70 mt-1 max-w-3xl">
+      <Card className="overflow-hidden">
+        <div className="border-b px-4 py-3 sm:px-5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Spam Backlinks</p>
+          <p className="mt-1 max-w-3xl text-xs text-muted-foreground">
             Backlinks com alto Spam Score são links de baixa qualidade ou potencialmente tóxicos que podem prejudicar o rankeamento do site. 
             É recomendado monitorar e, se necessário, rejeitar esses links via Google Disavow Tool para proteger a autoridade do domínio.
           </p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border/30">
-                <th className="text-left text-xs font-bold uppercase tracking-wider text-muted-foreground py-3 px-2">Source & Target</th>
-                <th className="text-center text-xs font-bold uppercase tracking-wider text-muted-foreground py-3 px-2 w-12">NF</th>
-                <th className="text-center text-xs font-bold uppercase tracking-wider text-muted-foreground py-3 px-2 w-12">DA</th>
-                <th className="text-center text-xs font-bold uppercase tracking-wider text-muted-foreground py-3 px-2 w-12">PA</th>
-                <th className="text-center text-xs font-bold uppercase tracking-wider text-muted-foreground py-3 px-2 w-16">Spam</th>
-                <th className="text-left text-xs font-bold uppercase tracking-wider text-muted-foreground py-3 px-2">Anchor Text</th>
-                <th className="text-center text-xs font-bold uppercase tracking-wider text-muted-foreground py-3 px-2 w-24">First Seen</th>
-                <th className="text-center text-xs font-bold uppercase tracking-wider text-muted-foreground py-3 px-2 w-24">Last Seen</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-[860px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Source & Target</TableHead>
+                <TableHead className="w-12 text-center">NF</TableHead>
+                <TableHead className="w-12 text-center">DA</TableHead>
+                <TableHead className="w-12 text-center">PA</TableHead>
+                <TableHead className="w-16 text-center">Spam</TableHead>
+                <TableHead>Anchor Text</TableHead>
+                <TableHead className="w-24 whitespace-nowrap text-center">First Seen</TableHead>
+                <TableHead className="w-24 whitespace-nowrap text-center">Last Seen</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {backlinksList.map((bl, i) => (
-                <tr key={i} className={`border-b border-border/10 hover:bg-muted/5 transition-colors ${bl.spam >= 80 ? "bg-red-500/5" : ""}`}>
-                  <td className="py-3 px-2">
-                    <p className="font-medium text-foreground text-xs">{bl.title}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Source: {bl.source}</p>
-                    <p className="text-[10px] text-muted-foreground">Target: {bl.target}</p>
-                  </td>
-                  <td className="py-3 px-2 text-center">
-                    {bl.nofollow && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border border-amber-400/30 bg-amber-400/10 text-amber-400">NF</span>}
-                  </td>
-                  <td className="py-3 px-2 text-center text-foreground">{bl.da}</td>
-                  <td className="py-3 px-2 text-center text-foreground">{bl.pa}</td>
-                  <td className="py-3 px-2 text-center">
-                    <span className={`text-xs font-semibold ${bl.spam >= 80 ? "text-red-400" : bl.spam >= 60 ? "text-amber-400" : "text-emerald-400"}`}>
+                <TableRow key={i} className={`transition-colors ${bl.spam >= 80 ? "bg-destructive/5 hover:bg-destructive/10" : "hover:bg-muted/50"}`}>
+                  <TableCell className="max-w-[320px]">
+                    <p className="text-sm font-medium text-foreground">{bl.title}</p>
+                    <p className="mt-0.5 break-all text-xs text-muted-foreground">Source: {bl.source}</p>
+                    <p className="break-all text-xs text-muted-foreground">Target: {bl.target}</p>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {bl.nofollow && <Badge variant="warning" className="px-1.5">NF</Badge>}
+                  </TableCell>
+                  <TableCell className="text-center tabular-nums text-foreground">{bl.da}</TableCell>
+                  <TableCell className="text-center tabular-nums text-foreground">{bl.pa}</TableCell>
+                  <TableCell className="text-center">
+                    <span className={`text-xs font-semibold tabular-nums ${bl.spam >= 80 ? "text-destructive" : bl.spam >= 60 ? "text-warning-strong" : "text-success"}`}>
                       {bl.spam}%
                     </span>
-                  </td>
-                  <td className="py-3 px-2 text-xs text-muted-foreground max-w-[200px] truncate">{bl.anchor || "—"}</td>
-                  <td className="py-3 px-2 text-center text-xs text-muted-foreground">{bl.firstSeen}</td>
-                  <td className="py-3 px-2 text-center text-xs text-muted-foreground">{bl.lastSeen}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground">{bl.anchor || "—"}</TableCell>
+                  <TableCell className="whitespace-nowrap text-center text-xs text-muted-foreground">{bl.firstSeen}</TableCell>
+                  <TableCell className="whitespace-nowrap text-center text-xs text-muted-foreground">{bl.lastSeen}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };

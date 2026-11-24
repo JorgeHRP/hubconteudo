@@ -30,31 +30,32 @@ const Admin = () => {
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
-        <h1 className="text-2xl font-bold gradient-text">Área Admin</h1>
+        <h2 className="text-lg font-semibold leading-tight text-foreground sm:text-xl">Área Admin</h2>
         <p className="text-muted-foreground text-sm mt-1">Envie atualizações e informações para incluir no dashboard</p>
       </div>
 
-      <div className="glass-card flex flex-col h-[60vh]">
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <div className="flex h-[60vh] min-h-[320px] flex-col overflow-hidden rounded-lg border bg-card shadow-card">
+        <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[80%] rounded-xl p-4 ${msg.type === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
-                <p className="text-sm">{msg.text}</p>
-                <p className={`text-xs mt-1 ${msg.type === "user" ? "text-primary-foreground/60" : "text-muted-foreground"}`}>{msg.timestamp}</p>
+              <div className={`max-w-[85%] rounded-lg px-3 py-2.5 ${msg.type === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
+                <p className="whitespace-pre-wrap break-words text-sm">{msg.text}</p>
+                <p className={`mt-1 text-xs ${msg.type === "user" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{msg.timestamp}</p>
               </div>
             </div>
           ))}
         </div>
-        <div className="border-t p-4 flex gap-3">
+        <div className="flex gap-2 border-t bg-muted/30 p-3">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Envie uma atualização para o dashboard..."
-            className="resize-none"
+            aria-label="Mensagem"
+            className="resize-none bg-card"
             rows={2}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
           />
-          <Button onClick={handleSend} className="self-end" style={{ background: "var(--gradient-primary)" }}>
+          <Button onClick={handleSend} size="icon" className="shrink-0 self-end" aria-label="Enviar atualização">
             <Send className="h-4 w-4" />
           </Button>
         </div>

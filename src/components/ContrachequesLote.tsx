@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarRange, Check, Paperclip, Upload, Users } from "lucide-react";
+import { AlertCircle, CalendarRange, Check, FileCheck2, Paperclip, Upload, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { criarDocumento, listarDocumentos, listarProfiles, podeEnviarDocumento } from "@/data/store";
@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -127,35 +128,54 @@ export function ContrachequesLote() {
           <div>
             <Label htmlFor="lote-comp">Competência</Label>
             <Input
-              id="lote-comp" type="month" className="mt-1.5 w-48" value={competencia}
+              id="lote-comp" type="month" className="mt-1.5 w-full sm:w-48" value={competencia}
               onChange={(e) => { setCompetencia(e.target.value); setSelecionados([]); }}
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+          <div className="flex flex-wrap items-center gap-2 border-t pt-4">
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Users className="h-3.5 w-3.5" />
-              {pendentes.length} de {ativos.length} ainda sem contracheque
+              <Users className="h-3.5 w-3.5" aria-hidden />
+              <span className="tabular-nums">
+                {pendentes.length} de {ativos.length} ainda sem contracheque
+              </span>
             </span>
-            <Button
-              variant="outline" size="sm" className="ml-auto h-8"
-              onClick={() => setSelecionados(pendentes.map((p) => p.user_id))}
-              disabled={pendentes.length === 0}
-            >
-              Marcar todos os pendentes
-            </Button>
-            {selecionados.length > 0 && (
-              <Button variant="ghost" size="sm" className="h-8"
-                onClick={() => setSelecionados([])}>
-                Limpar
+            <div className="flex flex-wrap gap-2 sm:ml-auto">
+              <Button
+                variant="outline" size="sm"
+                onClick={() => setSelecionados(pendentes.map((p) => p.user_id))}
+                disabled={pendentes.length === 0}
+              >
+                Marcar todos os pendentes
               </Button>
-            )}
+              {selecionados.length > 0 && (
+                <Button variant="ghost" size="sm"
+                  onClick={() => setSelecionados([])}>
+                  Limpar
+                </Button>
+              )}
+            </div>
           </div>
 
-          <div className="max-h-72 space-y-1.5 overflow-y-auto">
+          {!profiles ? (
+            <div className="space-y-3 rounded-md border p-3" role="status" aria-label="Carregando colaboradores">
+              {Array.from({ length: 4 }, (_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-3.5 w-2/5" />
+                    <Skeleton className="h-3 w-3/5" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+          <div className="max-h-72 divide-y overflow-y-auto rounded-md border">
             {ativos.map((p) => {
               const enviado = jaTem(p.user_id);
               const marcado = selecionados.includes(p.user_id);
+              const pronto = Boolean(arquivos[p.user_id]);
+              const faltaArquivo = comUpload && marcado && !pronto;
               const alternar = () =>
                 setSelecionados((s) =>
                   s.includes(p.user_id) ? s.filter((x) => x !== p.user_id) : [...s, p.user_id]
@@ -164,42 +184,69 @@ export function ContrachequesLote() {
                 <div
                   key={p.user_id}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-md border p-2 transition-colors",
-                    enviado && "opacity-60",
-                    marcado ? "border-primary bg-primary/5" : "hover:bg-muted/40"
+                    "flex w-full items-center gap-2 px-3 py-2 transition-colors sm:gap-3",
+                    enviado
+                      ? "bg-muted/40"
+                      : faltaArquivo
+                        ? "bg-destructive/10"
+                        : marcado
+                          ? "bg-primary/5"
+                          : "hover:bg-muted/40"
                   )}
                 >
                   <button
                     type="button" disabled={enviado} onClick={alternar}
-                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    aria-pressed={marcado}
+                    className={cn(
+                      "flex min-h-9 min-w-0 flex-1 items-center gap-3 rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                      enviado && "opacity-60"
+                    )}
                   >
-                    <div className={cn(
-                      "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
-                      marcado ? "border-primary bg-primary" : "border-input"
+                    <div aria-hidden className={cn(
+                      "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
+                      marcado ? "border-primary bg-primary" : "border-input bg-card"
                     )}>
                       {marcado && <Check className="h-3 w-3 text-primary-foreground" />}
                     </div>
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="text-[10px]">{getInitials(p.nome)}</AvatarFallback>
+                    <Avatar className="hidden h-8 w-8 sm:flex">
+                      <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                        {getInitials(p.nome)}
+                      </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{p.nome}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {arquivos[p.user_id]?.name ?? p.cargo ?? "—"}
-                      </p>
+                      {pronto ? (
+                        <p className="flex items-center gap-1 text-xs text-success">
+                          <FileCheck2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          <span className="truncate">{arquivos[p.user_id]?.name}</span>
+                        </p>
+                      ) : faltaArquivo ? (
+                        <p className="flex items-center gap-1 text-xs text-destructive">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          <span className="truncate">Falta escolher o arquivo</span>
+                        </p>
+                      ) : (
+                        <p className="truncate text-xs text-muted-foreground">{p.cargo ?? "—"}</p>
+                      )}
                     </div>
                   </button>
                   {enviado ? (
-                    <Badge variant="success" className="shrink-0 text-[9px]">já enviado</Badge>
+                    <Badge variant="success" className="shrink-0 gap-1">
+                      <Check className="h-3 w-3" aria-hidden /> Já enviado
+                    </Badge>
                   ) : comUpload && (
                     <label
                       className={cn(
-                        "flex shrink-0 cursor-pointer items-center gap-1 rounded-md border px-2 py-1 text-xs",
-                        arquivos[p.user_id] ? "border-primary text-primary" : "text-muted-foreground hover:bg-muted"
+                        "flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border bg-card px-2.5 text-xs font-medium transition-colors focus-within:ring-2 focus-within:ring-ring/50",
+                        pronto
+                          ? "border-success/20 text-success hover:bg-success/10"
+                          : faltaArquivo
+                            ? "border-destructive/20 text-destructive hover:bg-destructive/10"
+                            : "border-input text-muted-foreground hover:bg-muted hover:text-foreground"
                       )}
                       title="Escolher o arquivo desta pessoa"
                     >
-                      <Paperclip className="h-3 w-3" />
+                      <Paperclip className="h-3.5 w-3.5" aria-hidden />
                       {arquivos[p.user_id] ? "Trocar" : "Arquivo"}
                       <input
                         type="file" className="sr-only" accept={DOCUMENTO_ACEITA}
@@ -211,17 +258,20 @@ export function ContrachequesLote() {
               );
             })}
           </div>
+          )}
 
-          <p className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
+          <p className="text-xs leading-relaxed text-muted-foreground">
             {comUpload
               ? "Escolha o arquivo de cada pessoa (até 20 MB). Ao escolher, ela já fica marcada."
               : "No modo de demonstração é gerado só o registro de cada contracheque, sem o arquivo."}
-            {semArquivo.length > 0 && (
-              <span className="mt-1 block text-destructive">
-                {semArquivo.length} pessoa(s) marcada(s) ainda sem arquivo.
-              </span>
-            )}
           </p>
+
+          {semArquivo.length > 0 && (
+            <p role="status" className="flex items-start gap-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />
+              {semArquivo.length} pessoa(s) marcada(s) ainda sem arquivo.
+            </p>
+          )}
 
           <Button
             className="w-full"

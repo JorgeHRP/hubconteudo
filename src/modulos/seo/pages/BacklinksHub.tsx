@@ -21,7 +21,7 @@ const BacklinksHub = () => {
 
   return (
     <Tabs defaultValue="julho" className="space-y-6 max-w-7xl">
-      <TabsList className="glass-card">
+      <TabsList className="h-auto max-w-full flex-wrap justify-start gap-1 p-1">
         <TabsTrigger value="abril">Backlink Abril</TabsTrigger>
         <TabsTrigger value="julho">Backlink Julho</TabsTrigger>
         <TabsTrigger value="martech">Backlinks Conteúdo Martech</TabsTrigger>

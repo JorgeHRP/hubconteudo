@@ -12,11 +12,13 @@ import {
 import { blocosFluxo } from "@/lib/labels-clientes";
 import type { FluxoInbound, TipoNoFluxo } from "@/lib/types";
 import { EstadoVazio } from "@/components/EstadoVazio";
+import { EsqueletoLista } from "@/components/Esqueletos";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
@@ -34,10 +36,10 @@ const icones: Record<string, typeof Mail> = {
 };
 
 const tomDoTipo: Record<TipoNoFluxo, string> = {
-  entrada: "border-primary/40 bg-primary/5 text-primary",
-  automacao: "border-info/40 bg-info/5 text-info",
-  condicao: "border-warning/40 bg-warning/5 text-warning",
-  conversao: "border-success/40 bg-success/5 text-success",
+  entrada: "border-primary/20 bg-primary/10 text-primary",
+  automacao: "border-info/20 bg-info/10 text-info",
+  condicao: "border-warning/30 bg-warning/15 text-warning-strong",
+  conversao: "border-success/20 bg-success/10 text-success",
 };
 
 const statusFluxo: Record<FluxoInbound["status"], { rotulo: string; variante: "outline" | "success" | "warning" }> = {
@@ -78,10 +80,10 @@ export function FluxosInbound({ empresaId }: { empresaId: string }) {
   const lista = fluxos ?? [];
 
   const criador = (
-    <div className="flex flex-wrap items-end gap-2">
-      <div className="min-w-[16rem] flex-1">
-        <Label className="text-xs">Novo fluxo</Label>
-        <Input className="mt-1.5" value={nome}
+    <div className="flex flex-wrap items-end gap-2 text-left">
+      <div className="min-w-[12rem] flex-1">
+        <Label htmlFor="novo-fluxo-nome" className="text-xs text-muted-foreground">Nome do novo fluxo</Label>
+        <Input id="novo-fluxo-nome" className="mt-1.5" value={nome}
           placeholder="Fluxo · E-book Ensino Médio"
           onChange={(e) => setNome(e.target.value)} />
       </div>
@@ -90,6 +92,14 @@ export function FluxosInbound({ empresaId }: { empresaId: string }) {
       </Button>
     </div>
   );
+
+  if (!fluxos) {
+    return (
+      <div role="status" aria-label="Carregando fluxos">
+        <EsqueletoLista linhas={3} />
+      </div>
+    );
+  }
 
   if (lista.length === 0) {
     return (
@@ -104,43 +114,55 @@ export function FluxosInbound({ empresaId }: { empresaId: string }) {
 
   return (
     <div className="space-y-4">
-      <Card><CardContent className="p-4 pt-4">{criador}</CardContent></Card>
+      <Card>
+        <CardHeader className="border-b px-5 py-3.5">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Workflow className="h-4 w-4 text-accent" aria-hidden /> Novo fluxo
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-5">{criador}</CardContent>
+      </Card>
 
       {lista.map((f) => (
-        <Card key={f.id}>
-          <CardContent className="p-4 pt-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <Input className="h-8 w-64 font-medium" value={f.nome}
-                onChange={(e) => gravar.mutate({ ...f, nome: e.target.value })} />
+        <Card key={f.id} className="overflow-hidden">
+          <div className="flex flex-wrap items-center gap-2 px-4 py-3">
+            <Input className="h-9 w-full font-medium sm:w-72" value={f.nome}
+              aria-label="Nome do fluxo"
+              onChange={(e) => gravar.mutate({ ...f, nome: e.target.value })} />
 
-              <Select value={f.status}
-                onValueChange={(v) => gravar.mutate({ ...f, status: v as FluxoInbound["status"] })}>
-                <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(statusFluxo) as FluxoInbound["status"][]).map((st) => (
-                    <SelectItem key={st} value={st}>{statusFluxo[st].rotulo}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <Select value={f.status}
+              onValueChange={(v) => gravar.mutate({ ...f, status: v as FluxoInbound["status"] })}>
+              <SelectTrigger className="h-9 w-32" aria-label={`Situação do fluxo ${f.nome}`}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(statusFluxo) as FluxoInbound["status"][]).map((st) => (
+                  <SelectItem key={st} value={st}>{statusFluxo[st].rotulo}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-              <Badge variant={statusFluxo[f.status].variante} className="text-[10px]">
-                {statusFluxo[f.status].rotulo}
-              </Badge>
+            <Badge variant={statusFluxo[f.status].variante}>
+              {statusFluxo[f.status].rotulo}
+            </Badge>
 
-              <div className="ml-auto flex items-center gap-1">
-                <Button variant="ghost" size="sm" className="h-8 text-xs"
-                  onClick={() => setAberto(aberto === f.id ? null : f.id)}>
-                  {aberto === f.id ? "Fechar" : "Abrir régua"}
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8"
-                  onClick={() => apagar.mutate(f.id)}>
-                  <Trash2 className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </div>
+            <div className="ml-auto flex items-center gap-1">
+              <Button variant="ghost" size="sm" className="h-9 text-xs"
+                aria-expanded={aberto === f.id}
+                onClick={() => setAberto(aberto === f.id ? null : f.id)}>
+                {aberto === f.id ? "Fechar" : "Abrir régua"}
+                {aberto === f.id
+                  ? <ChevronUp className="h-3.5 w-3.5" aria-hidden />
+                  : <ChevronDown className="h-3.5 w-3.5" aria-hidden />}
+              </Button>
+              <Button variant="ghost" size="icon"
+                className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                title="Remover fluxo" aria-label={`Remover fluxo ${f.nome}`}
+                onClick={() => apagar.mutate(f.id)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
+          </div>
 
-            {aberto === f.id && <Regua fluxoId={f.id} empresaId={empresaId} />}
-          </CardContent>
+          {aberto === f.id && <Regua fluxoId={f.id} empresaId={empresaId} />}
         </Card>
       ))}
     </div>
@@ -191,46 +213,55 @@ function Regua({ fluxoId, empresaId }: { fluxoId: string; empresaId: string }) {
     lista.slice(0, i).reduce((s, n) => s + (n.espera_dias ?? 0), 0);
 
   return (
-    <div className="mt-4 border-t pt-4">
-      {lista.length === 0 ? (
-        <p className="mb-3 text-xs text-muted-foreground">
+    <div className="border-t bg-muted/50 p-4">
+      {!nos ? (
+        <div className="mb-4 space-y-2" role="status" aria-label="Carregando régua">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+      ) : lista.length === 0 ? (
+        <p className="mb-4 rounded-md border border-dashed bg-card/60 px-3 py-4 text-center text-xs leading-relaxed text-muted-foreground">
           Fluxo vazio. Comece pela entrada — campanha ou landing page — e vá somando
           e-mails e esperas.
         </p>
       ) : (
-        <div className="mb-3 space-y-0">
+        <ol className="mb-4">
           {lista.map((n, i) => {
             const Icone = icones[n.bloco] ?? Workflow;
             return (
-              <div key={n.id}>
+              <li key={n.id}>
                 {i > 0 && (
-                  <div className="ml-[1.15rem] h-4 w-px bg-border" aria-hidden />
+                  <div className="ml-[1.6rem] h-4 w-px bg-border" aria-hidden />
                 )}
-                <div className={cn("group flex flex-wrap items-center gap-2 rounded-lg border p-2.5",
-                  tomDoTipo[n.tipo])}>
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center">
+                <div className="group flex flex-wrap items-center gap-2 rounded-md border bg-card p-2">
+                  <span aria-hidden
+                    className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-md border",
+                      tomDoTipo[n.tipo])}>
                     <Icone className="h-4 w-4" />
                   </span>
 
                   <Input
-                    className="h-8 w-52 border-0 bg-transparent px-1 font-medium text-foreground shadow-none focus-visible:ring-0"
+                    className="h-9 min-w-[9rem] flex-1 border-transparent bg-transparent px-2 font-medium text-foreground shadow-none hover:border-input focus-visible:border-input sm:w-52 sm:flex-none"
+                    aria-label="Nome do bloco"
                     value={n.rotulo}
                     onChange={(e) => mudar.mutate({ id: n.id, campos: { rotulo: e.target.value } })}
                   />
 
                   {n.bloco === "espera" ? (
                     <div className="flex items-center gap-1.5">
-                      <Input type="number" min="0" className="h-8 w-16 text-foreground"
+                      <Input type="number" min="0" className="h-9 w-20 tabular-nums text-foreground"
+                        aria-label="Dias de espera"
                         value={n.espera_dias ?? 0}
                         onChange={(e) =>
                           mudar.mutate({ id: n.id, campos: { espera_dias: Number(e.target.value) } })
                         } />
-                      <span className="text-[11px] text-muted-foreground">dias</span>
+                      <span className="text-xs text-muted-foreground">dias</span>
                     </div>
                   ) : (
                     <Input
-                      className="h-8 min-w-[10rem] flex-1 border-0 bg-transparent px-1 text-xs text-muted-foreground shadow-none focus-visible:ring-0"
+                      className="h-9 min-w-[10rem] flex-1 border-transparent bg-transparent px-2 text-xs text-muted-foreground shadow-none hover:border-input focus-visible:border-input"
                       placeholder="Descrição (opcional)"
+                      aria-label={`Descrição do bloco ${n.rotulo}`}
                       value={n.descricao ?? ""}
                       onChange={(e) =>
                         mudar.mutate({ id: n.id, campos: { descricao: e.target.value || null } })
@@ -241,49 +272,54 @@ function Regua({ fluxoId, empresaId }: { fluxoId: string; empresaId: string }) {
                   {/* Quando o lead chega neste ponto, contado desde a entrada.
                       No bloco de espera seria redundante: ele já mostra a própria duração. */}
                   {n.bloco !== "espera" && diasAte(i) > 0 && (
-                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                    <Badge variant="secondary" className="shrink-0 font-normal tabular-nums">
                       dia {diasAte(i)}
-                    </span>
+                    </Badge>
                   )}
 
-                  <div className="ml-auto flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" disabled={i === 0}
+                  {/* Em tela de toque as ações ficam sempre à vista; com mouse, aparecem ao passar ou focar. */}
+                  <div className="ml-auto flex items-center gap-0.5 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100">
+                    <Button variant="ghost" size="icon" className="h-9 w-9" disabled={i === 0}
+                      title="Subir bloco" aria-label={`Subir bloco ${n.rotulo}`}
                       onClick={() => mover.mutate({ id: n.id, dir: -1 })}>
-                      <ChevronUp className="h-3.5 w-3.5" />
+                      <ChevronUp className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7"
+                    <Button variant="ghost" size="icon" className="h-9 w-9"
+                      title="Descer bloco" aria-label={`Descer bloco ${n.rotulo}`}
                       disabled={i === lista.length - 1}
                       onClick={() => mover.mutate({ id: n.id, dir: 1 })}>
-                      <ChevronDown className="h-3.5 w-3.5" />
+                      <ChevronDown className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7"
+                    <Button variant="ghost" size="icon"
+                      className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                      title="Remover bloco" aria-label={`Remover bloco ${n.rotulo}`}
                       onClick={() => apagar.mutate(n.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ol>
       )}
 
       <div className="flex flex-wrap items-center gap-2">
         <Select value={bloco} onValueChange={setBloco}>
-          <SelectTrigger className="h-8 w-56"><SelectValue placeholder="Adicionar bloco" /></SelectTrigger>
+          <SelectTrigger className="h-9 min-w-[10rem] flex-1 bg-card sm:w-56 sm:flex-none" aria-label="Tipo de bloco"><SelectValue placeholder="Adicionar bloco" /></SelectTrigger>
           <SelectContent>
             {blocosFluxo.map((b) => (
               <SelectItem key={b.chave} value={b.chave}>{b.rotulo}</SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Button size="sm" variant="outline" className="h-8" disabled={!bloco}
+        <Button size="sm" variant="outline" className="h-9" disabled={!bloco}
           onClick={() => adicionar.mutate()}>
           <Plus className="h-3.5 w-3.5" /> Adicionar
         </Button>
 
         {lista.length > 0 && (
-          <span className="ml-auto text-[11px] text-muted-foreground">
+          <span className="ml-auto text-xs tabular-nums text-muted-foreground">
             {lista.length === 1 ? "1 bloco" : `${lista.length} blocos`}
             {diasAte(lista.length) > 0 && ` · régua de ${diasAte(lista.length)} dias`}
           </span>

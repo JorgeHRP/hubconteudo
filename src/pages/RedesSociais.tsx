@@ -21,9 +21,13 @@ import type {
 import { PageHeader } from "@/components/PageHeader";
 import { EstadoVazio } from "@/components/EstadoVazio";
 import { CarteiraDaFrente } from "@/components/CarteiraDaFrente";
+import { EsqueletoIndicadores, EsqueletoPagina, EsqueletoTabela } from "@/components/Esqueletos";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -67,6 +71,7 @@ export function RedesDoCliente() {
   };
 
   if (empresas && !empresa) return <Navigate to="/redes-sociais" replace />;
+  if (!empresas) return <EsqueletoPagina />;
 
   const reportei = integracoes?.find((i) => i.chave === "reportei");
 
@@ -89,13 +94,14 @@ export function RedesDoCliente() {
 
       {/* Enquanto o Reportei não está ligado, os números são digitados à mão. */}
       {reportei && !reportei.conectada && (
-        <div className="mb-4 flex items-start gap-2 rounded-md border border-dashed p-3 text-xs text-muted-foreground">
-          <BarChart3 className="mt-0.5 h-4 w-4 shrink-0" />
+        <div role="note" className="mb-6 flex items-start gap-3 rounded-lg border border-info/20 bg-info/10 p-4 text-sm leading-relaxed text-muted-foreground">
+          <BarChart3 className="mt-0.5 h-4 w-4 shrink-0 text-info" aria-hidden />
           <span>
-            <strong className="text-foreground">Reportei não conectado.</strong> Ao ligar a
+            <strong className="font-semibold text-foreground">Reportei não conectado.</strong> Ao ligar a
             integração, os seguidores e as métricas de cada rede passam a ser atualizados
             sozinhos, e os relatórios do cliente vêm junto. Configure em{" "}
-            <Link to="/admin" className="underline hover:text-foreground">
+            <Link to="/admin"
+              className="rounded-sm font-medium text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
               Painel Admin → Integrações
             </Link>
             . Enquanto isso, os números são preenchidos à mão.
@@ -148,20 +154,22 @@ function Perfis({ empresaId, aoMudar }: { empresaId: string; aoMudar: () => void
   const total = lista.reduce((s, p) => s + (p.seguidores ?? 0), 0);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Card>
-        <CardContent className="p-4 pt-4">
-          <Label className="text-xs">Adicionar perfil</Label>
-          <div className="mt-1.5 flex flex-wrap items-end gap-2">
+        <CardHeader className="border-b px-5 py-3.5">
+          <CardTitle className="text-base">Adicionar perfil</CardTitle>
+        </CardHeader>
+        <CardContent className="p-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
             <Select value={rede} onValueChange={(v) => setRede(v as RedeSocial)}>
-              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="sm:w-40" aria-label="Rede social"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {redes.map((r) => <SelectItem key={r} value={r}>{redeLabels[r]}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Input className="w-44" placeholder="@usuario" value={usuario}
+            <Input className="sm:w-44" placeholder="@usuario" aria-label="Usuário do perfil" value={usuario}
               onChange={(e) => setUsuario(e.target.value)} />
-            <Input className="min-w-[14rem] flex-1" placeholder="https://" value={url}
+            <Input className="sm:min-w-[14rem] sm:flex-1" placeholder="https://" aria-label="Endereço do perfil" value={url}
               onChange={(e) => setUrl(e.target.value)} />
             <Button disabled={!usuario.trim()}
               onClick={() => {
@@ -177,63 +185,74 @@ function Perfis({ empresaId, aoMudar }: { empresaId: string; aoMudar: () => void
         </CardContent>
       </Card>
 
-      {lista.length === 0 ? (
+      {!perfis ? (
+        <div role="status" aria-label="Carregando perfis">
+          <EsqueletoIndicadores quantidade={3} />
+        </div>
+      ) : lista.length === 0 ? (
         <EstadoVazio
           icone={Share2}
           titulo="Nenhum perfil cadastrado"
           descricao="Cadastre os perfis que a agência administra para este cliente. Ao salvar o primeiro, a frente de Redes Sociais entra na ficha dele no Painel de CS."
         />
       ) : (
-        <>
-          {total > 0 && (
-            <p className="text-xs text-muted-foreground">
-              {seguidoresLegivel(total)} seguidores somados em {lista.length}{" "}
-              {lista.length === 1 ? "perfil" : "perfis"}
-            </p>
-          )}
+        <section>
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <h2 className="font-sans text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Perfis administrados
+            </h2>
+            {total > 0 && (
+              <p className="text-xs tabular-nums text-muted-foreground">
+                {seguidoresLegivel(total)} seguidores somados em {lista.length}{" "}
+                {lista.length === 1 ? "perfil" : "perfis"}
+              </p>
+            )}
+          </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {lista.map((p) => (
-              <Card key={p.id} className="group">
-                <CardContent className="p-4 pt-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className={cn("rounded px-2 py-0.5 text-[10px] font-medium", redeTom[p.rede])}>
+              <Card key={p.id} className="group overflow-hidden">
+                <div className="flex items-center justify-between gap-2 border-b py-2 pl-4 pr-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className={cn("shrink-0 rounded-md px-2 py-0.5 text-xs font-medium", redeTom[p.rede])}>
                       {redeLabels[p.rede]}
                     </span>
+                    <p className="truncate text-sm font-medium">{p.usuario}</p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-0.5">
+                    {p.url && (
+                      <Button asChild variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-accent">
+                        <a href={p.url} target="_blank" rel="noreferrer"
+                          title="Abrir perfil" aria-label={`Abrir perfil ${p.usuario}`}>
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    )}
                     <Button variant="ghost" size="icon"
-                      className="h-7 w-7 opacity-0 transition-opacity group-hover:opacity-100"
+                      className="h-9 w-9 text-muted-foreground transition-opacity hover:text-destructive [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:focus-visible:opacity-100 [@media(hover:hover)]:group-hover:opacity-100"
+                      title="Remover perfil" aria-label={`Remover perfil ${p.usuario}`}
                       onClick={() => apagar.mutate(p.id)}>
-                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
+                </div>
 
-                  <p className="mt-1.5 truncate text-sm font-medium">{p.usuario}</p>
-
-                  <div className="mt-2 flex items-end justify-between gap-2">
-                    <div>
-                      <p className="text-[10px] text-muted-foreground">Seguidores</p>
-                      <Input
-                        type="number"
-                        className="h-8 w-28"
-                        defaultValue={p.seguidores ?? ""}
-                        placeholder="—"
-                        onBlur={(e) => {
-                          const n = e.target.value === "" ? null : Number(e.target.value);
-                          if (n !== p.seguidores) {
-                            gravar.mutate({ ...p, seguidores: n });
-                          }
-                        }}
-                      />
-                    </div>
-                    {p.url && (
-                      <a href={p.url} target="_blank" rel="noreferrer"
-                        className="flex items-center gap-1 pb-2 text-[11px] text-muted-foreground hover:underline">
-                        <ExternalLink className="h-3 w-3" /> abrir
-                      </a>
-                    )}
-                  </div>
-
-                  <p className="mt-1 text-[10px] text-muted-foreground">
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground">Seguidores</p>
+                  <Input
+                    type="number"
+                    className="mt-1.5 h-9 w-36 font-display text-base font-semibold tabular-nums"
+                    aria-label={`Seguidores de ${p.usuario}`}
+                    defaultValue={p.seguidores ?? ""}
+                    placeholder="—"
+                    onBlur={(e) => {
+                      const n = e.target.value === "" ? null : Number(e.target.value);
+                      if (n !== p.seguidores) {
+                        gravar.mutate({ ...p, seguidores: n });
+                      }
+                    }}
+                  />
+                  <p className="mt-2 text-xs text-muted-foreground">
                     {p.medido_em
                       ? `medido em ${formatDate(p.medido_em)}`
                       : "sem medição registrada"}
@@ -242,7 +261,7 @@ function Perfis({ empresaId, aoMudar }: { empresaId: string; aoMudar: () => void
               </Card>
             ))}
           </div>
-        </>
+        </section>
       )}
     </div>
   );
@@ -286,6 +305,14 @@ function Calendario({ empresaId, aoMudar }: { empresaId: string; aoMudar: () => 
     />
   );
 
+  if (!publicacoes) {
+    return (
+      <div role="status" aria-label="Carregando calendário">
+        <EsqueletoTabela linhas={5} colunas={5} />
+      </div>
+    );
+  }
+
   if ((publicacoes ?? []).length === 0) {
     return (
       <>
@@ -301,10 +328,10 @@ function Calendario({ empresaId, aoMudar }: { empresaId: string; aoMudar: () => 
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <Select value={filtro} onValueChange={setFiltro}>
-          <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full bg-card sm:w-52" aria-label="Filtrar por status"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="todas">Todos os status</SelectItem>
             {(Object.keys(statusPublicacaoLabels) as StatusPublicacao[]).map((st) => (
@@ -317,60 +344,88 @@ function Calendario({ empresaId, aoMudar }: { empresaId: string; aoMudar: () => 
         </Button>
       </div>
 
-      <Card>
-        <CardContent className="divide-y p-0">
-          {lista.map((p) => (
-            <div key={p.id} className="group flex flex-wrap items-center gap-3 p-3">
-              <div className="min-w-0 flex-1">
-                <button type="button"
-                  onClick={() => { setEditando(p); setAberto(true); }}
-                  className="text-left text-sm font-medium hover:underline">
-                  {p.titulo}
-                </button>
-                <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-                  <span>{formatoLabels[p.formato]}</span>
-                  {p.redes.map((r) => (
-                    <span key={r} className={cn("rounded px-1.5 py-0.5 text-[9px] font-medium", redeTom[r])}>
-                      {redeLabels[r]}
-                    </span>
-                  ))}
-                  {nomeDe(p.responsavel_id) && <span>· {nomeDe(p.responsavel_id)}</span>}
-                  {p.link && (
-                    <a href={p.link} target="_blank" rel="noreferrer"
-                      className="flex items-center gap-0.5 hover:underline">
-                      <ExternalLink className="h-3 w-3" /> link
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              {p.data_prevista && (
-                <span className="text-[11px] text-muted-foreground">
-                  {formatDate(p.data_prevista)}
-                </span>
-              )}
-              <Badge variant={statusPublicacaoVariant[p.status]} className="text-[10px]">
-                {statusPublicacaoLabels[p.status]}
-              </Badge>
-
-              <div className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                <Button variant="ghost" size="icon" className="h-8 w-8"
-                  onClick={() => { setEditando(p); setAberto(true); }}>
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8"
-                  onClick={() => apagar.mutate(p.id)}>
-                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                </Button>
-              </div>
-            </div>
-          ))}
-          {lista.length === 0 && (
-            <p className="p-6 text-center text-sm text-muted-foreground">
-              Nenhuma publicação neste status.
-            </p>
-          )}
-        </CardContent>
+      <Card className="overflow-hidden">
+        {lista.length === 0 ? (
+          <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+            Nenhuma publicação neste status.
+          </p>
+        ) : (
+          <Table className="min-w-[50rem]">
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="pl-4">Publicação</TableHead>
+                <TableHead>Formato</TableHead>
+                <TableHead>Redes</TableHead>
+                <TableHead>Responsável</TableHead>
+                <TableHead>Data</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="w-32 pr-4"><span className="sr-only">Ações</span></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {lista.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell className="max-w-[20rem] pl-4">
+                    <button type="button"
+                      onClick={() => { setEditando(p); setAberto(true); }}
+                      className="rounded-sm text-left font-medium leading-snug text-foreground transition-colors hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+                      {p.titulo}
+                    </button>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-muted-foreground">
+                    {formatoLabels[p.formato]}
+                  </TableCell>
+                  <TableCell>
+                    {p.redes.length === 0 ? (
+                      <span className="text-muted-foreground">—</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {p.redes.map((r) => (
+                          <span key={r} className={cn("rounded-md px-1.5 py-0.5 text-xs font-medium", redeTom[r])}>
+                            {redeLabels[r]}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-muted-foreground">
+                    {nomeDe(p.responsavel_id) ?? "—"}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
+                    {p.data_prevista ? formatDate(p.data_prevista) : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={statusPublicacaoVariant[p.status]} className="whitespace-nowrap">
+                      {statusPublicacaoLabels[p.status]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="pr-4">
+                    <div className="flex items-center justify-end gap-0.5">
+                      {p.link && (
+                        <Button asChild variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-accent">
+                          <a href={p.link} target="_blank" rel="noreferrer"
+                            title="Abrir publicação" aria-label={`Abrir link de ${p.titulo}`}>
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                        title="Editar publicação" aria-label={`Editar publicação ${p.titulo}`}
+                        onClick={() => { setEditando(p); setAberto(true); }}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                        title="Remover publicação" aria-label={`Remover publicação ${p.titulo}`}
+                        onClick={() => apagar.mutate(p.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </Card>
 
       {dialogo}
@@ -464,7 +519,7 @@ function PublicacaoDialog({
               {opcoes.map((r) => {
                 const marcada = form.redes.includes(r);
                 return (
-                  <button key={r} type="button"
+                  <button key={r} type="button" aria-pressed={marcada}
                     onClick={() =>
                       setForm({
                         ...form,
@@ -473,17 +528,17 @@ function PublicacaoDialog({
                           : [...form.redes, r],
                       })
                     }
-                    className={cn("rounded-full border px-2.5 py-1 text-xs transition-colors",
+                    className={cn("inline-flex min-h-9 items-center rounded-md border px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                       marcada
                         ? "border-primary bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted")}>
+                        : "bg-card text-muted-foreground hover:bg-muted")}>
                     {redeLabels[r]}
                   </button>
                 );
               })}
             </div>
             {redesDisponiveis.length === 0 && (
-              <p className="mt-1 text-[11px] text-muted-foreground">
+              <p className="mt-1.5 text-xs text-muted-foreground">
                 Nenhum perfil cadastrado ainda — a lista mostra todas as redes.
               </p>
             )}

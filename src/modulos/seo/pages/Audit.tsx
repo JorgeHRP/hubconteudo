@@ -137,28 +137,29 @@ const Audit = () => {
             const conteudoCard = (
               <>
                 <div className="flex items-center gap-3">
-                  <div className="shrink-0 rounded-xl p-2.5"
-                    style={{ background: "linear-gradient(135deg, #7C3AED, #06B6D4)" }}>
-                    <Icone className="h-5 w-5 text-white" />
-                  </div>
-                  <h3 className="text-sm font-semibold leading-tight text-foreground">
+                  <span
+                    aria-hidden
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${temLink ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
+                  >
+                    <Icone className="h-4 w-4" />
+                  </span>
+                  <h3 className="min-w-0 text-sm font-semibold leading-snug text-foreground">
                     {card.title || "Sem nome"}
                   </h3>
                 </div>
                 <p className="flex-1 text-xs leading-relaxed text-muted-foreground">
                   {card.description || "Sem descrição."}
                 </p>
-                <div className="mt-auto flex items-center gap-1.5 pt-2 text-xs font-medium"
-                  style={{ color: temLink ? "#7C3AED" : undefined }}>
+                <div className="mt-auto flex items-center gap-1.5 border-t pt-3 text-xs font-medium">
                   {temLink ? (
                     <>
-                      <span className="opacity-60 transition-opacity group-hover:opacity-100">
+                      <span className="text-accent group-hover:underline">
                         Abrir relatório
                       </span>
-                      <ExternalLink className="h-3 w-3" />
+                      <ExternalLink className="h-3 w-3 text-accent" aria-hidden />
                     </>
                   ) : (
-                    <span className="text-muted-foreground">Relatório ainda não anexado</span>
+                    <span className="font-normal text-muted-foreground">Relatório ainda não anexado</span>
                   )}
                 </div>
               </>
@@ -167,11 +168,11 @@ const Audit = () => {
             // Sem link, o card não deve fingir que leva a algum lugar.
             return temLink ? (
               <a key={i} href={card.link} target="_blank" rel="noopener noreferrer"
-                className="glass-card-hover group flex cursor-pointer flex-col gap-3 p-5 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10">
+                className="group flex cursor-pointer flex-col gap-3 rounded-lg border bg-card p-4 shadow-card transition-colors hover:border-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
                 {conteudoCard}
               </a>
             ) : (
-              <div key={i} className="glass-card-hover flex flex-col gap-3 p-5 opacity-70">
+              <div key={i} className="flex flex-col gap-3 rounded-lg border border-dashed bg-card/60 p-4">
                 {conteudoCard}
               </div>
             );
@@ -179,7 +180,7 @@ const Audit = () => {
         </div>
 
         {conteudo.length === 0 && (
-          <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+          <p className="rounded-lg border border-dashed bg-card/60 px-6 py-12 text-center text-sm text-muted-foreground">
             Nenhuma auditoria cadastrada. Use “Editar” para montar a lista deste cliente.
           </p>
         )}

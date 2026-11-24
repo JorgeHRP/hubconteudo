@@ -3,8 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
   Users, FolderKanban, Trophy, Plus, Trash2, Star, Mail, Phone, Link2, MapPin,
-  Pencil, ExternalLink,
+  Pencil, ExternalLink, Building2,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -19,12 +20,12 @@ import type { EmpresaDossie, StatusProjeto, TipoProjeto } from "@/lib/types";
 import { EmpresaDialog } from "@/components/EmpresaDialog";
 import { EquipeAlocada } from "@/components/EquipeAlocada";
 import { VendaAdicional } from "@/components/VendaAdicional";
-import { EstadoVazio } from "@/components/EstadoVazio";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
@@ -50,6 +51,44 @@ const destinoDoProjeto: Record<TipoProjeto, (id: string) => string> = {
   sites: () => "/sites",
   social: () => "/redes-sociais",
 };
+
+/** Linhas de espera das listas, enquanto os dados chegam. */
+function LinhasEspera({ linhas = 2 }: { linhas?: number }) {
+  return (
+    <div className="divide-y border-t" aria-hidden>
+      {Array.from({ length: linhas }, (_, i) => (
+        <div key={i} className="space-y-2 px-5 py-3">
+          <Skeleton className="h-3.5 w-2/5" />
+          <Skeleton className="h-3 w-3/5" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Aviso de lista vazia dentro do cartão, sem abrir outro cartão por dentro. */
+function VazioNoCartao({ icone: Icone, titulo, descricao }: {
+  icone: LucideIcon; titulo: string; descricao: string;
+}) {
+  return (
+    <div className="flex items-start gap-3 border-t px-5 py-4">
+      <span
+        aria-hidden
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground"
+      >
+        <Icone className="h-4 w-4" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-sm font-medium">{titulo}</p>
+        <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">{descricao}</p>
+      </div>
+    </div>
+  );
+}
+
+const cabecalhoCartao =
+  "flex-row flex-wrap items-center justify-between gap-x-4 gap-y-2 space-y-0 pb-4";
+const caixaMarcar = "h-4 w-4 shrink-0 accent-[hsl(var(--primary))]";
 
 /** Aba "Conta": identificação, projetos por frente, contatos e conquistas. */
 export function ContaDoCliente({ empresa }: { empresa: EmpresaDossie }) {
@@ -130,16 +169,18 @@ export function ContaDoCliente({ empresa }: { empresa: EmpresaDossie }) {
     .filter((t) => !projetos?.some((p) => p.tipo === t));
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* identificação */}
       <Card>
-        <CardContent className="p-5 pt-5">
-          <div className="mb-3 flex items-start justify-between gap-3">
-            <p className="text-sm font-semibold">Identificação</p>
-            <EmpresaDialog empresa={empresa}
-              gatilho={<Button variant="outline" size="sm"><Pencil /> Editar</Button>} />
-          </div>
-          <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+        <CardHeader className={cn(cabecalhoCartao, "border-b")}>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Building2 className="h-4 w-4 text-accent" aria-hidden /> Identificação
+          </CardTitle>
+          <EmpresaDialog empresa={empresa}
+            gatilho={<Button variant="outline" size="sm"><Pencil /> Editar</Button>} />
+        </CardHeader>
+        <CardContent className="p-5">
+          <div className="grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
             {[
               ["Razão social", empresa.razao_social],
               ["CNPJ", empresa.cnpj || "—"],
@@ -151,24 +192,26 @@ export function ContaDoCliente({ empresa }: { empresa: EmpresaDossie }) {
               ["Vigência", empresa.contrato_vigencia ?? "—"],
               ["Serviços", empresa.servicos_contratados ?? "—"],
             ].map(([r, v]) => (
-              <div key={r}>
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{r}</p>
-                <p className="mt-0.5 break-words">{v}</p>
+              <div key={r} className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{r}</p>
+                <p className="mt-1 break-words">{v}</p>
               </div>
             ))}
           </div>
           {endereco && (
-            <p className="mt-3 flex items-center gap-1.5 border-t pt-3 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3 shrink-0" /> {endereco}
+            <p className="mt-4 flex items-start gap-2 border-t pt-4 text-sm text-muted-foreground">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden /> <span className="min-w-0 break-words">{endereco}</span>
             </p>
           )}
         </CardContent>
       </Card>
 
       {/* projetos */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-sm font-semibold">Projetos por frente</p>
+      <Card className="overflow-hidden">
+        <CardHeader className={cabecalhoCartao}>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <FolderKanban className="h-4 w-4 text-accent" aria-hidden /> Projetos por frente
+          </CardTitle>
           <Dialog open={projetoAberto} onOpenChange={setProjetoAberto}>
             <DialogTrigger asChild>
               <Button size="sm" disabled={frentesLivres.length === 0}><Plus /> Novo projeto</Button>
@@ -193,7 +236,7 @@ export function ContaDoCliente({ empresa }: { empresa: EmpresaDossie }) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-3 sm:grid-cols-2">
                   <div>
                     <Label htmlFor="pj-mrr">MRR (R$)</Label>
                     <Input id="pj-mrr" type="number" className="mt-1.5" value={projeto.mrr}
@@ -226,65 +269,69 @@ export function ContaDoCliente({ empresa }: { empresa: EmpresaDossie }) {
               </div>
             </DialogContent>
           </Dialog>
-        </div>
+        </CardHeader>
 
-        {projetos?.length === 0 ? (
-          <EstadoVazio icone={FolderKanban} titulo="Nenhum projeto aberto"
+        {!projetos ? (
+          <LinhasEspera />
+        ) : projetos.length === 0 ? (
+          <VazioNoCartao icone={FolderKanban} titulo="Nenhum projeto aberto"
             descricao="Abra CS, tráfego, SEO ou implantação RD. Cada um libera o painel correspondente." />
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {projetos?.map((p) => (
-              <Card key={p.id}>
-                <CardContent className="p-4 pt-4">
-                  <div className="mb-2 flex items-start justify-between gap-2">
-                    <span className={cn("rounded px-1.5 py-0.5 text-[9px] font-medium", tipoProjetoTom[p.tipo])}>
+          <ul className="divide-y border-t">
+            {projetos.map((p) => (
+              <li key={p.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3">
+                <div className="min-w-0 flex-1 basis-56">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className={cn("rounded-md px-2 py-0.5 text-xs font-medium", tipoProjetoTom[p.tipo])}>
                       {tipoProjetoLabels[p.tipo]}
                     </span>
-                    <Badge variant={flagBadgeVariant[p.flag]} className="shrink-0 text-[9px]">
+                    <Badge variant={statusProjetoVariant[p.status]}>
+                      {statusProjetoLabels[p.status]}
+                    </Badge>
+                    <Badge variant={flagBadgeVariant[p.flag]}>
                       {flagLabels[p.flag]}
                     </Badge>
                   </div>
-                  <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
-                    <span><Badge variant={statusProjetoVariant[p.status]} className="text-[9px]">
-                      {statusProjetoLabels[p.status]}</Badge></span>
-                    <span className="text-right font-medium text-foreground">{formatCurrency(p.mrr)}</span>
-                    <span>Renova {formatDate(p.renovacao)}</span>
-                    <span className="text-right">{nomeDe(p.responsavel_id)}</span>
-                  </div>
-                  <div className="mt-3 flex gap-2 border-t pt-3">
-                    {p.tipo !== "cs" && (
-                      <Button size="sm" variant="outline" className="flex-1" asChild>
-                        <Link to={destinoDoProjeto[p.tipo](id)}>Abrir painel <ExternalLink /></Link>
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost" size="icon" className={cn("h-8 w-8", p.tipo === "cs" && "ml-auto")}
-                      title="Encerrar projeto"
-                      onClick={async () => {
-                        await encerrarProjeto(p.id);
-                        recarregar("projetos");
-                        toast.success("Projeto encerrado");
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  <p className="mt-1.5 break-words text-xs text-muted-foreground">
+                    Renova {formatDate(p.renovacao)} · {nomeDe(p.responsavel_id)}
+                  </p>
+                </div>
+                <span className="font-display text-sm font-semibold tabular-nums">{formatCurrency(p.mrr)}</span>
+                <div className="flex shrink-0 items-center gap-1">
+                  {p.tipo !== "cs" && (
+                    <Button size="sm" variant="outline" asChild>
+                      <Link to={destinoDoProjeto[p.tipo](id)}>Abrir painel <ExternalLink /></Link>
                     </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                  )}
+                  <Button
+                    variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                    title="Encerrar projeto" aria-label={`Encerrar projeto ${tipoProjetoLabels[p.tipo]}`}
+                    onClick={async () => {
+                      await encerrarProjeto(p.id);
+                      recarregar("projetos");
+                      toast.success("Projeto encerrado");
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </section>
+      </Card>
 
-      {/* equipe alocada */}
+      {/* venda adicional e equipe alocada */}
       <VendaAdicional empresaId={id} />
 
       <EquipeAlocada empresaId={id} />
 
       {/* contatos */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-sm font-semibold">Contatos</p>
+      <Card className="overflow-hidden">
+        <CardHeader className={cabecalhoCartao}>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Users className="h-4 w-4 text-accent" aria-hidden /> Contatos
+          </CardTitle>
           <Dialog open={contatoAberto} onOpenChange={setContatoAberto}>
             <DialogTrigger asChild><Button size="sm" variant="outline"><Plus /> Contato</Button></DialogTrigger>
             <DialogContent>
@@ -315,10 +362,10 @@ export function ContaDoCliente({ empresa }: { empresa: EmpresaDossie }) {
                   <Input id="c-tel" className="mt-1.5" value={contato.telefone}
                     onChange={(e) => setContato({ ...contato, telefone: e.target.value })} />
                 </div>
-                <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground sm:col-span-2">
+                <label className="flex min-h-9 cursor-pointer items-center gap-2 text-sm text-muted-foreground sm:col-span-2">
                   <input type="checkbox" checked={contato.principal}
                     onChange={(e) => setContato({ ...contato, principal: e.target.checked })}
-                    className="h-3.5 w-3.5 accent-[hsl(var(--primary))]" />
+                    className={caixaMarcar} />
                   Contato principal da conta
                 </label>
                 <Button className="sm:col-span-2" disabled={!contato.nome.trim()}
@@ -326,52 +373,58 @@ export function ContaDoCliente({ empresa }: { empresa: EmpresaDossie }) {
               </div>
             </DialogContent>
           </Dialog>
-        </div>
+        </CardHeader>
 
-        {contatos?.length === 0 ? (
-          <EstadoVazio icone={Users} titulo="Nenhum contato"
+        {!contatos ? (
+          <LinhasEspera />
+        ) : contatos.length === 0 ? (
+          <VazioNoCartao icone={Users} titulo="Nenhum contato"
             descricao="Cadastre quem decide, quem aprova e quem opera do lado do cliente." />
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {contatos?.map((c) => (
-              <Card key={c.id}>
-                <CardContent className="p-4 pt-4">
-                  <div className="mb-2 flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{c.nome}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {c.cargo ?? "—"}{c.area ? ` · ${c.area}` : ""}
-                      </p>
-                    </div>
+          <ul className="divide-y border-t">
+            {contatos.map((c) => (
+              <li key={c.id} className="flex items-start gap-3 px-5 py-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <p className="break-words text-sm font-medium">{c.nome}</p>
                     {c.principal && (
-                      <Badge variant="info" className="shrink-0 gap-1 text-[9px]">
-                        <Star className="h-2.5 w-2.5" /> Principal
+                      <Badge variant="info" className="shrink-0 gap-1">
+                        <Star className="h-3 w-3" aria-hidden /> Principal
                       </Badge>
                     )}
                   </div>
-                  <div className="space-y-1 border-t pt-2 text-xs text-muted-foreground">
-                    {c.email && <p className="flex items-center gap-2 truncate">
-                      <Mail className="h-3 w-3 shrink-0" /> {c.email}</p>}
-                    {c.telefone && <p className="flex items-center gap-2">
-                      <Phone className="h-3 w-3 shrink-0" /> {c.telefone}</p>}
-                    {c.linkedin && <p className="flex items-center gap-2 truncate">
-                      <Link2 className="h-3 w-3 shrink-0" /> {c.linkedin}</p>}
-                  </div>
-                  <Button variant="ghost" size="sm" className="mt-2 h-7 w-full text-xs"
-                    onClick={async () => { await removerContato(c.id); recarregar("contatos"); }}>
-                    <Trash2 className="h-3 w-3" /> Remover
-                  </Button>
-                </CardContent>
-              </Card>
+                  <p className="mt-0.5 break-words text-xs text-muted-foreground">
+                    {c.cargo ?? "—"}{c.area ? ` · ${c.area}` : ""}
+                  </p>
+                  {(c.email || c.telefone || c.linkedin) && (
+                    <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      {c.email && <span className="flex min-w-0 items-center gap-1.5">
+                        <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden /> <span className="truncate">{c.email}</span></span>}
+                      {c.telefone && <span className="flex items-center gap-1.5 tabular-nums">
+                        <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden /> {c.telefone}</span>}
+                      {c.linkedin && <span className="flex min-w-0 items-center gap-1.5">
+                        <Link2 className="h-3.5 w-3.5 shrink-0" aria-hidden /> <span className="truncate">{c.linkedin}</span></span>}
+                    </div>
+                  )}
+                </div>
+                <Button variant="ghost" size="icon"
+                  className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+                  title="Remover contato" aria-label={`Remover contato ${c.nome}`}
+                  onClick={async () => { await removerContato(c.id); recarregar("contatos"); }}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </section>
+      </Card>
 
       {/* conquistas */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-sm font-semibold">Conquistas</p>
+      <Card className="overflow-hidden">
+        <CardHeader className={cabecalhoCartao}>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Trophy className="h-4 w-4 text-accent" aria-hidden /> Conquistas
+          </CardTitle>
           <Dialog open={conquistaAberta} onOpenChange={setConquistaAberta}>
             <DialogTrigger asChild><Button size="sm" variant="outline"><Trophy /> Registrar</Button></DialogTrigger>
             <DialogContent>
@@ -403,10 +456,10 @@ export function ContaDoCliente({ empresa }: { empresa: EmpresaDossie }) {
                   <Textarea id="q-desc" className="mt-1.5" value={conquista.descricao}
                     onChange={(e) => setConquista({ ...conquista, descricao: e.target.value })} />
                 </div>
-                <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+                <label className="flex min-h-9 cursor-pointer items-center gap-2 text-sm text-muted-foreground">
                   <input type="checkbox" checked={conquista.destaque}
                     onChange={(e) => setConquista({ ...conquista, destaque: e.target.checked })}
-                    className="h-3.5 w-3.5 accent-[hsl(var(--primary))]" />
+                    className={caixaMarcar} />
                   Mostrar na visão geral
                 </label>
                 <Button className="w-full" disabled={!conquista.titulo.trim()}
@@ -414,43 +467,49 @@ export function ContaDoCliente({ empresa }: { empresa: EmpresaDossie }) {
               </div>
             </DialogContent>
           </Dialog>
-        </div>
+        </CardHeader>
 
-        {conquistas?.length === 0 ? (
-          <EstadoVazio icone={Trophy} titulo="Nenhuma conquista registrada"
+        {!conquistas ? (
+          <LinhasEspera />
+        ) : conquistas.length === 0 ? (
+          <VazioNoCartao icone={Trophy} titulo="Nenhuma conquista registrada"
             descricao="Registre os resultados que provam o trabalho. As de destaque aparecem na visão geral." />
         ) : (
-          <div className="space-y-3">
-            {conquistas?.map((c) => (
-              <Card key={c.id}>
-                <CardContent className="flex items-start gap-4 p-4 pt-4">
+          <ul className="divide-y border-t">
+            {conquistas.map((c) => (
+              <li key={c.id} className="flex items-start gap-3 px-5 py-3">
+                <div className="flex min-w-0 flex-1 flex-col gap-x-4 gap-y-2 sm:flex-row sm:items-start">
                   {c.indicador && (
-                    <div className="shrink-0 rounded-md bg-accent/10 px-3 py-2">
-                      <p className="text-lg font-bold leading-tight text-accent">{c.indicador}</p>
-                    </div>
+                    <p className="max-w-full self-start break-words rounded-md bg-accent/10 px-3 py-1.5 font-display text-base font-semibold leading-snug text-accent sm:max-w-[16rem] sm:shrink-0">
+                      {c.indicador}
+                    </p>
                   )}
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-medium">{c.titulo}</p>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <p className="break-words text-sm font-medium">{c.titulo}</p>
                       {c.destaque && (
-                        <Badge variant="warning" className="gap-1 text-[9px]">
-                          <Star className="h-2.5 w-2.5" /> Destaque
+                        <Badge variant="warning" className="gap-1">
+                          <Star className="h-3 w-3" aria-hidden /> Destaque
                         </Badge>
                       )}
                     </div>
-                    {c.descricao && <p className="mt-1 text-sm text-muted-foreground">{c.descricao}</p>}
-                    <p className="mt-1 text-xs text-muted-foreground">{formatDate(c.data)}</p>
+                    {c.descricao && (
+                      <p className="mt-1 break-words text-sm leading-relaxed text-muted-foreground">{c.descricao}</p>
+                    )}
+                    <p className="mt-1 text-xs tabular-nums text-muted-foreground">{formatDate(c.data)}</p>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"
-                    onClick={async () => { await removerConquista(c.id); recarregar("conquistas"); }}>
-                    <Trash2 className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                </CardContent>
-              </Card>
+                </div>
+                <Button variant="ghost" size="icon"
+                  className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+                  title="Remover conquista" aria-label={`Remover conquista ${c.titulo}`}
+                  onClick={async () => { await removerConquista(c.id); recarregar("conquistas"); }}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
-      </section>
+      </Card>
     </div>
   );
 }

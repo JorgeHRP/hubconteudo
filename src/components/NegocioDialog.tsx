@@ -80,15 +80,15 @@ export function NegocioDialog({ negocio, gatilho }: { negocio?: VendaNegocio; ga
   return (
     <Dialog open={aberto} onOpenChange={setAberto}>
       <DialogTrigger asChild>{gatilho}</DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="p-5 sm:p-6">
+        <DialogHeader className="pr-6">
           <DialogTitle>{negocio ? "Editar negócio" : "Novo negócio"}</DialogTitle>
           <DialogDescription>
             Ao marcar como ganho ou perdido, o negócio sai do pipeline e entra na taxa de conversão.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Label htmlFor="n-nome">Negócio</Label>
             <Input id="n-nome" className="mt-1.5" placeholder="Inbound 2027 — Graduação" {...campo("nome")} />
@@ -99,22 +99,22 @@ export function NegocioDialog({ negocio, gatilho }: { negocio?: VendaNegocio; ga
           </div>
           <div>
             <Label htmlFor="n-valor">Valor (R$)</Label>
-            <Input id="n-valor" type="number" min="0" step="0.01" className="mt-1.5" {...campo("valor")} />
+            <Input id="n-valor" type="number" min="0" step="0.01" inputMode="decimal" className="mt-1.5 tabular-nums" {...campo("valor")} />
           </div>
           <div>
-            <Label>Etapa</Label>
+            <Label htmlFor="n-etapa">Etapa</Label>
             <Select value={form.etapa} onValueChange={(v) => setForm({ ...form, etapa: v as EtapaFunil })}>
-              <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+              <SelectTrigger id="n-etapa" className="mt-1.5"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {etapasFunil.map((e) => <SelectItem key={e.valor} value={e.valor}>{e.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label>Unidade</Label>
+            <Label htmlFor="n-unidade">Unidade</Label>
             <Select value={form.produto}
               onValueChange={(v) => setForm({ ...form, produto: v as Form["produto"] })}>
-              <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+              <SelectTrigger id="n-unidade" className="mt-1.5"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={SEM_UNIDADE}>Sem unidade</SelectItem>
                 {Object.entries(produtoLabels).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}
@@ -131,13 +131,16 @@ export function NegocioDialog({ negocio, gatilho }: { negocio?: VendaNegocio; ga
           </div>
         </div>
 
-        <div className="mt-2 flex gap-2">
-          {negocio && (
-            <Button variant="outline" disabled={remover.isPending} onClick={() => remover.mutate()}>
+        <div className="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+          {negocio ? (
+            <Button variant="outline" disabled={remover.isPending} onClick={() => remover.mutate()}
+              className="text-destructive hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
               <Trash2 /> Remover
             </Button>
+          ) : (
+            <span aria-hidden className="hidden sm:block" />
           )}
-          <Button className="flex-1" disabled={!form.nome.trim() || salvar.isPending}
+          <Button className="sm:min-w-44" disabled={!form.nome.trim() || salvar.isPending}
             onClick={() => salvar.mutate()}>
             {negocio ? "Salvar" : "Cadastrar negócio"}
           </Button>

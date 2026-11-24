@@ -19,8 +19,8 @@ const BacklinksMartech = () => {
   return (
     <div className="space-y-6 max-w-7xl">
       <div>
-        <h1 className="text-2xl font-bold gradient-text">Backlinks Conteúdo Martech</h1>
-        <p className="text-muted-foreground text-sm mt-1">Clique em qualquer célula para editar</p>
+        <h2 className="text-lg font-semibold leading-tight text-foreground sm:text-xl">Backlinks Conteúdo Martech</h2>
+        <p className="mt-0.5 text-sm text-muted-foreground">Clique em qualquer célula para editar</p>
       </div>
       <EditableDataTable
         data={backlinksData}

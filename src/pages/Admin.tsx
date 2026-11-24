@@ -19,6 +19,10 @@ import { ClickUpDialog } from "@/components/ClickUpDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { EstadoVazio } from "@/components/EstadoVazio";
+import { EsqueletoIndicadores, EsqueletoTabela } from "@/components/Esqueletos";
+import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -96,7 +100,7 @@ export default function Admin() {
       />
 
       <Tabs defaultValue="usuarios">
-        <TabsList>
+        <TabsList className="h-auto max-w-full flex-wrap justify-start">
           <TabsTrigger value="usuarios"><Users /> Usuários</TabsTrigger>
           <TabsTrigger value="equipes"><UsersRound /> Equipes</TabsTrigger>
           <TabsTrigger value="integracoes"><Plug /> Integrações</TabsTrigger>
@@ -104,103 +108,125 @@ export default function Admin() {
         </TabsList>
 
         <TabsContent value="usuarios">
-          <Card>
-            <CardContent className="p-0">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/30">
-                  <tr className="text-left text-xs text-muted-foreground">
-                    <th className="p-3 font-medium">Nome</th>
-                    <th className="hidden p-3 font-medium md:table-cell">E-mail</th>
-                    <th className="p-3 font-medium">Papel</th>
-                    <th className="hidden p-3 font-medium lg:table-cell">Painéis</th>
-                    <th className="p-3 text-right font-medium">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {profiles?.map((p) => {
+          {!profiles ? (
+            <div role="status" aria-label="Carregando usuários">
+              <EsqueletoTabela linhas={6} colunas={4} />
+            </div>
+          ) : profiles.length === 0 ? (
+            <EstadoVazio
+              icone={Users}
+              titulo="Nenhum usuário cadastrado"
+              descricao="Cadastre a primeira pessoa do time pelo botão no topo da página. Depois é só definir o papel e os painéis que ela enxerga."
+            />
+          ) : (
+            <Card className="overflow-hidden">
+              <Table className="min-w-[32rem]">
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead>Nome</TableHead>
+                    <TableHead className="hidden md:table-cell">E-mail</TableHead>
+                    <TableHead>Papel</TableHead>
+                    <TableHead className="hidden lg:table-cell">Painéis</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {profiles.map((p) => {
                     const papel = papelDe(p.user_id);
                     const mods = modulosDe(p.user_id);
                     const euMesmo = p.user_id === userId;
                     return (
-                      <tr key={p.id} className="border-b hover:bg-muted/20">
-                        <td className="p-3">
-                          <span className={p.ativo ? "font-medium" : "font-medium text-muted-foreground line-through"}>
-                            {p.nome}
-                          </span>
-                          <p className="text-xs text-muted-foreground">{p.cargo ?? "—"}</p>
-                        </td>
-                        <td className="hidden p-3 text-muted-foreground md:table-cell">
-                          {p.email}
-                          {p.convite_enviado_em && (
-                            <Badge variant="info" className="ml-2 text-[9px]">convite enviado</Badge>
-                          )}
-                        </td>
-                        <td className="p-3">
+                      <TableRow key={p.id}>
+                        <TableCell>
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span className={p.ativo ? "font-medium" : "font-medium text-muted-foreground line-through"}>
+                              {p.nome}
+                            </span>
+                            {!p.ativo && <Badge variant="secondary">Inativo</Badge>}
+                          </div>
+                          <p className="mt-0.5 text-xs text-muted-foreground">{p.cargo ?? "—"}</p>
+                        </TableCell>
+                        <TableCell className="hidden text-muted-foreground md:table-cell">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span className="break-all">{p.email}</span>
+                            {p.convite_enviado_em && (
+                              <Badge variant="info" className="whitespace-nowrap">Convite enviado</Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
                           <Select
                             value={papel}
                             disabled={!isMaster || euMesmo}
                             onValueChange={(v) => mudarPapel.mutate({ user_id: p.user_id, role: v as AppRole })}
                           >
-                            <SelectTrigger className="h-8 w-36 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="h-9 w-36 text-xs" aria-label={`Papel de ${p.nome}`}>
+                              <SelectValue />
+                            </SelectTrigger>
                             <SelectContent>
                               {(Object.keys(roleLabels) as AppRole[]).map((r) => (
                                 <SelectItem key={r} value={r}>{roleLabels[r]}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-                        </td>
-                        <td className="hidden p-3 lg:table-cell">
-                          <div className="flex flex-wrap gap-1">
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <div className="flex max-w-md flex-wrap gap-1">
                             {papel === "master" ? (
-                              <Badge variant="secondary" className="text-[9px]">todos</Badge>
+                              <Badge variant="outline">Todos os painéis</Badge>
                             ) : mods.length === 0 ? (
                               <span className="text-xs text-muted-foreground">—</span>
                             ) : (
                               mods.map((m) => (
-                                <Badge key={m} variant="secondary" className="text-[9px]">
+                                <Badge key={m} variant="secondary">
                                   {moduloLabels[m]}
                                 </Badge>
                               ))
                             )}
                           </div>
-                        </td>
-                        <td className="p-3">
-                          <div className="flex justify-end gap-1">
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex justify-end gap-0.5">
                             <Button
-                              variant="ghost" size="icon" className="h-8 w-8" title="Reenviar convite"
+                              variant="ghost" size="icon" className="h-9 w-9" title="Reenviar convite"
+                              aria-label={`Reenviar convite para ${p.nome}`}
                               onClick={() => reenviar.mutate(p.user_id)}
                             >
                               <Mail className="h-4 w-4" />
                             </Button>
                             <PermissoesDialog userId={p.user_id} nome={p.nome} papel={papel} />
                             <Button
-                              variant="ghost" size="icon" className="h-8 w-8"
+                              variant="ghost" size="icon" className="h-9 w-9"
                               title={p.ativo ? "Desativar" : "Reativar"}
+                              aria-label={p.ativo ? `Desativar ${p.nome}` : `Reativar ${p.nome}`}
                               disabled={euMesmo}
                               onClick={() => alternar.mutate(p.user_id)}
                             >
                               <Power className={p.ativo ? "h-4 w-4" : "h-4 w-4 text-destructive"} />
                             </Button>
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
+            </Card>
+          )}
+
+          <p className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            O que cada papel pode fazer
+          </p>
+          <Card>
+            <CardContent className="grid p-0 sm:grid-cols-3 sm:divide-x">
+              {(Object.keys(roleLabels) as AppRole[]).map((r) => (
+                <div key={r} className="border-b p-4 last:border-b-0 sm:border-b-0">
+                  <p className="text-sm font-semibold">{roleLabels[r]}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{roleDescricoes[r]}</p>
+                </div>
+              ))}
             </CardContent>
           </Card>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            {(Object.keys(roleLabels) as AppRole[]).map((r) => (
-              <Card key={r}>
-                <CardContent className="p-4 pt-4">
-                  <p className="text-sm font-semibold">{roleLabels[r]}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{roleDescricoes[r]}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
         </TabsContent>
 
         <TabsContent value="equipes">
@@ -208,90 +234,135 @@ export default function Admin() {
         </TabsContent>
 
         <TabsContent value="integracoes">
-          <div className="grid gap-3 sm:grid-cols-2">
-            {integracoes?.map((i) => (
-              <Card key={i.chave}>
-                <CardContent className="p-4 pt-4">
-                  <div className="mb-2 flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="font-medium">{i.nome}</p>
-                      <p className="text-xs text-muted-foreground">{i.descricao}</p>
+          {!integracoes ? (
+            <div role="status" aria-label="Carregando integrações">
+              <EsqueletoIndicadores />
+            </div>
+          ) : integracoes.length === 0 ? (
+            <EstadoVazio
+              icone={Plug}
+              titulo="Nenhuma integração disponível"
+              descricao="As fontes de dados que alimentam os painéis aparecem aqui assim que forem cadastradas."
+            />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {integracoes.map((i) => (
+                <Card key={i.chave} className="flex flex-col">
+                  <CardContent className="flex flex-1 flex-col p-4">
+                    <div className="flex items-start gap-3">
+                      <span
+                        aria-hidden
+                        className={cn(
+                          "flex h-9 w-9 shrink-0 items-center justify-center rounded-md",
+                          i.conectada ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+                        )}
+                      >
+                        <Plug className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                          <p className="text-sm font-semibold">{i.nome}</p>
+                          <Badge variant={i.conectada ? "success" : "secondary"} className="shrink-0 whitespace-nowrap">
+                            {i.conectada ? "Conectada" : "Não conectada"}
+                          </Badge>
+                        </div>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{i.descricao}</p>
+                      </div>
                     </div>
-                    <Badge variant={i.conectada ? "success" : "secondary"} className="shrink-0 text-[9px]">
-                      {i.conectada ? "Conectada" : "Não conectada"}
-                    </Badge>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 border-t pt-3 text-xs text-muted-foreground">
-                    <span>Alimenta: <strong className="text-foreground">{i.destino}</strong></span>
-                    <span>·</span>
-                    <code className="rounded bg-muted px-1.5 py-0.5">{i.segredo}</code>
-                  </div>
-                  {i.ultima_sincronizacao && (
-                    <p className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground">
-                      <CheckCircle2 className="h-3 w-3 text-success" />
-                      Sincronizado em {new Date(i.ultima_sincronizacao).toLocaleString("pt-BR")}
-                    </p>
-                  )}
-                  {isMaster && i.chave === "clickup" && loginReal && (
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      <ClickUpDialog />
-                      <Button size="sm" disabled={sincronizar.isPending} onClick={() => sincronizar.mutate()}>
-                        {sincronizar.isPending ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-                        Sincronizar agora
-                      </Button>
-                    </div>
-                  )}
-                  {isMaster && !(i.chave === "clickup" && loginReal) && (
-                    <Button
-                      variant={i.conectada ? "outline" : "default"}
-                      size="sm"
-                      className="mt-3 w-full"
-                      onClick={() => ligar.mutate({ chave: i.chave, conectada: !i.conectada })}
-                    >
-                      {i.conectada ? "Desligar" : "Marcar como conectada"}
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          <p className="mt-4 text-xs text-muted-foreground">
+                    <dl className="mt-3 space-y-1.5 border-t pt-3 text-xs">
+                      <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                        <dt className="text-muted-foreground">Alimenta</dt>
+                        <dd className="font-medium text-foreground">{i.destino}</dd>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5">
+                        <dt className="text-muted-foreground">Segredo</dt>
+                        <dd className="min-w-0">
+                          <code className="break-all rounded bg-muted px-1.5 py-0.5 text-muted-foreground">{i.segredo}</code>
+                        </dd>
+                      </div>
+                    </dl>
+                    {i.ultima_sincronizacao && (
+                      <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-success" aria-hidden />
+                        Sincronizado em {new Date(i.ultima_sincronizacao).toLocaleString("pt-BR")}
+                      </p>
+                    )}
+                    {isMaster && i.chave === "clickup" && loginReal && (
+                      <div className="mt-auto grid gap-2 pt-3 min-[420px]:grid-cols-2">
+                        <ClickUpDialog />
+                        <Button size="sm" disabled={sincronizar.isPending} onClick={() => sincronizar.mutate()}>
+                          {sincronizar.isPending ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+                          Sincronizar agora
+                        </Button>
+                      </div>
+                    )}
+                    {isMaster && !(i.chave === "clickup" && loginReal) && (
+                      <div className="mt-auto pt-3">
+                        <Button
+                          variant={i.conectada ? "outline" : "default"}
+                          size="sm"
+                          className="w-full"
+                          onClick={() => ligar.mutate({ chave: i.chave, conectada: !i.conectada })}
+                        >
+                          {i.conectada ? "Desligar" : "Marcar como conectada"}
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+          <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
             Ligar aqui registra a intenção e libera a interface. A sincronização de verdade
-            depende da edge function <code>sync-&lt;serviço&gt;</code> e do segredo cadastrado no Supabase.
+            depende da edge function <code className="rounded bg-muted px-1 py-0.5">sync-&lt;serviço&gt;</code> e do segredo cadastrado no Supabase.
           </p>
         </TabsContent>
 
         <TabsContent value="paineis">
-          <div className="grid gap-3 sm:grid-cols-2">
-            {paineis?.map((p) => (
-              <Card key={p.chave}>
-                <CardContent className="p-4 pt-4">
-                  <div className="mb-2 flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="font-medium">{p.nome}</p>
-                      <p className="text-xs text-muted-foreground">{p.descricao}</p>
+          {!paineis ? (
+            <div role="status" aria-label="Carregando painéis">
+              <EsqueletoIndicadores />
+            </div>
+          ) : paineis.length === 0 ? (
+            <EstadoVazio
+              icone={Link2}
+              titulo="Nenhum painel externo"
+              descricao="Os painéis incorporados ao menu lateral aparecem aqui, com a indicação de quais já têm endereço configurado."
+            />
+          ) : (
+            <Card className="overflow-hidden">
+              <ul className="divide-y">
+                {paineis.map((p) => (
+                  <li key={p.chave} className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-4 py-3">
+                    <div className="min-w-0 flex-1 basis-56">
+                      <p className="text-sm font-medium">{p.nome}</p>
+                      <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{p.descricao}</p>
+                      {p.url && (
+                        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Link2 className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden />
+                          <span className="truncate">{p.url}</span>
+                        </p>
+                      )}
                     </div>
-                    <Badge variant={p.url ? "success" : "secondary"} className="shrink-0 text-[9px]">
+                    <Badge variant={p.url ? "success" : "secondary"} className="shrink-0 whitespace-nowrap">
                       {p.url ? "Configurado" : "Sem URL"}
                     </Badge>
-                  </div>
-                  {p.url && (
-                    <p className="truncate border-t pt-2 text-xs text-muted-foreground">{p.url}</p>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
           <p className="mt-4 text-xs text-muted-foreground">
             A URL de cada painel é configurada na própria tela dele, no menu lateral.
           </p>
 
           {isMaster && (
-            <Card className="mt-6 border border-destructive/30">
-              <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 pt-4">
-                <div>
+            <Card className="mt-6 border-destructive/30">
+              <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+                <div className="min-w-0 flex-1 basis-64">
                   <p className="text-sm font-medium">Zerar dados locais</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
                     Apaga tudo o que foi cadastrado neste navegador e volta ao estado inicial.
                     Útil enquanto o Supabase não está conectado.
                   </p>

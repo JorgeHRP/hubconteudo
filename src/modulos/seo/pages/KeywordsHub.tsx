@@ -13,11 +13,11 @@ const KeywordsHub = () => {
   return (
     <div className="space-y-6 max-w-7xl">
       <div>
-        <h1 className="text-2xl font-bold gradient-text">Palavras-chave</h1>
-        <p className="text-muted-foreground text-sm mt-1">Gestão completa de palavras-chave por categoria</p>
+        <h2 className="text-lg font-semibold leading-tight text-foreground sm:text-xl">Palavras-chave</h2>
+        <p className="mt-0.5 text-sm text-muted-foreground">Gestão completa de palavras-chave por categoria</p>
       </div>
       <Tabs defaultValue="escolhidas" className="w-full">
-        <TabsList className="bg-muted/50 backdrop-blur-sm border border-border/50 mb-6 flex-wrap h-auto gap-1 p-1">
+        <TabsList className="mb-2 h-auto max-w-full flex-wrap justify-start gap-1 p-1">
           <TabsTrigger value="escolhidas">Escolhidas</TabsTrigger>
           <TabsTrigger value="todas">Todas Palavras-Chave</TabsTrigger>
           <TabsTrigger value="gsc">Google Search Console</TabsTrigger>

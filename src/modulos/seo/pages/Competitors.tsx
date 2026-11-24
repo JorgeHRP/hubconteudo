@@ -69,7 +69,7 @@ const Competitors = () => {
   return (
     <div className="space-y-6 max-w-7xl">
       <div>
-        <h1 className="text-2xl font-bold gradient-text">Palavras-chave Concorrentes</h1>
+        <h2 className="text-lg font-semibold leading-tight text-foreground sm:text-xl">Palavras-chave Concorrentes</h2>
         <p className="text-muted-foreground text-sm mt-1">Clique em qualquer célula para editar</p>
       </div>
       <EditableDataTable

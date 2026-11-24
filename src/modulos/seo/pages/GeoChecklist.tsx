@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClipboardCheck, Zap, Shield, MousePointerClick } from "lucide-react";
 import { useComecaVazio } from "@/modulos/seo/contexts/ProjetoSeoContext";
 import { SecaoSemDados } from "@/modulos/seo/components/SecaoSemDados";
@@ -18,19 +19,19 @@ interface ChecklistSection {
 }
 
 const effortColor = (v: string) =>
-  v === "Baixo" ? "bg-green-500/20 text-green-400 border-green-500/30" :
-  v === "Médio" ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" :
-  "bg-red-500/20 text-red-400 border-red-500/30";
+  v === "Baixo" ? "border-success/20 bg-success/10 text-success" :
+  v === "Médio" ? "border-warning/30 bg-warning/15 text-warning-strong" :
+  "border-destructive/20 bg-destructive/10 text-destructive";
 
 const impactColor = (v: string) =>
-  v === "Alto" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" :
-  v === "Médio" ? "bg-blue-500/20 text-blue-400 border-blue-500/30" :
-  "bg-muted text-muted-foreground border-border";
+  v === "Alto" ? "border-primary/20 bg-primary/10 text-primary" :
+  v === "Médio" ? "border-info/20 bg-info/10 text-info" :
+  "border-border bg-muted text-muted-foreground";
 
 const sections: ChecklistSection[] = [
   {
     title: "Relevância do Conteúdo",
-    icon: <ClipboardCheck className="h-5 w-5 text-primary" />,
+    icon: <ClipboardCheck className="h-4 w-4" />,
     items: [
       { text: "Criar textos que respondam perguntas objetivamente nos primeiros parágrafos", effort: "Médio", impact: "Alto" },
       { text: "Criar conteúdo original — experiências pessoais, estudos, comparativos", effort: "Alto", impact: "Alto" },
@@ -53,7 +54,7 @@ const sections: ChecklistSection[] = [
   },
   {
     title: "Autoridade e Confiabilidade",
-    icon: <Shield className="h-5 w-5 text-cyan-400" />,
+    icon: <Shield className="h-4 w-4" />,
     items: [
       { text: "Criar páginas de autoria bem definidas — nomes, cargos e bios dos autores", effort: "Médio", impact: "Alto" },
       { text: "Referenciar fontes confiáveis — mostrar que o conteúdo tem embasamento real", effort: "Baixo", impact: "Alto" },
@@ -66,7 +67,7 @@ const sections: ChecklistSection[] = [
   },
   {
     title: "Interação e Conversão",
-    icon: <MousePointerClick className="h-5 w-5 text-yellow-400" />,
+    icon: <MousePointerClick className="h-4 w-4" />,
     items: [
       { text: "Usar CTAs diretos e persuasivos, adaptados para IA generativa", effort: "Baixo", impact: "Alto" },
       { text: "Fornecer resumos curtos antes dos CTAs para aumentar a retenção", effort: "Baixo", impact: "Médio" },
@@ -104,80 +105,87 @@ const GeoChecklist = () => {
   return (
     <div className="space-y-6">
       {/* Progress */}
-      <div className="glass-card p-5">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-primary" />
-            <span className="font-semibold text-foreground">Progresso do Checklist</span>
+      <Card className="overflow-hidden">
+        <div className="p-5">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-accent" aria-hidden />
+              <span className="font-display text-base font-semibold text-foreground">Progresso do Checklist</span>
+            </div>
+            <span className="text-sm tabular-nums text-muted-foreground">{checkedCount}/{totalItems} itens ({pct}%)</span>
           </div>
-          <span className="text-sm text-muted-foreground">{checkedCount}/{totalItems} itens ({pct}%)</span>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-success transition-all duration-500"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
         </div>
-        <div className="w-full h-3 rounded-full bg-muted/50 overflow-hidden">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-primary to-cyan-400 transition-all duration-500"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-      </div>
 
-      {/* Legend */}
-      <div className="glass-card p-4 flex flex-wrap gap-4 text-xs">
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-muted-foreground">Esforço:</span>
-          <Badge variant="outline" className={effortColor("Baixo")}>Baixo</Badge>
-          <Badge variant="outline" className={effortColor("Médio")}>Médio</Badge>
-          <Badge variant="outline" className={effortColor("Alto")}>Alto</Badge>
+        {/* Legend */}
+        <div className="flex flex-wrap gap-x-6 gap-y-2 border-t bg-muted/50 px-5 py-3 text-xs">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 font-semibold uppercase tracking-wide text-muted-foreground">Esforço</span>
+            <Badge variant="outline" className={effortColor("Baixo")}>Baixo</Badge>
+            <Badge variant="outline" className={effortColor("Médio")}>Médio</Badge>
+            <Badge variant="outline" className={effortColor("Alto")}>Alto</Badge>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 font-semibold uppercase tracking-wide text-muted-foreground">Impacto</span>
+            <Badge variant="outline" className={impactColor("Alto")}>Alto</Badge>
+            <Badge variant="outline" className={impactColor("Médio")}>Médio</Badge>
+            <Badge variant="outline" className={impactColor("Baixo")}>Baixo</Badge>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-muted-foreground">Impacto:</span>
-          <Badge variant="outline" className={impactColor("Alto")}>Alto</Badge>
-          <Badge variant="outline" className={impactColor("Médio")}>Médio</Badge>
-          <Badge variant="outline" className={impactColor("Baixo")}>Baixo</Badge>
-        </div>
-      </div>
+      </Card>
 
       {/* Sections */}
       {sections.map((section) => (
-        <div key={section.title} className="glass-card p-5 space-y-4">
-          <div className="flex items-center gap-2">
-            {section.icon}
-            <h3 className="text-lg font-semibold text-foreground">{section.title}</h3>
-          </div>
-          <div className="space-y-2">
+        <Card key={section.title} className="overflow-hidden">
+          <CardHeader className="flex-row items-center gap-3 space-y-0 border-b px-5 py-4">
+            <span
+              aria-hidden
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary"
+            >
+              {section.icon}
+            </span>
+            <CardTitle className="text-base">{section.title}</CardTitle>
+          </CardHeader>
+          <div className="divide-y">
             {section.items.map((item, i) => {
               const key = `${section.title}-${i}`;
               const done = !!checked[key];
               return (
                 <div
                   key={key}
-                  className={`flex items-start gap-3 p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
-                    done
-                      ? "bg-primary/5 border-primary/30"
-                      : "bg-card/50 border-border/50 hover:border-border"
+                  className={`flex cursor-pointer items-start gap-3 px-5 py-3 transition-colors ${
+                    done ? "bg-success/5 hover:bg-success/10" : "hover:bg-muted/50"
                   }`}
                   onClick={() => toggle(key)}
                 >
                   <Checkbox
                     checked={done}
                     onCheckedChange={() => toggle(key)}
-                    className="mt-0.5"
+                    className="mt-0.5 data-[state=checked]:border-success data-[state=checked]:bg-success data-[state=checked]:text-success-foreground"
                   />
-                  <span className={`flex-1 text-sm ${done ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                    {item.text}
-                  </span>
-                  <div className="flex gap-1.5 shrink-0">
-                    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${effortColor(item.effort)}`}>
-                      {item.effort}
-                    </Badge>
-                    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${impactColor(item.impact)}`}>
-                      {item.impact}
-                    </Badge>
+                  <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
+                    <span className={`flex-1 text-sm leading-relaxed ${done ? "text-muted-foreground line-through" : "text-foreground"}`}>
+                      {item.text}
+                    </span>
+                    <div className="flex shrink-0 gap-1.5">
+                      <Badge variant="outline" title="Esforço" className={effortColor(item.effort)}>
+                        {item.effort}
+                      </Badge>
+                      <Badge variant="outline" title="Impacto" className={impactColor(item.impact)}>
+                        {item.impact}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
               );
             })}
           </div>
-        </div>
+        </Card>
       ))}
     </div>
   );

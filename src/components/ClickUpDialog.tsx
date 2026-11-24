@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Folder, List, Link2, Loader2, Wand2, X } from "lucide-react";
+import { AlertTriangle, Folder, List, Link2, Loader2, Wand2, X } from "lucide-react";
 import { toast } from "sonner";
 import { estruturaClickUp, listarEmpresas, vincularClickUp } from "@/data/store";
 import type { ClickUpEstrutura, ClickUpVinculo } from "@/lib/types";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Opcao extends ClickUpVinculo {
@@ -137,59 +138,78 @@ export function ClickUpDialog() {
         </DialogHeader>
 
         {estrutura.isLoading && (
-          <p className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Lendo pastas e listas do ClickUp…
-          </p>
+          <div role="status" className="space-y-3">
+            <p className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Lendo pastas e listas do ClickUp…
+            </p>
+            <div className="divide-y rounded-lg border" aria-hidden>
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="space-y-2.5 p-3">
+                  <Skeleton className="h-3.5 w-2/5" />
+                  <Skeleton className="h-9 w-full" />
+                </div>
+              ))}
+            </div>
+          </div>
         )}
         {estrutura.error && (
-          <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-            {(estrutura.error as Error).message}
+          <p role="alert"
+            className="flex items-start gap-2 rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            <span className="min-w-0 break-words">{(estrutura.error as Error).message}</span>
           </p>
         )}
 
         {estrutura.data && (
           <>
-            <div className="flex justify-end">
-              <Button variant="ghost" size="sm" onClick={sugerirTodas}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Clientes da carteira
+              </p>
+              <Button variant="outline" size="sm" onClick={sugerirTodas}>
                 <Wand2 /> Sugerir pelo nome
               </Button>
             </div>
-            <div className="divide-y rounded-md border">
+            <div className="divide-y rounded-lg border">
               {(empresas ?? []).map((e) => {
                 const lista = atuais(e.id);
                 return (
-                  <div key={e.id} className="space-y-2 p-3">
-                    <p className="text-sm font-medium">{e.nome_fantasia}</p>
+                  <div key={e.id} className="space-y-2.5 p-3">
+                    <p className="break-words text-sm font-medium">{e.nome_fantasia}</p>
                     {lista.length > 0 && (
                       <div className="flex flex-wrap gap-1.5">
                         {lista.map((v) => (
-                          <Badge key={v.id} variant="secondary" className="gap-1 pr-1 text-[11px] font-normal">
-                            {v.tipo === "pasta" ? <Folder className="h-3 w-3" /> : <List className="h-3 w-3" />}
-                            {v.nome}
+                          <Badge key={v.id} variant="secondary" className="max-w-full gap-1 py-0 pr-0.5 font-normal">
+                            {v.tipo === "pasta"
+                              ? <Folder className="h-3 w-3 shrink-0" aria-hidden />
+                              : <List className="h-3 w-3 shrink-0" aria-hidden />}
+                            <span className="min-w-0 truncate">{v.nome}</span>
                             <button
                               type="button"
-                              className="rounded p-0.5 hover:bg-muted"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                               title="Tirar"
+                              aria-label={`Tirar ${v.nome}`}
                               onClick={() => mudar(e.id, lista.filter((x) => x.id !== v.id))}
                             >
-                              <X className="h-3 w-3" />
+                              <X className="h-3.5 w-3.5" />
                             </button>
                           </Badge>
                         ))}
                       </div>
                     )}
                     <Select value="" onValueChange={(chave) => adicionar(e.id, chave)}>
-                      <SelectTrigger className="h-8 text-xs">
+                      <SelectTrigger className="h-9 text-sm"
+                        aria-label={`Adicionar pasta ou lista para ${e.nome_fantasia}`}>
                         <SelectValue placeholder="Adicionar pasta ou lista…" />
                       </SelectTrigger>
                       <SelectContent className="max-h-72">
                         {grupos.map((g) => (
                           <SelectGroup key={g.espaco}>
-                            <p className="px-2 py-1.5 text-[10px] font-semibold uppercase text-muted-foreground">
+                            <p className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                               {g.espaco}
                             </p>
                             {g.opcoes.map((o) => (
-                              <SelectItem key={`${o.tipo}:${o.id}`} value={`${o.tipo}:${o.id}`} className="text-xs">
+                              <SelectItem key={`${o.tipo}:${o.id}`} value={`${o.tipo}:${o.id}`}>
                                 {o.rotulo}
                               </SelectItem>
                             ))}
@@ -204,7 +224,7 @@ export function ClickUpDialog() {
           </>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={() => setAberto(false)}>Cancelar</Button>
           <Button disabled={!alterou || salvar.isPending} onClick={() => salvar.mutate()}>
             {salvar.isPending && <Loader2 className="animate-spin" />} Salvar vínculos
