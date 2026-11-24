@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, Sparkles, FolderOpen, MessageSquare, ListChecks, Link2, ThermometerSun,
   ExternalLink, Plus, Loader2, History, Video, Building2, BookMarked, ClipboardList,
+  Clock, AlertTriangle, CheckCircle2, RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,11 +26,15 @@ import { AcessoClienteCard } from "@/components/AcessoClienteCard";
 import { ContaDoCliente } from "@/components/ContaDoCliente";
 import { TarefaDialog } from "@/components/TarefaDialog";
 import { ReunioesCliente } from "@/components/ReunioesCliente";
+import { EstadoVazio } from "@/components/EstadoVazio";
+import { EsqueletoLista, EsqueletoPagina } from "@/components/Esqueletos";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -168,7 +173,7 @@ export default function ClienteDetalhe() {
   }
 
   if (!cliente) {
-    return <p className="py-12 text-center text-sm text-muted-foreground">Carregando cliente…</p>;
+    return <EsqueletoPagina />;
   }
 
   const mrrTotal = (projetos ?? []).reduce((s, p) => s + p.mrr, 0);
@@ -196,99 +201,130 @@ export default function ClienteDetalhe() {
 
   return (
     <div className="animate-fade-in">
-      <Link to="/cs" className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Voltar para o painel
+      <Link
+        to="/cs"
+        className="mb-4 inline-flex min-h-9 items-center gap-1.5 rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden /> Voltar para o painel
       </Link>
 
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-bold">{cliente.nome_fantasia}</h1>
-            <Badge variant={flagBadgeVariant[flagConta]}>{flagLabels[flagConta]}</Badge>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {[
-              cliente.razao_social,
-              cliente.cnpj ? `CNPJ ${cliente.cnpj}` : null,
-              cliente.segmento,
-              `${formatCurrency(mrrTotal)}/mês`,
-              `responsável ${nomeDe(cliente.responsavel_id)}`,
-            ].filter(Boolean).join(" · ")}
-          </p>
-        </div>
-
-        <div className="flex gap-2">
-        <TarefaDialog
-          empresaFixa={id}
-          gatilho={<Button variant="outline"><Plus /> Tarefa</Button>}
-        />
-        <Dialog open={churnAberto} onOpenChange={setChurnAberto}>
-          <DialogTrigger asChild>
-            <Button variant="destructive"><ThermometerSun /> Avaliar risco</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader><DialogTitle>Termômetro de churn — {cliente.nome_fantasia}</DialogTitle></DialogHeader>
-            <div className="space-y-4">
-              {perguntasChurn.map((p) => (
-                <div key={p.id}>
-                  <p className="mb-2 text-sm font-medium">{p.pergunta}</p>
-                  <div className="grid gap-1.5">
-                    {p.opcoes.map((opcao, valor) => (
-                      <button
-                        key={opcao}
-                        onClick={() => setRespostas((r) => ({ ...r, [p.id]: valor }))}
-                        className={cn(
-                          "rounded-md border px-3 py-1.5 text-left text-xs transition-colors",
-                          respostas[p.id] === valor
-                            ? "border-primary bg-primary/10 font-medium text-primary"
-                            : "hover:bg-muted/50"
-                        )}
-                      >
-                        <span className="mr-2 text-muted-foreground">{valor}</span>
-                        {opcao}
-                      </button>
-                    ))}
-                  </div>
+      {/* Cabeçalho-resumo da ficha: nome, situação e os dados principais da conta. */}
+      <Card className="mb-6">
+        <CardContent className="p-5">
+          <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+            <div className="flex min-w-0 items-start gap-3.5">
+              <span
+                aria-hidden
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+              >
+                <Building2 className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+                  <h1 className="break-words text-xl font-semibold leading-tight sm:text-2xl">
+                    {cliente.nome_fantasia}
+                  </h1>
+                  <Badge variant={flagBadgeVariant[flagConta]}>{flagLabels[flagConta]}</Badge>
                 </div>
-              ))}
-
-              <div>
-                <Label htmlFor="churn-com">Comentário</Label>
-                <Textarea id="churn-com" className="mt-1.5" value={comentarioChurn}
-                  onChange={(e) => setComentarioChurn(e.target.value)} />
+                <p className="mt-1 break-words text-sm text-muted-foreground">{cliente.razao_social}</p>
               </div>
-
-              <div className="flex items-center justify-between rounded-md bg-muted/40 p-3">
-                <div>
-                  <p className="text-xs text-muted-foreground">Pontuação</p>
-                  <p className="text-xl font-bold">{pontuacao} / {PONTUACAO_MAXIMA_CHURN}</p>
-                </div>
-                <Badge variant={flagBadgeVariant[flagPrevia]}>{flagLabels[flagPrevia]}</Badge>
-              </div>
-
-              <Button className="w-full" disabled={!todasRespondidas || avaliar.isPending}
-                onClick={() => avaliar.mutate()}>
-                Salvar avaliação do mês
-              </Button>
             </div>
-          </DialogContent>
-        </Dialog>
-        </div>
-      </div>
+
+            <div className="flex flex-wrap gap-2">
+              <TarefaDialog
+                empresaFixa={id}
+                gatilho={<Button variant="outline"><Plus /> Tarefa</Button>}
+              />
+              <Dialog open={churnAberto} onOpenChange={setChurnAberto}>
+                <DialogTrigger asChild>
+                  <Button variant="destructive"><ThermometerSun /> Avaliar risco</Button>
+                </DialogTrigger>
+                <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+                  <DialogHeader><DialogTitle>Termômetro de churn — {cliente.nome_fantasia}</DialogTitle></DialogHeader>
+                  <div className="space-y-5">
+                    {perguntasChurn.map((p) => (
+                      <div key={p.id}>
+                        <p className="mb-2 text-sm font-medium">{p.pergunta}</p>
+                        <div className="grid gap-1.5">
+                          {p.opcoes.map((opcao, valor) => (
+                            <button
+                              key={opcao}
+                              type="button"
+                              aria-pressed={respostas[p.id] === valor}
+                              onClick={() => setRespostas((r) => ({ ...r, [p.id]: valor }))}
+                              className={cn(
+                                "flex min-h-9 items-start gap-2.5 rounded-md border px-3 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                                respostas[p.id] === valor
+                                  ? "border-primary bg-primary/10 font-medium text-primary"
+                                  : "hover:bg-muted/50"
+                              )}
+                            >
+                              <span className="w-3 shrink-0 tabular-nums text-muted-foreground">{valor}</span>
+                              <span className="min-w-0">{opcao}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+
+                    <div>
+                      <Label htmlFor="churn-com">Comentário</Label>
+                      <Textarea id="churn-com" className="mt-1.5" value={comentarioChurn}
+                        onChange={(e) => setComentarioChurn(e.target.value)} />
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/50 p-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Pontuação</p>
+                        <p className="font-display text-xl font-semibold tabular-nums">
+                          {pontuacao} / {PONTUACAO_MAXIMA_CHURN}
+                        </p>
+                      </div>
+                      <Badge variant={flagBadgeVariant[flagPrevia]}>{flagLabels[flagPrevia]}</Badge>
+                    </div>
+
+                    <Button className="w-full" disabled={!todasRespondidas || avaliar.isPending}
+                      onClick={() => avaliar.mutate()}>
+                      Salvar avaliação do mês
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+
+          <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 border-t pt-4 lg:grid-cols-4">
+            {[
+              ["CNPJ", cliente.cnpj || "—"],
+              ["Segmento", cliente.segmento || "—"],
+              ["Receita mensal", `${formatCurrency(mrrTotal)}/mês`],
+              ["Responsável", nomeDe(cliente.responsavel_id)],
+            ].map(([rotulo, valor]) => (
+              <div key={rotulo} className="min-w-0">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{rotulo}</dt>
+                <dd className="mt-1 break-words text-sm font-medium tabular-nums">{valor}</dd>
+              </div>
+            ))}
+          </dl>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="conta">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="conta"><Building2 /> Conta</TabsTrigger>
-          <TabsTrigger value="historico"><History /> Histórico</TabsTrigger>
-          <TabsTrigger value="ia"><Sparkles /> Análise de IA</TabsTrigger>
-          <TabsTrigger value="reunioes"><Video /> Reuniões</TabsTrigger>
-          <TabsTrigger value="repo"><FolderOpen /> Repositório</TabsTrigger>
-          <TabsTrigger value="timeline"><MessageSquare /> Notas</TabsTrigger>
-          <TabsTrigger value="clickup"><ListChecks /> ClickUp</TabsTrigger>
-          <TabsTrigger value="dossie"><BookMarked /> Dossiê</TabsTrigger>
-          <TabsTrigger value="tarefas"><ClipboardList /> Tarefas</TabsTrigger>
-          <TabsTrigger value="integr"><Link2 /> Integrações</TabsTrigger>
-        </TabsList>
+        {/* No celular as abas rolam na horizontal; em tela maior, quebram linha. */}
+        <div className="-mx-1 overflow-x-auto px-1 pb-1">
+          <TabsList className="h-auto w-max justify-start sm:w-auto sm:flex-wrap">
+            <TabsTrigger value="conta"><Building2 /> Conta</TabsTrigger>
+            <TabsTrigger value="historico"><History /> Histórico</TabsTrigger>
+            <TabsTrigger value="ia"><Sparkles /> Análise de IA</TabsTrigger>
+            <TabsTrigger value="reunioes"><Video /> Reuniões</TabsTrigger>
+            <TabsTrigger value="repo"><FolderOpen /> Repositório</TabsTrigger>
+            <TabsTrigger value="timeline"><MessageSquare /> Notas</TabsTrigger>
+            <TabsTrigger value="clickup"><ListChecks /> ClickUp</TabsTrigger>
+            <TabsTrigger value="dossie"><BookMarked /> Dossiê</TabsTrigger>
+            <TabsTrigger value="tarefas"><ClipboardList /> Tarefas</TabsTrigger>
+            <TabsTrigger value="integr"><Link2 /> Integrações</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="conta">
           <ContaDoCliente empresa={cliente} />
@@ -299,8 +335,8 @@ export default function ClienteDetalhe() {
         </TabsContent>
 
         <TabsContent value="tarefas">
-          <div className="grid gap-4 lg:grid-cols-3">
-            <div className="lg:col-span-2">
+          <div className="grid gap-4 lg:grid-cols-3 lg:items-start">
+            <div className="min-w-0 lg:col-span-2">
               <TarefasDaEmpresa empresaId={id} />
             </div>
             <AcessoClienteCard empresaId={id} />
@@ -317,16 +353,22 @@ export default function ClienteDetalhe() {
 
         <TabsContent value="ia" className="space-y-4">
           <Card>
-            <CardContent className="p-4 pt-4">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Sparkles className="h-4 w-4 text-accent" aria-hidden /> Nova análise
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Input placeholder="Pergunta livre sobre este cliente (opcional)…"
+                  aria-label="Pergunta livre sobre este cliente (opcional)"
                   value={pergunta} onChange={(e) => setPergunta(e.target.value)} />
-                <Button onClick={gerarAnalise} disabled={gerando}>
+                <Button className="shrink-0" onClick={gerarAnalise} disabled={gerando}>
                   {gerando ? <Loader2 className="animate-spin" /> : <Sparkles />}
                   {gerando ? "Analisando…" : "Gerar análise"}
                 </Button>
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                 {comIA
                   ? "A IA lê a ficha inteira (frentes, notas, avaliações de churn, reuniões, recursos e tarefas do ClickUp) e sugere a flag. Leva alguns segundos."
                   : "Modo de demonstração: a análise é montada com regras fixas, sem IA."}
@@ -334,32 +376,36 @@ export default function ClienteDetalhe() {
             </CardContent>
           </Card>
 
+          {!analises && <EsqueletoLista linhas={2} />}
+
           {analises?.length === 0 && (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Nenhuma análise gerada ainda.
-            </p>
+            <EstadoVazio
+              icone={Sparkles}
+              titulo="Nenhuma análise gerada ainda"
+              descricao="Gere a primeira análise para ver resumo, percepções, riscos e recomendações deste cliente."
+            />
           )}
 
           {analises?.map((a) => (
-            <Card key={a.id}>
-              <CardContent className="space-y-3 p-5 pt-5">
-                <div className="flex items-center justify-between">
-                  <Badge variant={flagBadgeVariant[a.flag_sugerida]} className="text-[9px]">
-                    Flag sugerida: {flagLabels[a.flag_sugerida]}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(a.created_at).toLocaleString("pt-BR")}
-                  </span>
-                </div>
+            <Card key={a.id} className="overflow-hidden">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/50 px-5 py-3">
+                <Badge variant={flagBadgeVariant[a.flag_sugerida]}>
+                  Flag sugerida: {flagLabels[a.flag_sugerida]}
+                </Badge>
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  {new Date(a.created_at).toLocaleString("pt-BR")}
+                </span>
+              </div>
+              <CardContent className="grid gap-x-8 gap-y-4 p-5 md:grid-cols-2">
                 {([
                   ["Resumo", a.resumo],
                   ["Percepções", a.percepcoes],
                   ["Riscos", a.riscos],
                   ["Recomendações", a.recomendacoes],
                 ] as const).map(([titulo, texto]) => (
-                  <div key={titulo}>
+                  <div key={titulo} className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{titulo}</p>
-                    <p className="mt-0.5 text-sm">{texto}</p>
+                    <p className="mt-1 break-words text-sm leading-relaxed">{texto}</p>
                   </div>
                 ))}
               </CardContent>
@@ -367,31 +413,37 @@ export default function ClienteDetalhe() {
           ))}
 
           {(avaliacoes?.length ?? 0) > 0 && (
-            <Card>
-              <CardContent className="p-5 pt-5">
-                <p className="mb-3 text-sm font-semibold">Histórico do termômetro</p>
-                <div className="space-y-2">
-                  {avaliacoes?.map((a) => (
-                    <div key={a.id} className="flex items-center justify-between border-b pb-2 text-sm last:border-0">
-                      <span className="text-muted-foreground">{formatDate(a.referencia_mes)}</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-muted-foreground">
-                          {a.pontuacao}/{PONTUACAO_MAXIMA_CHURN}
-                        </span>
-                        <Badge variant={flagBadgeVariant[a.flag]} className="text-[9px]">
-                          {flagLabels[a.flag]}
-                        </Badge>
-                      </div>
+            <Card className="overflow-hidden">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <ThermometerSun className="h-4 w-4 text-accent" aria-hidden /> Histórico do termômetro
+                </CardTitle>
+              </CardHeader>
+              <ul className="divide-y border-t">
+                {avaliacoes?.map((a) => (
+                  <li key={a.id} className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
+                    <span className="tabular-nums">{formatDate(a.referencia_mes)}</span>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <span className="text-xs tabular-nums text-muted-foreground">
+                        {a.pontuacao}/{PONTUACAO_MAXIMA_CHURN}
+                      </span>
+                      <Badge variant={flagBadgeVariant[a.flag]}>
+                        {flagLabels[a.flag]}
+                      </Badge>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
+                  </li>
+                ))}
+              </ul>
             </Card>
           )}
         </TabsContent>
 
         <TabsContent value="repo">
-          <div className="mb-4 flex justify-end">
+          <Card className="overflow-hidden">
+            <CardHeader className="flex-row flex-wrap items-center justify-between gap-x-4 gap-y-2 space-y-0 pb-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <FolderOpen className="h-4 w-4 text-accent" aria-hidden /> Repositório
+              </CardTitle>
             <Dialog open={recursoAberto} onOpenChange={setRecursoAberto}>
               <DialogTrigger asChild><Button size="sm"><Plus /> Adicionar</Button></DialogTrigger>
               <DialogContent>
@@ -424,41 +476,77 @@ export default function ClienteDetalhe() {
                 </div>
               </DialogContent>
             </Dialog>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {recursos?.map((r) => (
-              <Card key={r.id}>
-                <CardContent className="p-4 pt-4">
-                  <Badge variant="secondary" className="mb-2 text-[9px]">{recursoTipoLabels[r.tipo]}</Badge>
-                  <p className="text-sm font-medium">{r.titulo}</p>
-                  {r.descricao && <p className="mt-0.5 text-xs text-muted-foreground">{r.descricao}</p>}
-                  <p className="mt-2 text-[10px] text-muted-foreground">
-                    {nomeDe(r.criado_por)} · {formatDate(r.created_at.slice(0, 10))}
+            </CardHeader>
+            {!recursos ? (
+              <div className="divide-y border-t" aria-hidden>
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="space-y-2 px-5 py-3">
+                    <Skeleton className="h-3.5 w-2/5" />
+                    <Skeleton className="h-3 w-3/5" />
+                  </div>
+                ))}
+              </div>
+            ) : recursos.length === 0 ? (
+              <div className="flex items-center gap-3 border-t px-5 py-4">
+                <span
+                  aria-hidden
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground"
+                >
+                  <FolderOpen className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm">Nenhum recurso ainda.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Guarde aqui relatórios, apresentações e links úteis deste cliente.
                   </p>
-                  {r.url && (
-                    <a href={r.url} target="_blank" rel="noreferrer"
-                      className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline">
-                      Abrir <ExternalLink className="h-3 w-3" />
-                    </a>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-            {recursos?.length === 0 && (
-              <p className="py-8 text-sm text-muted-foreground">Nenhum recurso ainda.</p>
+                </div>
+              </div>
+            ) : (
+              <ul className="divide-y border-t">
+                {recursos.map((r) => (
+                  <li key={r.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-3">
+                    <div className="min-w-0 flex-1 basis-56">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="break-words text-sm font-medium">{r.titulo}</p>
+                        <Badge variant="secondary">{recursoTipoLabels[r.tipo]}</Badge>
+                      </div>
+                      {r.descricao && (
+                        <p className="mt-0.5 break-words text-sm text-muted-foreground">{r.descricao}</p>
+                      )}
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {nomeDe(r.criado_por)} · {formatDate(r.created_at.slice(0, 10))}
+                      </p>
+                    </div>
+                    {r.url && (
+                      <Button variant="outline" size="sm" className="shrink-0" asChild>
+                        <a href={r.url} target="_blank" rel="noreferrer"
+                          aria-label={`Abrir ${r.titulo} em nova aba`}>
+                          Abrir <ExternalLink />
+                        </a>
+                      </Button>
+                    )}
+                  </li>
+                ))}
+              </ul>
             )}
-          </div>
+          </Card>
         </TabsContent>
 
-        <TabsContent value="timeline">
-          <Card className="mb-4">
-            <CardContent className="p-4 pt-4">
+        <TabsContent value="timeline" className="space-y-4">
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <MessageSquare className="h-4 w-4 text-accent" aria-hidden /> Nova nota
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <Textarea placeholder="Registrar nota, reunião, alerta ou entrega…"
+                aria-label="Texto da nota"
                 value={nota.conteudo} onChange={(e) => setNota({ ...nota, conteudo: e.target.value })}
-                className="resize-none border-0 bg-muted/40 focus-visible:ring-1" />
-              <div className="mt-3 flex items-center justify-between gap-2">
+                className="resize-none" />
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                 <Select value={nota.tipo} onValueChange={(v) => setNota({ ...nota, tipo: v as NotaTipo })}>
-                  <SelectTrigger className="h-9 w-36"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-9 w-40" aria-label="Tipo da nota"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {Object.entries(notaTipoLabels).map(([v, l]) => (
                       <SelectItem key={v} value={v}>{l}</SelectItem>
@@ -472,130 +560,155 @@ export default function ClienteDetalhe() {
             </CardContent>
           </Card>
 
-          <div className="space-y-3">
-            {notas?.map((n) => (
-              <div key={n.id} className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <span className={cn(
-                    "mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full",
-                    n.tipo === "alerta" ? "bg-destructive" : n.tipo === "entrega" ? "bg-success" :
-                    n.tipo === "reuniao" ? "bg-primary" : "bg-muted-foreground"
-                  )} />
-                  <span className="w-px flex-1 bg-border" />
-                </div>
-                <Card className="mb-1 flex-1">
-                  <CardContent className="p-3 pt-3">
-                    <div className="mb-1 flex flex-wrap items-center gap-2">
-                      <Badge variant="secondary" className="text-[9px]">{notaTipoLabels[n.tipo]}</Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {nomeDe(n.autor_id)} · {new Date(n.created_at).toLocaleDateString("pt-BR")}
-                      </span>
-                    </div>
-                    <p className="text-sm">{n.conteudo}</p>
-                  </CardContent>
-                </Card>
-              </div>
-            ))}
-            {notas?.length === 0 && (
-              <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma nota registrada.</p>
-            )}
-          </div>
+          {!notas ? (
+            <EsqueletoLista linhas={3} />
+          ) : notas.length === 0 ? (
+            <EstadoVazio
+              icone={MessageSquare}
+              titulo="Nenhuma nota registrada"
+              descricao="Registre acima o que aconteceu com este cliente: reunião, alerta, entrega ou observação do time."
+            />
+          ) : (
+            <Card>
+              <CardContent className="p-5">
+                {/* Linha do tempo: trilho fino à esquerda e um ponto por nota, na cor do tipo. */}
+                <ol className="ml-1.5 space-y-5 border-l pl-5">
+                  {notas.map((n) => (
+                    <li key={n.id} className="relative">
+                      <span
+                        aria-hidden
+                        className={cn(
+                          "absolute -left-[25.5px] top-1.5 h-2.5 w-2.5 rounded-full ring-4 ring-card",
+                          n.tipo === "alerta" ? "bg-destructive" : n.tipo === "entrega" ? "bg-success" :
+                          n.tipo === "reuniao" ? "bg-primary" : "bg-muted-foreground"
+                        )}
+                      />
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <Badge variant="secondary">{notaTipoLabels[n.tipo]}</Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {nomeDe(n.autor_id)} · {new Date(n.created_at).toLocaleDateString("pt-BR")}
+                        </span>
+                      </div>
+                      <p className="mt-1.5 whitespace-pre-wrap break-words text-sm leading-relaxed">{n.conteudo}</p>
+                    </li>
+                  ))}
+                </ol>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
-        <TabsContent value="clickup">
+        <TabsContent value="clickup" className="space-y-4">
           {tarefas && tarefas.length > 0 && (
-            <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
               {[
-                { rotulo: "Pendentes", valor: pendentes.length },
-                { rotulo: "Atrasadas", valor: atrasadas.length },
-                { rotulo: "Entregues no mês", valor: entreguesNoMes.length },
-                { rotulo: "Total sincronizado", valor: tarefas.length },
+                { icone: Clock, rotulo: "Pendentes", valor: pendentes.length, tom: "bg-primary/10 text-primary" },
+                { icone: AlertTriangle, rotulo: "Atrasadas", valor: atrasadas.length, tom: "bg-destructive/10 text-destructive" },
+                { icone: CheckCircle2, rotulo: "Entregues no mês", valor: entreguesNoMes.length, tom: "bg-success/10 text-success" },
+                { icone: RefreshCw, rotulo: "Total sincronizado", valor: tarefas.length, tom: "bg-info/10 text-info" },
               ].map((k) => (
                 <Card key={k.rotulo}>
-                  <CardContent className="p-4 pt-4">
-                    <p className="text-xs text-muted-foreground">{k.rotulo}</p>
-                    <p className="text-2xl font-bold">{k.valor}</p>
+                  <CardContent className="flex items-start justify-between gap-3 p-4">
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground">{k.rotulo}</p>
+                      <p className="mt-1.5 font-display text-2xl font-semibold tabular-nums leading-none">{k.valor}</p>
+                    </div>
+                    <span aria-hidden
+                      className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-md", k.tom)}>
+                      <k.icone className="h-4 w-4" />
+                    </span>
                   </CardContent>
                 </Card>
               ))}
             </div>
           )}
 
-          <Card>
-            <CardContent className="p-0">
-              {tarefas && tarefas.length > 0 ? (
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/30">
-                    <tr className="text-left text-xs text-muted-foreground">
-                      <th className="p-3 font-medium">Tarefa</th>
-                      <th className="p-3 font-medium">Status</th>
-                      <th className="hidden p-3 font-medium md:table-cell">Responsável</th>
-                      <th className="hidden p-3 font-medium lg:table-cell">Prioridade</th>
-                      <th className="hidden p-3 font-medium sm:table-cell">Vencimento</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tarefas.map((t) => (
-                      <tr key={t.id} className="border-b hover:bg-muted/20">
-                        <td className="p-3">
-                          {t.url ? (
-                            <a href={t.url} target="_blank" rel="noreferrer" className="hover:text-primary hover:underline">
-                              {t.nome}
-                            </a>
-                          ) : t.nome}
-                        </td>
-                        <td className="p-3">
-                          <Badge variant="secondary" className="text-[9px]">{t.status}</Badge>
-                        </td>
-                        <td className="hidden p-3 text-muted-foreground md:table-cell">{t.responsavel}</td>
-                        <td className="hidden p-3 lg:table-cell">
-                          <Badge
-                            variant={t.prioridade === "urgente" ? "destructive" : t.prioridade === "alta" ? "warning" : "secondary"}
-                            className="text-[9px]"
-                          >
-                            {t.prioridade}
-                          </Badge>
-                        </td>
-                        <td className="hidden p-3 text-muted-foreground sm:table-cell">{formatDate(t.due_date)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <div className="px-6 py-14 text-center">
-                  <ListChecks className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
-                  <p className="font-medium">Nenhuma tarefa sincronizada</p>
-                  <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-                    {cliente.clickup_vinculos?.length
-                      ? "Este cliente já está vinculado ao ClickUp. As tarefas aparecem aqui depois da próxima sincronização (Painel Admin → Integrações → Sincronizar agora)."
-                      : "Vincule a pasta deste cliente no ClickUp em Painel Admin → Integrações → Vincular clientes para ver aqui as tarefas pendentes e a produção mensal."}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {tarefas && tarefas.length > 0 ? (
+            <Card className="overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead>Tarefa</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="hidden md:table-cell">Responsável</TableHead>
+                    <TableHead className="hidden lg:table-cell">Prioridade</TableHead>
+                    <TableHead className="hidden sm:table-cell">Vencimento</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tarefas.map((t) => (
+                    <TableRow key={t.id}>
+                      <TableCell className="min-w-[10rem] break-words font-medium">
+                        {t.url ? (
+                          <a href={t.url} target="_blank" rel="noreferrer"
+                            className="rounded-sm transition-colors hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+                            {t.nome}
+                          </a>
+                        ) : t.nome}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{t.status}</Badge>
+                      </TableCell>
+                      <TableCell className="hidden text-muted-foreground md:table-cell">{t.responsavel}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        <Badge
+                          variant={t.prioridade === "urgente" ? "destructive" : t.prioridade === "alta" ? "warning" : "secondary"}
+                          className="capitalize"
+                        >
+                          {t.prioridade}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden whitespace-nowrap tabular-nums text-muted-foreground sm:table-cell">
+                        {formatDate(t.due_date)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          ) : !tarefas ? (
+            <EsqueletoLista linhas={4} />
+          ) : (
+            <EstadoVazio
+              icone={ListChecks}
+              titulo="Nenhuma tarefa sincronizada"
+              descricao={
+                cliente.clickup_vinculos?.length
+                  ? "Este cliente já está vinculado ao ClickUp. As tarefas aparecem aqui depois da próxima sincronização (Painel Admin → Integrações → Sincronizar agora)."
+                  : "Vincule a pasta deste cliente no ClickUp em Painel Admin → Integrações → Vincular clientes para ver aqui as tarefas pendentes e a produção mensal."
+              }
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="integr">
-          <div className="grid gap-3 sm:grid-cols-2">
-            {integracoes.map((i) => (
-              <Card key={i.rotulo}>
-                <CardContent className="flex items-center justify-between p-4 pt-4">
-                  <div>
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Link2 className="h-4 w-4 text-accent" aria-hidden /> Integrações deste cliente
+              </CardTitle>
+            </CardHeader>
+            <ul className="divide-y border-t">
+              {integracoes.map((i) => (
+                <li key={i.rotulo} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-3">
+                  <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                     <p className="text-sm font-medium">{i.rotulo}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {i.url ? "Configurado" : "Não configurado para este cliente"}
-                    </p>
+                    <Badge variant={i.url ? "success" : "secondary"}>
+                      {i.url ? "Configurado" : "Não configurado"}
+                    </Badge>
                   </div>
                   {i.url && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={i.url} target="_blank" rel="noreferrer">Abrir <ExternalLink /></a>
+                    <Button variant="outline" size="sm" className="shrink-0" asChild>
+                      <a href={i.url} target="_blank" rel="noreferrer"
+                        aria-label={`Abrir ${i.rotulo} em nova aba`}>
+                        Abrir <ExternalLink />
+                      </a>
                     </Button>
                   )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                </li>
+              ))}
+            </ul>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

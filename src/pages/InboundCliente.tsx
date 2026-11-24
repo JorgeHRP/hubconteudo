@@ -24,9 +24,13 @@ import type {
 import { PageHeader } from "@/components/PageHeader";
 import { EstadoVazio } from "@/components/EstadoVazio";
 import { FluxosInbound } from "@/components/FluxosInbound";
+import { EsqueletoPagina, EsqueletoTabela } from "@/components/Esqueletos";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,7 +57,7 @@ export default function InboundCliente() {
   const qc = useQueryClient();
   const [mes, setMes] = useState(mesAtual());
 
-  const { data: empresa } = useQuery({
+  const { data: empresa, isLoading: carregandoEmpresa } = useQuery({
     queryKey: ["empresa", id], queryFn: () => buscarEmpresa(id), enabled: Boolean(id),
   });
   const { data: catalogo } = useQuery({
@@ -74,6 +78,8 @@ export default function InboundCliente() {
 
   const saldo = useMemo(() => saldoDoMes(id, mes), [id, mes, plano]);
   const contrato = pontosDoMes(id, mes);
+
+  if (carregandoEmpresa) return <EsqueletoPagina />;
 
   if (!empresa) {
     return (
@@ -98,7 +104,7 @@ export default function InboundCliente() {
         subtitulo="Plano em pontos, calendário de pautas e réguas de nutrição"
         acao={
           <Select value={mes} onValueChange={setMes}>
-            <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full bg-card sm:w-48" aria-label="Mês do plano"><SelectValue /></SelectTrigger>
             <SelectContent>
               {janelaDeMeses().map((m) => (
                 <SelectItem key={m} value={m}>{mesLegivel(m)}</SelectItem>
@@ -166,59 +172,70 @@ export default function InboundCliente() {
     const catDe = (cid: string | null) => ativos.find((c) => c.id === cid) ?? null;
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         {/* contrato do mês */}
-        <Card>
-          <CardContent className="p-4 pt-4">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <Label className="text-xs">Pontos contratados em {mesLegivel(mes)}</Label>
-                <div className="mt-1.5 flex items-center gap-2">
-                  <Input
-                    type="number" min="0" className="w-36"
-                    placeholder={contrato ? String(contrato.pontos_contratados) : "0"}
-                    value={contratados}
-                    onChange={(e) => setContratados(e.target.value)}
-                  />
-                  <Button size="sm" disabled={!contratados} onClick={() => gravarContrato.mutate()}>
-                    Salvar
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-5">
-                <div>
-                  <p className="text-[11px] text-muted-foreground">Contratado</p>
-                  <p className="text-xl font-bold">{formatPontos(saldo.contratados)}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-muted-foreground">Planejado</p>
-                  <p className={cn("text-xl font-bold", saldo.estourou && "text-destructive")}>
-                    {formatPontos(saldo.planejados)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-muted-foreground">Entregue</p>
-                  <p className="text-xl font-bold text-success">{formatPontos(saldo.entregues)}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] text-muted-foreground">Saldo</p>
-                  <p className={cn("text-xl font-bold", saldo.saldo < 0 ? "text-destructive" : "text-foreground")}>
-                    {formatPontos(saldo.saldo)}
-                  </p>
-                </div>
+        <Card className="overflow-hidden">
+          <CardHeader className="flex-row flex-wrap items-center justify-between gap-x-4 gap-y-3 space-y-0 border-b px-5 py-3.5">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Coins className="h-4 w-4 text-accent" aria-hidden /> Pontos de {mesLegivel(mes)}
+            </CardTitle>
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+              <Label htmlFor="pontos-contratados" className="text-xs text-muted-foreground">
+                Pontos contratados
+              </Label>
+              <div className="flex flex-1 items-center gap-2 sm:flex-none">
+                <Input
+                  id="pontos-contratados"
+                  type="number" min="0" className="h-9 flex-1 tabular-nums sm:w-32 sm:flex-none"
+                  placeholder={contrato ? String(contrato.pontos_contratados) : "0"}
+                  value={contratados}
+                  onChange={(e) => setContratados(e.target.value)}
+                />
+                <Button size="sm" className="h-9" disabled={!contratados} onClick={() => gravarContrato.mutate()}>
+                  Salvar
+                </Button>
               </div>
             </div>
+          </CardHeader>
+          <CardContent className="p-5">
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-4">
+              <div>
+                <dt className="text-xs text-muted-foreground">Contratado</dt>
+                <dd className="mt-1 font-display text-2xl font-semibold leading-none tabular-nums">
+                  {formatPontos(saldo.contratados)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Planejado</dt>
+                <dd className={cn("mt-1 font-display text-2xl font-semibold leading-none tabular-nums",
+                  saldo.estourou && "text-destructive")}>
+                  {formatPontos(saldo.planejados)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Entregue</dt>
+                <dd className="mt-1 font-display text-2xl font-semibold leading-none tabular-nums text-success">
+                  {formatPontos(saldo.entregues)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Saldo</dt>
+                <dd className={cn("mt-1 font-display text-2xl font-semibold leading-none tabular-nums",
+                  saldo.saldo < 0 ? "text-destructive" : "text-foreground")}>
+                  {formatPontos(saldo.saldo)}
+                </dd>
+              </div>
+            </dl>
 
             {saldo.percentual !== null && (
-              <div className="mt-3">
-                <div className="flex h-2.5 overflow-hidden rounded-full bg-muted">
+              <div className="mt-5">
+                <div className="flex h-2 overflow-hidden rounded-full bg-muted" aria-hidden>
                   <div
                     className={cn("h-full transition-all", saldo.estourou ? "bg-destructive" : "bg-primary")}
                     style={{ width: `${Math.min(saldo.percentual, 100)}%` }}
                   />
                 </div>
-                <p className={cn("mt-1 text-[11px]",
+                <p className={cn("mt-1.5 text-xs tabular-nums",
                   saldo.estourou ? "font-medium text-destructive" : "text-muted-foreground")}>
                   {saldo.percentual}% do contratado
                   {saldo.estourou && ` — ${formatPontos(Math.abs(saldo.saldo))} pts acima`}
@@ -230,12 +247,14 @@ export default function InboundCliente() {
 
         {/* lançar serviço */}
         <Card>
-          <CardContent className="p-4 pt-4">
-            <Label className="text-xs">Lançar serviço no plano</Label>
-            <div className="mt-1.5 flex flex-wrap items-end gap-2">
-              <div className="min-w-[16rem] flex-1">
+          <CardHeader className="border-b px-5 py-3.5">
+            <CardTitle className="text-base">Lançar serviço no plano</CardTitle>
+          </CardHeader>
+          <CardContent className="p-5">
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="w-full sm:w-auto sm:min-w-[16rem] sm:flex-1">
                 <Select value={servico} onValueChange={setServico}>
-                  <SelectTrigger><SelectValue placeholder="Escolha no catálogo" /></SelectTrigger>
+                  <SelectTrigger aria-label="Serviço do catálogo"><SelectValue placeholder="Escolha no catálogo" /></SelectTrigger>
                   <SelectContent>
                     {ativos.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
@@ -245,97 +264,122 @@ export default function InboundCliente() {
                   </SelectContent>
                 </Select>
               </div>
-              <Input type="number" min="1" className="w-20" value={qtd}
+              <Input type="number" min="1" className="w-20 tabular-nums" value={qtd} aria-label="Quantidade"
                 onChange={(e) => setQtd(e.target.value)} />
               <Button disabled={!servico || lancar.isPending} onClick={() => lancar.mutate()}>
                 <Plus /> Lançar
               </Button>
-
-              {itens.length === 0 && (
-                <div className="flex items-end gap-2">
-                  <div>
-                    <Label className="text-[11px] text-muted-foreground">Copiar de</Label>
-                    <Select value={copiarDe} onValueChange={setCopiarDe}>
-                      <SelectTrigger className="mt-1 w-44"><SelectValue placeholder="Outro mês" /></SelectTrigger>
-                      <SelectContent>
-                        {janelaDeMeses().filter((m) => m !== mes).map((m) => (
-                          <SelectItem key={m} value={m}>{mesLegivel(m)}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button variant="outline" disabled={!copiarDe} onClick={() => copiar.mutate()}>
-                    <Copy /> Copiar
-                  </Button>
-                </div>
-              )}
             </div>
             {servico && (
-              <p className="mt-1.5 text-[11px] text-muted-foreground">
+              <p className="mt-2 text-xs text-muted-foreground">
                 {formatPontos((catDe(servico)?.pontos ?? 0) * Number(qtd || 1))} pts serão
                 somados ao plano deste mês.
               </p>
+            )}
+
+            {itens.length === 0 && (
+              <div className="mt-4 flex flex-wrap items-end gap-2 border-t pt-4">
+                <div className="w-full sm:w-auto">
+                  <Label className="text-xs text-muted-foreground">Ou copiar o plano de outro mês</Label>
+                  <Select value={copiarDe} onValueChange={setCopiarDe}>
+                    <SelectTrigger className="mt-1.5 sm:w-48" aria-label="Copiar de"><SelectValue placeholder="Outro mês" /></SelectTrigger>
+                    <SelectContent>
+                      {janelaDeMeses().filter((m) => m !== mes).map((m) => (
+                        <SelectItem key={m} value={m}>{mesLegivel(m)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button variant="outline" disabled={!copiarDe} onClick={() => copiar.mutate()}>
+                  <Copy /> Copiar
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>
 
         {/* itens do plano */}
-        {itens.length === 0 ? (
+        {!plano ? (
+          <div role="status" aria-label="Carregando plano do mês">
+            <EsqueletoTabela linhas={4} colunas={4} />
+          </div>
+        ) : itens.length === 0 ? (
           <EstadoVazio
             icone={Coins}
             titulo={`Nada planejado em ${mesLegivel(mes)}`}
             descricao="Lance os serviços contratados a partir do catálogo. O consumo em pontos é somado automaticamente e comparado com o contrato do mês."
           />
         ) : (
-          <Card>
-            <CardContent className="divide-y p-0">
-              {itens.map((i) => {
-                const cat = catDe(i.catalogo_id);
-                return (
-                  <div key={i.id} className="group flex flex-wrap items-center gap-3 p-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{i.titulo}</p>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                        {cat && (
-                          <span className={cn("rounded px-1.5 py-0.5 text-[9px] font-medium",
-                            categoriaInboundTom[cat.categoria])}>
-                            {cat.categoria}
+          <Card className="overflow-hidden">
+            <Table className="min-w-[42rem]">
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="pl-4">Serviço</TableHead>
+                  <TableHead className="w-24">Qtd.</TableHead>
+                  <TableHead className="w-44">Situação</TableHead>
+                  <TableHead className="w-28 text-right">Pontos</TableHead>
+                  <TableHead className="w-12 pr-4"><span className="sr-only">Ações</span></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {itens.map((i) => {
+                  const cat = catDe(i.catalogo_id);
+                  return (
+                    <TableRow key={i.id}>
+                      <TableCell className="py-2.5 pl-4">
+                        <p className="font-medium">{i.titulo}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                          {cat && (
+                            <span className={cn("rounded-md px-1.5 py-0.5 text-xs font-medium",
+                              categoriaInboundTom[cat.categoria])}>
+                              {cat.categoria}
+                            </span>
+                          )}
+                          <span className="text-xs tabular-nums text-muted-foreground">
+                            {formatPontos(i.pontos_unitarios)} pts × {i.quantidade}
                           </span>
-                        )}
-                        <span className="text-[11px] text-muted-foreground">
-                          {formatPontos(i.pontos_unitarios)} pts × {i.quantidade}
-                        </span>
-                      </div>
-                    </div>
+                        </div>
+                      </TableCell>
 
-                    <Input type="number" min="1" className="h-8 w-16" value={i.quantidade}
-                      onChange={(e) =>
-                        mudar.mutate({ item: i.id, campos: { quantidade: Math.max(1, Number(e.target.value)) } })
-                      } />
+                      <TableCell className="py-2.5">
+                        <Input type="number" min="1" className="h-9 w-20 tabular-nums" value={i.quantidade}
+                          aria-label={`Quantidade de ${i.titulo}`}
+                          onChange={(e) =>
+                            mudar.mutate({ item: i.id, campos: { quantidade: Math.max(1, Number(e.target.value)) } })
+                          } />
+                      </TableCell>
 
-                    <Select value={i.status}
-                      onValueChange={(v) => mudar.mutate({ item: i.id, campos: { status: v as StatusItemPlano } })}>
-                      <SelectTrigger className="h-8 w-40"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {(Object.keys(statusItemPlanoLabels) as StatusItemPlano[]).map((st) => (
-                          <SelectItem key={st} value={st}>{statusItemPlanoLabels[st]}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <TableCell className="py-2.5">
+                        <Select value={i.status}
+                          onValueChange={(v) => mudar.mutate({ item: i.id, campos: { status: v as StatusItemPlano } })}>
+                          <SelectTrigger className="h-9 w-40" aria-label={`Situação de ${i.titulo}`}><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {(Object.keys(statusItemPlanoLabels) as StatusItemPlano[]).map((st) => (
+                              <SelectItem key={st} value={st}>{statusItemPlanoLabels[st]}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
 
-                    <Badge variant={statusItemPlanoVariant[i.status]} className="w-20 justify-center text-[10px]">
-                      {formatPontos(i.pontos_unitarios * i.quantidade)}
-                    </Badge>
+                      <TableCell className="py-2.5 text-right">
+                        <Badge variant={statusItemPlanoVariant[i.status]} className="min-w-[4.5rem] justify-center tabular-nums">
+                          {formatPontos(i.pontos_unitarios * i.quantidade)}
+                        </Badge>
+                      </TableCell>
 
-                    <Button variant="ghost" size="icon"
-                      className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100"
-                      onClick={() => apagar.mutate(i.id)}>
-                      <Trash2 className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </div>
-                );
-              })}
-            </CardContent>
+                      <TableCell className="py-2.5 pr-4 text-right">
+                        <Button variant="ghost" size="icon"
+                          className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                          title="Remover do plano" aria-label={`Remover ${i.titulo} do plano`}
+                          onClick={() => apagar.mutate(i.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </Card>
         )}
       </div>
@@ -536,6 +580,14 @@ export default function InboundCliente() {
       </Dialog>
     );
 
+    if (!pautas) {
+      return (
+        <div role="status" aria-label="Carregando pautas">
+          <EsqueletoTabela linhas={5} colunas={5} />
+        </div>
+      );
+    }
+
     if ((pautas ?? []).length === 0) {
       return (
         <EstadoVazio
@@ -548,10 +600,10 @@ export default function InboundCliente() {
     }
 
     return (
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <Select value={filtro} onValueChange={setFiltro}>
-            <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full bg-card sm:w-52" aria-label="Filtrar por situação"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="todas">Todas as situações</SelectItem>
               {(Object.keys(statusPautaLabels) as StatusPauta[]).map((st) => (
@@ -562,49 +614,73 @@ export default function InboundCliente() {
           <div className="ml-auto">{dialogo}</div>
         </div>
 
-        <Card>
-          <CardContent className="divide-y p-0">
-            {lista.map((p) => (
-              <div key={p.id} className="group flex flex-wrap items-center gap-3 p-3">
-                <div className="min-w-0 flex-1">
-                  <button type="button" onClick={() => abrirEdicao(p)}
-                    className="text-left text-sm font-medium hover:underline">
-                    {p.titulo}
-                  </button>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                    <span>{p.tipo_material}</span>
-                    {p.produto && <span>· {p.produto}</span>}
-                    {p.etapa_funil && <span>· {etapaFunilLabels[p.etapa_funil]} de funil</span>}
-                    {nome(p.responsavel_id) && <span>· {nome(p.responsavel_id)}</span>}
-                    {p.link && (
-                      <a href={p.link} target="_blank" rel="noreferrer"
-                        className="flex items-center gap-0.5 hover:underline">
-                        <ExternalLink className="h-3 w-3" /> link
-                      </a>
-                    )}
-                  </div>
-                </div>
-
-                {p.data_prevista && (
-                  <span className="text-[11px] text-muted-foreground">{formatDate(p.data_prevista)}</span>
-                )}
-                <Badge variant={statusPautaVariant[p.status]} className="text-[10px]">
-                  {statusPautaLabels[p.status]}
-                </Badge>
-
-                <Button variant="ghost" size="icon"
-                  className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100"
-                  onClick={() => apagar.mutate(p.id)}>
-                  <Trash2 className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </div>
-            ))}
-            {lista.length === 0 && (
-              <p className="p-6 text-center text-sm text-muted-foreground">
-                Nenhuma pauta nesta situação.
-              </p>
-            )}
-          </CardContent>
+        <Card className="overflow-hidden">
+          {lista.length === 0 ? (
+            <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+              Nenhuma pauta nesta situação.
+            </p>
+          ) : (
+            <Table className="min-w-[52rem]">
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="pl-4">Pauta</TableHead>
+                  <TableHead>Material</TableHead>
+                  <TableHead>Produto</TableHead>
+                  <TableHead>Funil</TableHead>
+                  <TableHead>Responsável</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Situação</TableHead>
+                  <TableHead className="w-24 pr-4"><span className="sr-only">Ações</span></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {lista.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell className="max-w-[22rem] pl-4">
+                      <button type="button" onClick={() => abrirEdicao(p)}
+                        className="rounded-sm text-left font-medium leading-snug text-foreground transition-colors hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+                        {p.titulo}
+                      </button>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground">{p.tipo_material}</TableCell>
+                    <TableCell className="text-muted-foreground">{p.produto || "—"}</TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                      {p.etapa_funil ? etapaFunilLabels[p.etapa_funil] : "—"}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                      {nome(p.responsavel_id) ?? "—"}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
+                      {p.data_prevista ? formatDate(p.data_prevista) : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusPautaVariant[p.status]} className="whitespace-nowrap">
+                        {statusPautaLabels[p.status]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="pr-4">
+                      <div className="flex items-center justify-end gap-0.5">
+                        {p.link && (
+                          <Button asChild variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-accent">
+                            <a href={p.link} target="_blank" rel="noreferrer"
+                              title="Abrir link" aria-label={`Abrir link de ${p.titulo}`}>
+                              <ExternalLink className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="icon"
+                          className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                          title="Remover pauta" aria-label={`Remover pauta ${p.titulo}`}
+                          onClick={() => apagar.mutate(p.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </Card>
       </div>
     );

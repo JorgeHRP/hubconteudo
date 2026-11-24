@@ -7,6 +7,8 @@ import {
 import { listarHistorico, producaoMensal } from "@/data/store";
 import type { EventoHistoricoTipo } from "@/lib/types";
 import { EstadoVazio } from "@/components/EstadoVazio";
+import { EsqueletoLista } from "@/components/Esqueletos";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,14 +35,26 @@ const rotulos: Record<EventoHistoricoTipo, string> = {
   flag: "Mudanças de flag",
 };
 
+/** Cor do ícone de cada tipo de registro. */
 const cores: Record<EventoHistoricoTipo, string> = {
-  nota: "bg-muted text-muted-foreground",
-  reuniao: "bg-info/10 text-info",
-  documento: "bg-primary/10 text-primary",
-  avaliacao: "bg-warning/10 text-warning",
-  analise_ia: "bg-accent/10 text-accent",
-  tarefa: "bg-success/10 text-success",
-  flag: "bg-destructive/10 text-destructive",
+  nota: "text-muted-foreground",
+  reuniao: "text-info",
+  documento: "text-primary",
+  avaliacao: "text-warning-strong",
+  analise_ia: "text-accent",
+  tarefa: "text-success",
+  flag: "text-destructive",
+};
+
+/** Cor do ponto no trilho da linha do tempo. */
+const pontos: Record<EventoHistoricoTipo, string> = {
+  nota: "bg-muted-foreground",
+  reuniao: "bg-info",
+  documento: "bg-primary",
+  avaliacao: "bg-warning",
+  analise_ia: "bg-accent",
+  tarefa: "bg-success",
+  flag: "bg-destructive",
 };
 
 const periodos = [
@@ -111,41 +125,43 @@ export function HistoricoCliente({ clienteId }: { clienteId: string }) {
   const totalReunioes = (producao ?? []).reduce((s, p) => s + p.reunioes, 0);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="border-b pb-4">
           <CardTitle className="flex items-center gap-2 text-base">
-            <BarChart3 className="h-4 w-4 text-primary" /> Produção dos últimos 6 meses
+            <BarChart3 className="h-4 w-4 text-accent" aria-hidden /> Produção dos últimos 6 meses
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          {totalEntregue === 0 && totalReunioes === 0 ? (
-            <p className="py-4 text-sm text-muted-foreground">
+        <CardContent className="p-5">
+          {!producao ? (
+            <Skeleton className="h-32 w-full" />
+          ) : totalEntregue === 0 && totalReunioes === 0 ? (
+            <p className="text-sm leading-relaxed text-muted-foreground">
               Nenhuma entrega ou reunião registrada no período. Com o ClickUp e o Read.ai
               ligados, a produção mensal aparece aqui automaticamente.
             </p>
           ) : (
             <>
-              <div className="flex items-end justify-between gap-2">
-                {producao?.map((p) => (
-                  <div key={p.competencia} className="flex flex-1 flex-col items-center gap-1.5">
-                    <span className="text-[10px] font-medium text-muted-foreground">
+              <div className="flex items-end justify-between gap-2 sm:gap-4">
+                {producao.map((p) => (
+                  <div key={p.competencia} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
+                    <span className="h-4 text-xs font-medium tabular-nums text-muted-foreground">
                       {p.entregues > 0 ? p.entregues : ""}
                     </span>
-                    <div className="flex h-24 w-full items-end">
+                    <div className="flex h-24 w-full max-w-16 items-end">
                       <div
-                        className="gradient-primary w-full rounded-t-md transition-all"
+                        className="w-full rounded-t-sm bg-primary transition-all"
                         style={{ height: `${Math.max((p.entregues / maxProducao) * 100, p.entregues > 0 ? 8 : 2)}%` }}
                         title={`${plural(p.entregues, "entrega", "entregas")}, ${plural(p.reunioes, "reunião", "reuniões")}`}
                       />
                     </div>
-                    <span className="text-[10px] capitalize text-muted-foreground">
+                    <span className="text-xs capitalize text-muted-foreground">
                       {mesLegivel(p.competencia)}
                     </span>
                   </div>
                 ))}
               </div>
-              <div className="mt-3 flex gap-4 border-t pt-3 text-xs text-muted-foreground">
+              <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 border-t pt-3 text-xs text-muted-foreground">
                 <span>{plural(totalEntregue, "entrega", "entregas")}</span>
                 <span>{plural(totalReunioes, "reunião", "reuniões")}</span>
               </div>
@@ -154,10 +170,11 @@ export function HistoricoCliente({ clienteId }: { clienteId: string }) {
         </CardContent>
       </Card>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="space-y-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <Select value={tipo} onValueChange={(v) => setTipo(v as typeof tipo)}>
-          <SelectTrigger className="h-9 w-56 text-xs">
-            <Filter className="h-3.5 w-3.5" />
+          <SelectTrigger className="h-9 gap-2 bg-card sm:w-64" aria-label="Filtrar por tipo de registro">
+            <Filter className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -171,7 +188,7 @@ export function HistoricoCliente({ clienteId }: { clienteId: string }) {
         </Select>
 
         <Select value={periodo} onValueChange={setPeriodo}>
-          <SelectTrigger className="h-9 w-44 text-xs"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-9 bg-card sm:w-48" aria-label="Filtrar por período"><SelectValue /></SelectTrigger>
           <SelectContent>
             {periodos.map((p) => (
               <SelectItem key={p.valor} value={p.valor}>{p.label}</SelectItem>
@@ -179,21 +196,26 @@ export function HistoricoCliente({ clienteId }: { clienteId: string }) {
           </SelectContent>
         </Select>
 
-        <Button
-          variant={soRelevantes ? "default" : "outline"}
-          size="sm"
-          className="h-9"
-          onClick={() => setSoRelevantes((v) => !v)}
-        >
-          Só os marcos
-        </Button>
+        <div className="flex items-center justify-between gap-3 sm:contents">
+          <Button
+            variant={soRelevantes ? "default" : "outline"}
+            size="sm"
+            className="h-9"
+            aria-pressed={soRelevantes}
+            onClick={() => setSoRelevantes((v) => !v)}
+          >
+            <Flag /> Só os marcos
+          </Button>
 
-        <span className="ml-auto text-xs text-muted-foreground">
-          {plural(filtrados.length, "registro", "registros")}
-        </span>
+          <span className="text-xs tabular-nums text-muted-foreground sm:ml-auto">
+            {plural(filtrados.length, "registro", "registros")}
+          </span>
+        </div>
       </div>
 
-      {filtrados.length === 0 ? (
+      {!eventos ? (
+        <EsqueletoLista linhas={4} />
+      ) : filtrados.length === 0 ? (
         <EstadoVazio
           icone={History}
           titulo={eventos?.length === 0 ? "Histórico ainda vazio" : "Nada neste filtro"}
@@ -204,63 +226,63 @@ export function HistoricoCliente({ clienteId }: { clienteId: string }) {
           }
         />
       ) : (
-        <div className="relative">
-          <div className="absolute bottom-2 left-[15px] top-2 w-px bg-border" />
-          <div className="space-y-3">
-            {filtrados.map((e) => {
-              const Icone = icones[e.tipo];
-              return (
-                <div key={e.id} className="relative flex gap-3">
-                  <div
-                    className={cn(
-                      "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-4 ring-background",
-                      cores[e.tipo]
-                    )}
-                  >
-                    <Icone className="h-4 w-4" />
-                  </div>
-
-                  <Card className={cn("flex-1", !e.relevante && "bg-card/60")}>
-                    <CardContent className="p-3 pt-3">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <p className="text-sm font-medium">{e.titulo}</p>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <Badge variant="secondary" className="text-[9px]">{e.origem}</Badge>
-                          <span className="text-[10px] text-muted-foreground">
-                            {dataLegivel(e.data)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {e.descricao && (
-                        <p className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">
-                          {e.descricao}
-                        </p>
+        <Card>
+          <CardHeader className="border-b pb-4">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <History className="h-4 w-4 text-accent" aria-hidden /> Linha do tempo
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-5">
+            {/* Trilho fino à esquerda; um ponto por registro. Marco = ponto cheio na cor do tipo. */}
+            <ol className="ml-1.5 space-y-6 border-l pl-5">
+              {filtrados.map((e) => {
+                const Icone = icones[e.tipo];
+                return (
+                  <li key={e.id} className="relative">
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "absolute -left-[25.5px] top-1.5 h-2.5 w-2.5 rounded-full ring-4 ring-card",
+                        e.relevante ? pontos[e.tipo] : "border-2 border-muted-foreground/40 bg-card"
                       )}
+                    />
 
-                      <div className="mt-2 flex items-center gap-3">
-                        {e.autor && (
-                          <span className="text-[10px] text-muted-foreground">{e.autor}</span>
-                        )}
-                        {e.url && (
-                          <a
-                            href={e.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-[10px] font-medium text-primary hover:underline"
-                          >
-                            Abrir <ExternalLink className="h-2.5 w-2.5" />
-                          </a>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+                    <p className="text-xs tabular-nums text-muted-foreground">{dataLegivel(e.data)}</p>
+                    <p className={cn("mt-0.5 break-words text-sm", e.relevante ? "font-semibold" : "font-medium")}>
+                      {e.titulo}
+                    </p>
+
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                      <Badge variant="secondary" className="gap-1 font-normal">
+                        <Icone className={cn("h-3 w-3", cores[e.tipo])} aria-hidden /> {e.origem}
+                      </Badge>
+                      {e.autor && <span>{e.autor}</span>}
+                    </div>
+
+                    {e.descricao && (
+                      <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">
+                        {e.descricao}
+                      </p>
+                    )}
+
+                    {e.url && (
+                      <a
+                        href={e.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-2 inline-flex min-h-9 items-center gap-1 rounded-sm text-xs font-medium text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 sm:min-h-0"
+                      >
+                        Abrir <ExternalLink className="h-3 w-3" aria-hidden />
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </CardContent>
+        </Card>
       )}
+      </div>
     </div>
   );
 }

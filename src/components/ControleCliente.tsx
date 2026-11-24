@@ -88,7 +88,10 @@ export function ControleCliente({
         value={empresa.status}
         onValueChange={(v) => mudarStatus.mutate(v as StatusEmpresa)}
       >
-        <SelectTrigger className={cn("h-7 text-xs", compacto ? "w-[124px]" : "w-36")}>
+        <SelectTrigger
+          aria-label={`Status de ${empresa.nome_fantasia}`}
+          className={cn("h-8 bg-card text-xs", compacto ? "w-[124px]" : "w-36")}
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -98,21 +101,29 @@ export function ControleCliente({
         </SelectContent>
       </Select>
 
-      <div className="flex items-center gap-1 rounded-md border p-0.5">
+      <div role="group" aria-label="Flag da conta"
+        className="flex h-8 shrink-0 items-center rounded-md border bg-card px-0.5">
         {flags.map((f) => (
           <button
             key={f.valor}
+            type="button"
             title={f.rotulo}
             aria-label={`Marcar como ${f.rotulo}`}
+            aria-pressed={flagAtual === f.valor}
             onClick={() => aoMudarFlag(f.valor)}
-            className={cn(
-              "h-4 w-4 rounded-full transition-all",
-              f.cor,
-              flagAtual === f.valor
-                ? "ring-2 ring-foreground/30 ring-offset-1"
-                : "opacity-30 hover:opacity-70"
-            )}
-          />
+            className="group flex h-7 w-7 items-center justify-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          >
+            <span
+              aria-hidden
+              className={cn(
+                "h-3.5 w-3.5 rounded-full transition-opacity",
+                f.cor,
+                flagAtual === f.valor
+                  ? "ring-2 ring-foreground/25 ring-offset-1 ring-offset-card"
+                  : "opacity-30 group-hover:opacity-70"
+              )}
+            />
+          </button>
         ))}
       </div>
 
@@ -134,7 +145,7 @@ export function ControleCliente({
                 Os prazos de cada etapa são calculados a partir daqui.
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
               <Button variant="outline" className="flex-1" onClick={() => setPerguntando(false)}>
                 Agora não
               </Button>

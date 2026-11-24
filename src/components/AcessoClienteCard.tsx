@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { buscarAcessoPorEmpresa, gerarAcessoCliente, revogarAcessoCliente } from "@/data/store";
 import { formatDate } from "@/lib/cs-data";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 /** Link exclusivo pelo qual o cliente acompanha o que foi compartilhado. */
 export function AcessoClienteCard({ empresaId }: { empresaId: string }) {
@@ -47,42 +47,45 @@ export function AcessoClienteCard({ empresaId }: { empresaId: string }) {
 
   return (
     <Card>
-      <CardContent className="p-4 pt-4">
-        <div className="mb-2 flex items-center gap-2">
-          <Link2 className="h-4 w-4 text-primary" />
-          <p className="text-sm font-medium">Painel do cliente</p>
-        </div>
-
+      <CardHeader className="border-b pb-4">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Link2 className="h-4 w-4 text-accent" aria-hidden /> Painel do cliente
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-5">
         {url ? (
           <>
-            <p className="mb-3 text-xs text-muted-foreground">
+            <p className="mb-3 text-sm leading-relaxed text-muted-foreground">
               O cliente vê aqui só o que foi marcado como compartilhado, e responde aprovando
               ou pedindo ajuste. Não precisa de senha.
             </p>
-            <div className="flex items-center gap-2 rounded-md border bg-muted/40 p-2">
+            <div className="flex items-center gap-1 rounded-md border bg-muted/50 py-1 pl-3 pr-1">
               <code className="min-w-0 flex-1 truncate text-xs">{url}</code>
-              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={copiar}>
-                {copiado ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+              <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0"
+                title="Copiar link" aria-label="Copiar link do painel do cliente" onClick={copiar}>
+                {copiado ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
               </Button>
             </div>
-            <p className="mt-2 text-[10px] text-muted-foreground">
+            <p className="mt-2 text-xs text-muted-foreground">
               Criado em {formatDate(acesso!.created_at.slice(0, 10))}
               {acesso!.ultimo_acesso
                 ? ` · último acesso em ${formatDate(acesso!.ultimo_acesso.slice(0, 10))}`
                 : " · ainda não acessado"}
             </p>
-            <div className="mt-3 flex gap-2">
+            <div className="mt-4 flex flex-wrap gap-2">
               <Button variant="outline" size="sm" className="flex-1" onClick={() => gerar.mutate()}>
                 <RefreshCw /> Gerar novo
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => revogar.mutate()}>
+              <Button variant="ghost" size="sm"
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => revogar.mutate()}>
                 <Ban /> Revogar
               </Button>
             </div>
           </>
         ) : (
           <>
-            <p className="mb-3 text-xs text-muted-foreground">
+            <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
               Gere um endereço exclusivo para este cliente acompanhar as entregas
               compartilhadas e responder a elas.
             </p>

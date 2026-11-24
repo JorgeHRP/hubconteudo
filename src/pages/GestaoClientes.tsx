@@ -17,12 +17,16 @@ import { flagBadgeVariant, flagLabels, formatCurrency, formatDate } from "@/lib/
 import type { ChurnFlag, TipoProjeto } from "@/lib/types";
 import { PageHeader } from "@/components/PageHeader";
 import { EstadoVazio } from "@/components/EstadoVazio";
+import { EsqueletoIndicadores, EsqueletoTabela } from "@/components/Esqueletos";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
 function Kpi({
@@ -32,12 +36,22 @@ function Kpi({
 }) {
   return (
     <Card>
-      <CardContent className="p-4 pt-4">
-        <div className="mb-2 flex items-center justify-between">
+      <CardContent className="flex items-start justify-between gap-3 p-4">
+        <div className="min-w-0">
           <p className="text-xs text-muted-foreground">{rotulo}</p>
-          <Icone className={cn("h-4 w-4", tom ?? "text-primary")} />
+          <p className="mt-1.5 break-words font-display text-xl font-semibold leading-tight tabular-nums sm:text-2xl">
+            {valor}
+          </p>
         </div>
-        <p className="text-2xl font-bold">{valor}</p>
+        <span
+          aria-hidden
+          className={cn(
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-md",
+            tom ?? "bg-primary/10 text-primary"
+          )}
+        >
+          <Icone className="h-4 w-4" />
+        </span>
       </CardContent>
     </Card>
   );
@@ -47,7 +61,7 @@ export default function GestaoClientes() {
   const [busca, setBusca] = useState("");
   const [frente, setFrente] = useState("todas");
 
-  const { data: empresas } = useQuery({ queryKey: ["empresas"], queryFn: listarEmpresas });
+  const { data: empresas, isLoading: carregando } = useQuery({ queryKey: ["empresas"], queryFn: listarEmpresas });
   const { data: projetos } = useQuery({ queryKey: ["projetos"], queryFn: listarProjetos });
   const { data: contatos } = useQuery({ queryKey: ["contatos"], queryFn: listarContatosTodos });
   const { data: conquistas } = useQuery({ queryKey: ["conquistas"], queryFn: listarConquistas });
@@ -110,7 +124,12 @@ export default function GestaoClientes() {
         subtitulo="Retrato da carteira. O time de CS alimenta estes números no Painel de CS."
       />
 
-      {listaEmpresas.length === 0 ? (
+      {carregando ? (
+        <div role="status" aria-label="Carregando carteira" className="space-y-6">
+          <EsqueletoIndicadores />
+          <EsqueletoTabela colunas={5} />
+        </div>
+      ) : listaEmpresas.length === 0 ? (
         <EstadoVazio
           icone={Building2}
           titulo="Nenhuma empresa cadastrada"
@@ -127,28 +146,28 @@ export default function GestaoClientes() {
             <Kpi icone={Building2} rotulo="Clientes ativos" valor={ativas.length} />
             <Kpi icone={TrendingUp} rotulo="MRR somado" valor={formatCurrency(mrrTotal)} />
             <Kpi icone={AlertTriangle} rotulo="Sinais de atenção" valor={amarelas.length}
-              tom="text-warning" />
+              tom="bg-warning/15 text-warning-strong" />
             <Kpi icone={ShieldAlert} rotulo="Em risco" valor={vermelhas.length}
-              tom="text-destructive" />
+              tom="bg-destructive/10 text-destructive" />
           </div>
 
-          <div className="mt-4 grid gap-4 lg:grid-cols-3">
+          <div className="mt-6 grid gap-4 lg:grid-cols-3 lg:items-start">
             <Card className="lg:col-span-2">
-              <CardHeader className="pb-2">
+              <CardHeader className="pb-4">
                 <CardTitle className="text-base">Projetos por frente</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-4">
                 {porFrente.map(({ tipo, quantidade }) => (
                   <div key={tipo}>
-                    <div className="mb-1 flex items-baseline justify-between text-xs">
-                      <span className="font-medium">{tipoProjetoLabels[tipo]}</span>
-                      <span className="text-muted-foreground">
+                    <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-3 text-xs">
+                      <span className="font-medium text-foreground">{tipoProjetoLabels[tipo]}</span>
+                      <span className="tabular-nums text-muted-foreground">
                         {quantidade} {quantidade === 1 ? "cliente" : "clientes"}
                       </span>
                     </div>
-                    <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+                    <div className="h-2 overflow-hidden rounded-full bg-muted">
                       <div
-                        className="gradient-primary h-full rounded-full transition-all"
+                        className="h-full rounded-full bg-primary transition-all"
                         style={{ width: `${Math.max((quantidade / maxFrente) * 100, quantidade > 0 ? 4 : 0)}%` }}
                       />
                     </div>
@@ -157,48 +176,49 @@ export default function GestaoClientes() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="pb-2">
+            <Card className="overflow-hidden">
+              <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <Trophy className="h-4 w-4 text-warning" /> Conquistas em destaque
+                  <Trophy className="h-4 w-4 text-accent" aria-hidden /> Conquistas em destaque
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {destaques.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    Nenhuma conquista marcada como destaque. Registre na ficha da empresa —
-                    é o que se leva para a reunião de renovação.
-                  </p>
-                ) : (
-                  destaques.map((c) => {
+              {destaques.length === 0 ? (
+                <p className="border-t px-5 py-4 text-sm leading-relaxed text-muted-foreground">
+                  Nenhuma conquista marcada como destaque. Registre na ficha da empresa —
+                  é o que se leva para a reunião de renovação.
+                </p>
+              ) : (
+                <ul className="divide-y border-t">
+                  {destaques.map((c) => {
                     const empresa = listaEmpresas.find((e) => e.id === c.empresa_id);
                     return (
-                      <div key={c.id} className="border-b pb-2 last:border-0 last:pb-0">
+                      <li key={c.id} className="px-5 py-3">
                         {c.indicador && (
-                          <p className="text-lg font-bold leading-tight text-accent">
+                          <p className="font-display text-lg font-semibold leading-tight text-accent">
                             {c.indicador}
                           </p>
                         )}
                         <p className="text-sm font-medium">{c.titulo}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="mt-0.5 text-xs text-muted-foreground">
                           {empresa?.nome_fantasia} · {formatDate(c.data)}
                         </p>
-                      </div>
+                      </li>
                     );
-                  })
-                )}
-              </CardContent>
+                  })}
+                </ul>
+              )}
             </Card>
           </div>
 
-          <div className="my-5 flex flex-col gap-2 sm:flex-row">
+          <div className="my-6 flex flex-col gap-2 sm:flex-row">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search aria-hidden className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input placeholder="Buscar por nome, CNPJ ou segmento…" value={busca}
-                onChange={(e) => setBusca(e.target.value)} className="pl-9" />
+                aria-label="Buscar empresa"
+                onChange={(e) => setBusca(e.target.value)} className="bg-card pl-9" />
             </div>
             <Select value={frente} onValueChange={setFrente}>
-              <SelectTrigger className="sm:w-52"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="bg-card sm:w-52" aria-label="Filtrar por frente"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas as frentes</SelectItem>
                 {(Object.keys(tipoProjetoLabels) as TipoProjeto[]).map((t) => (
@@ -215,103 +235,126 @@ export default function GestaoClientes() {
               descricao="Ajuste a busca ou a frente de trabalho."
             />
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filtradas.map((e) => {
-                const seus = projetosDe(e.id);
-                const contato = contatoPrincipal(e.id);
-                const pior = flagDaConta(e.id);
-                const tarefasAbertas = (tarefas ?? []).filter(
-                  (t) => t.empresa_id === e.id && !t.concluida_em
-                ).length;
-                return (
-                  <Link key={e.id} to={`/cs/${e.id}`} className="group">
-                    <Card className="h-full transition-shadow hover:shadow-md">
-                      <CardContent className="p-5 pt-5">
-                        <div className="mb-3 flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="truncate font-semibold group-hover:text-primary">
-                              {e.nome_fantasia}
-                            </p>
-                            <p className="truncate text-xs text-muted-foreground">
-                              {e.segmento ?? e.razao_social}
-                            </p>
-                          </div>
-                          <span
-                            title={pior === "red" ? "Em risco" : pior === "yellow" ? "Atenção" : "Saudável"}
-                            className={cn(
-                              "mt-1 h-3 w-3 shrink-0 rounded-full ring-4",
-                              pior === "green" && "bg-success ring-success/15",
-                              pior === "yellow" && "bg-warning ring-warning/15",
-                              pior === "red" && "bg-destructive ring-destructive/15"
-                            )}
-                          />
-                        </div>
-
-                        <div className="mb-3 flex flex-wrap items-center gap-2">
-                          <Badge variant={statusEmpresaVariant[e.status]} className="text-[9px]">
-                            {statusEmpresaLabels[e.status]}
-                          </Badge>
-                          <Badge variant={flagBadgeVariant[pior]} className="text-[9px]">
-                            {flagLabels[pior]}
-                          </Badge>
-                        </div>
-
-                        <div className="mb-3 flex flex-wrap gap-1">
-                          {seus.map((p) => (
-                            <span
-                              key={p.id}
-                              className={cn(
-                                "rounded px-1.5 py-0.5 text-[9px] font-medium",
-                                tipoProjetoTom[p.tipo]
-                              )}
-                            >
-                              {tipoProjetoCurto[p.tipo]}
-                            </span>
-                          ))}
-                          {seus.length === 0 && (
-                            <span className="text-[10px] text-muted-foreground">sem projeto</span>
-                          )}
-                        </div>
-
-                        <div className="space-y-1 border-t pt-3 text-xs text-muted-foreground">
-                          <p className="truncate">
-                            {contato ? `${contato.nome}${contato.cargo ? ` · ${contato.cargo}` : ""}` : "Contato não cadastrado"}
+            <Card className="overflow-hidden">
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b px-4 py-3">
+                <p className="font-display text-sm font-semibold">Carteira</p>
+                <p className="text-xs tabular-nums text-muted-foreground">
+                  {filtradas.length === listaEmpresas.length
+                    ? `${listaEmpresas.length} ${listaEmpresas.length === 1 ? "empresa" : "empresas"}`
+                    : `${filtradas.length} de ${listaEmpresas.length}`}
+                </p>
+              </div>
+              <Table className="min-w-[60rem]">
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="pl-4">Cliente</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Saúde</TableHead>
+                    <TableHead>Frentes</TableHead>
+                    <TableHead>Contato principal</TableHead>
+                    <TableHead>Responsável</TableHead>
+                    <TableHead className="text-right">MRR somado</TableHead>
+                    <TableHead className="text-right">Tarefas</TableHead>
+                    <TableHead className="w-10 pr-4"><span className="sr-only">Abrir</span></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtradas.map((e) => {
+                    const seus = projetosDe(e.id);
+                    const contato = contatoPrincipal(e.id);
+                    const pior = flagDaConta(e.id);
+                    const tarefasAbertas = (tarefas ?? []).filter(
+                      (t) => t.empresa_id === e.id && !t.concluida_em
+                    ).length;
+                    return (
+                      <TableRow key={e.id} className="group">
+                        <TableCell className="max-w-[16rem] pl-4">
+                          <Link
+                            to={`/cs/${e.id}`}
+                            className="block truncate rounded-sm font-medium text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                          >
+                            {e.nome_fantasia}
+                          </Link>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {e.segmento ?? e.razao_social}
                           </p>
                           {(e.cidade || e.estado) && (
-                            <p className="flex items-center gap-1.5">
-                              <MapPin className="h-3 w-3 shrink-0" />
+                            <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground">
+                              <MapPin className="h-3 w-3 shrink-0" aria-hidden />
                               {[e.cidade, e.estado].filter(Boolean).join(" · ")}
                             </p>
                           )}
-                          <p>Responsável: {nomeDe(e.responsavel_id)}</p>
-                        </div>
-
-                        <div className="mt-3 flex items-center justify-between border-t pt-3">
-                          <div>
-                            <p className="text-[10px] text-muted-foreground">
-                              {seus.length > 0 ? "MRR somado" : "Tarefas em aberto"}
-                            </p>
-                            <p className="text-sm font-bold">
-                              {seus.length > 0
-                                ? formatCurrency(seus.reduce((s, p) => s + p.mrr, 0))
-                                : tarefasAbertas}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {seus.length > 0 && tarefasAbertas > 0 && (
-                              <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                                {tarefasAbertas} tarefa{tarefasAbertas === 1 ? "" : "s"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={statusEmpresaVariant[e.status]} className="whitespace-nowrap">
+                            {statusEmpresaLabels[e.status]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={flagBadgeVariant[pior]} className="whitespace-nowrap">
+                            {flagLabels[pior]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {seus.map((p) => (
+                              <span
+                                key={p.id}
+                                className={cn(
+                                  "rounded-md px-1.5 py-0.5 text-xs font-medium",
+                                  tipoProjetoTom[p.tipo]
+                                )}
+                              >
+                                {tipoProjetoCurto[p.tipo]}
                               </span>
+                            ))}
+                            {seus.length === 0 && (
+                              <span className="whitespace-nowrap text-xs text-muted-foreground">sem projeto</span>
                             )}
-                            <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                );
-              })}
-            </div>
+                        </TableCell>
+                        <TableCell className="max-w-[14rem]">
+                          {contato ? (
+                            <>
+                              <p className="truncate">{contato.nome}</p>
+                              {contato.cargo && (
+                                <p className="truncate text-xs text-muted-foreground">{contato.cargo}</p>
+                              )}
+                            </>
+                          ) : (
+                            <span className="whitespace-nowrap text-xs text-muted-foreground">
+                              Contato não cadastrado
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="max-w-[12rem] truncate text-muted-foreground">
+                          {nomeDe(e.responsavel_id)}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-right font-medium tabular-nums">
+                          {seus.length > 0
+                            ? formatCurrency(seus.reduce((s, p) => s + p.mrr, 0))
+                            : <span className="font-normal text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {tarefasAbertas > 0
+                            ? tarefasAbertas
+                            : <span className="text-muted-foreground">0</span>}
+                        </TableCell>
+                        <TableCell className="pr-4">
+                          <Link
+                            to={`/cs/${e.id}`}
+                            aria-label={`Abrir a ficha de ${e.nome_fantasia}`}
+                            className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                          >
+                            <ArrowRight className="h-4 w-4" />
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </Card>
           )}
         </>
       )}

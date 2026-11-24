@@ -6,8 +6,12 @@ import {
 import { listarEmpresas, listarProfiles, listarStatus, listarTarefas2 } from "@/data/store";
 import type { Tarefa } from "@/lib/types";
 import { EstadoVazio } from "@/components/EstadoVazio";
+import { EsqueletoTabela } from "@/components/Esqueletos";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
 const hoje = () => new Date().toISOString().slice(0, 10);
@@ -46,7 +50,7 @@ interface Linha {
 
 /** Análise da equipe: quem está entregando, quem está travado e onde o trabalho está parado. */
 export function AnaliseEquipe({ empresaFiltro }: { empresaFiltro?: string }) {
-  const { data: tarefas } = useQuery({ queryKey: ["tarefas"], queryFn: listarTarefas2 });
+  const { data: tarefas, isLoading: carregando } = useQuery({ queryKey: ["tarefas"], queryFn: listarTarefas2 });
   const { data: profiles } = useQuery({ queryKey: ["profiles"], queryFn: listarProfiles });
   const { data: empresas } = useQuery({ queryKey: ["empresas"], queryFn: listarEmpresas });
   const { data: colunas } = useQuery({ queryKey: ["status-tarefa"], queryFn: listarStatus });
@@ -137,6 +141,14 @@ export function AnaliseEquipe({ empresaFiltro }: { empresaFiltro?: string }) {
 
   const maxCarga = Math.max(...equipe.map((l) => l.abertas), 1);
 
+  if (carregando) {
+    return (
+      <div role="status" aria-label="Carregando análise da equipe">
+        <EsqueletoTabela colunas={5} />
+      </div>
+    );
+  }
+
   if (lista.length === 0) {
     return (
       <EstadoVazio
@@ -153,117 +165,112 @@ export function AnaliseEquipe({ empresaFiltro }: { empresaFiltro?: string }) {
       {(semDono.length > 0 || equipe.some((l) => l.atrasadas > 0)) && (
         <div className="grid gap-3 sm:grid-cols-2">
           {semDono.length > 0 && (
-            <Card className="border-l-2 border-l-warning">
-              <CardContent className="flex items-start gap-3 p-4 pt-4">
-                <UserX className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">
-                    {semDono.length} tarefa{semDono.length === 1 ? "" : "s"} sem responsável
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Trabalho da agência que ninguém assumiu. Não entra na conta de ninguém e
-                    não aparece em nenhuma carga.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/15 p-4">
+              <UserX className="mt-0.5 h-5 w-5 shrink-0 text-warning-strong" aria-hidden />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">
+                  {semDono.length} tarefa{semDono.length === 1 ? "" : "s"} sem responsável
+                </p>
+                <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                  Trabalho da agência que ninguém assumiu. Não entra na conta de ninguém e
+                  não aparece em nenhuma carga.
+                </p>
+              </div>
+            </div>
           )}
 
           {equipe.filter((l) => l.atrasadas > 0).length > 0 && (
-            <Card className="border-l-2 border-l-destructive">
-              <CardContent className="flex items-start gap-3 p-4 pt-4">
-                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">
-                    {equipe.filter((l) => l.atrasadas > 0).length} pessoa(s) com tarefa atrasada
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {equipe.filter((l) => l.atrasadas > 0)
-                      .map((l) => `${l.nome.split(" ")[0]} (${l.atrasadas})`)
-                      .join(" · ")}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="flex items-start gap-3 rounded-lg border border-destructive/20 bg-destructive/10 p-4">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">
+                  {equipe.filter((l) => l.atrasadas > 0).length} pessoa(s) com tarefa atrasada
+                </p>
+                <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                  {equipe.filter((l) => l.atrasadas > 0)
+                    .map((l) => `${l.nome.split(" ")[0]} (${l.atrasadas})`)
+                    .join(" · ")}
+                </p>
+              </div>
+            </div>
           )}
         </div>
       )}
 
       {/* tabela da equipe */}
-      <Card>
-        <CardHeader className="pb-2">
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Users className="h-4 w-4 text-primary" /> Desempenho por pessoa
+            <Users className="h-4 w-4 text-accent" aria-hidden /> Desempenho por pessoa
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
-          {equipe.length === 0 ? (
-            <p className="px-5 py-10 text-center text-sm text-muted-foreground">
-              Nenhuma tarefa tem responsável definido ainda.
-            </p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-muted/30">
-                <tr className="text-left text-xs text-muted-foreground">
-                  <th className="p-3 font-medium">Pessoa</th>
-                  <th className="p-3 text-right font-medium">Em aberto</th>
-                  <th className="p-3 text-right font-medium">Atrasadas</th>
-                  <th className="hidden p-3 text-right font-medium sm:table-cell">No mês</th>
-                  <th className="hidden p-3 text-right font-medium md:table-cell">No prazo</th>
-                  <th className="hidden p-3 text-right font-medium lg:table-cell">Tempo médio</th>
-                  <th className="hidden p-3 text-right font-medium lg:table-cell">Carga</th>
-                </tr>
-              </thead>
-              <tbody className="tabular-nums">
+        {equipe.length === 0 ? (
+          <p className="border-t px-5 py-8 text-center text-sm text-muted-foreground">
+            Nenhuma tarefa tem responsável definido ainda.
+          </p>
+        ) : (
+          <div className="border-t">
+            <Table className="min-w-[44rem]">
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="pl-5">Pessoa</TableHead>
+                  <TableHead className="text-right">Em aberto</TableHead>
+                  <TableHead className="text-right">Atrasadas</TableHead>
+                  <TableHead className="text-right">No mês</TableHead>
+                  <TableHead className="text-right">No prazo</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">Tempo médio</TableHead>
+                  <TableHead className="pr-5 text-right">Carga</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="tabular-nums">
                 {equipe.map((l) => (
-                  <tr key={l.id} className="border-b last:border-0 hover:bg-muted/20">
-                    <td className="p-3">
-                      <p className="font-medium">{l.nome}</p>
-                      <div className="mt-1 h-1.5 w-24 overflow-hidden rounded-full bg-muted">
-                        <div className="gradient-primary h-full rounded-full"
+                  <TableRow key={l.id}>
+                    <TableCell className="pl-5">
+                      <p className="whitespace-nowrap font-medium">{l.nome}</p>
+                      <div className="mt-1.5 h-1.5 w-24 overflow-hidden rounded-full bg-muted" aria-hidden>
+                        <div className="h-full rounded-full bg-primary"
                           style={{ width: `${(l.abertas / maxCarga) * 100}%` }} />
                       </div>
-                    </td>
-                    <td className="p-3 text-right font-medium">{l.abertas}</td>
-                    <td className={cn("p-3 text-right font-medium",
+                    </TableCell>
+                    <TableCell className="text-right font-medium">{l.abertas}</TableCell>
+                    <TableCell className={cn("text-right font-medium",
                       l.atrasadas > 0 ? "text-destructive" : "text-muted-foreground")}>
                       {l.atrasadas}
-                    </td>
-                    <td className="hidden p-3 text-right text-muted-foreground sm:table-cell">
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">
                       {l.concluidasMes}
-                    </td>
-                    <td className="hidden p-3 text-right md:table-cell">
+                    </TableCell>
+                    <TableCell className="text-right">
                       {l.noPrazo === null ? (
                         <span className="text-muted-foreground">—</span>
                       ) : (
                         <Badge
                           variant={l.noPrazo >= 80 ? "success" : l.noPrazo >= 50 ? "warning" : "destructive"}
-                          className="text-[9px]"
                         >
                           {l.noPrazo}%
                         </Badge>
                       )}
-                    </td>
-                    <td className="hidden p-3 text-right text-muted-foreground lg:table-cell">
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-right text-muted-foreground">
                       {l.tempoMedio === null ? "—" : `${l.tempoMedio} d`}
-                    </td>
-                    <td className="hidden p-3 text-right text-muted-foreground lg:table-cell">
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap pr-5 text-right text-muted-foreground">
                       {l.cargaHoras > 0 ? `${l.cargaHoras} h` : "—"}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          )}
-        </CardContent>
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3 lg:items-start">
         {/* entregas por mês */}
         <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2 text-base">
-              <TrendingUp className="h-4 w-4 text-primary" /> Entregas por mês
+              <TrendingUp className="h-4 w-4 text-accent" aria-hidden /> Entregas por mês
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -277,22 +284,22 @@ export function AnaliseEquipe({ empresaFiltro }: { empresaFiltro?: string }) {
                 <div className="flex items-end justify-between gap-2">
                   {entregasPorMes.map((m) => (
                     <div key={m.chave} className="flex flex-1 flex-col items-center gap-1.5">
-                      <span className="text-[10px] font-medium tabular-nums text-muted-foreground">
+                      <span className="h-4 text-xs font-medium tabular-nums text-foreground">
                         {m.total > 0 ? m.total : ""}
                       </span>
-                      <div className="flex h-28 w-full items-end">
+                      <div className="flex h-28 w-full items-end border-b">
                         <div
-                          className="gradient-primary w-full rounded-t-md transition-all"
+                          className="mx-auto w-full max-w-14 rounded-t-sm bg-primary transition-all"
                           style={{
                             height: `${Math.max((m.total / maxEntregas) * 100, m.total > 0 ? 6 : 2)}%`,
                           }}
                         />
                       </div>
-                      <span className="text-[10px] capitalize text-muted-foreground">{m.rotulo}</span>
+                      <span className="text-xs capitalize text-muted-foreground">{m.rotulo}</span>
                     </div>
                   ))}
                 </div>
-                <p className="mt-3 border-t pt-3 text-xs text-muted-foreground">
+                <p className="mt-4 text-xs tabular-nums text-muted-foreground">
                   {entregasPorMes.reduce((s, m) => s + m.total, 0)} entregas nos últimos 6 meses
                 </p>
               </>
@@ -302,24 +309,24 @@ export function AnaliseEquipe({ empresaFiltro }: { empresaFiltro?: string }) {
 
         {/* onde o trabalho está parado */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Layers className="h-4 w-4 text-primary" /> Onde está o trabalho
+              <Layers className="h-4 w-4 text-accent" aria-hidden /> Onde está o trabalho
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             {porEtapa.map((e) => (
               <div key={e.id}>
-                <div className="mb-1 flex justify-between text-xs">
-                  <span className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: e.cor }} />
-                    {e.label}
+                <div className="mb-1.5 flex justify-between gap-3 text-xs">
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: e.cor }} aria-hidden />
+                    <span className="truncate">{e.label}</span>
                   </span>
-                  <span className="font-medium tabular-nums">{e.total}</span>
+                  <span className="shrink-0 font-medium tabular-nums">{e.total}</span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-muted">
                   <div
-                    className={cn("h-full rounded-full", e.concluido ? "bg-success" : "gradient-primary")}
+                    className={cn("h-full rounded-full", e.concluido ? "bg-success" : "bg-primary")}
                     style={{ width: `${(e.total / totalEtapas) * 100}%` }}
                   />
                 </div>
@@ -329,26 +336,26 @@ export function AnaliseEquipe({ empresaFiltro }: { empresaFiltro?: string }) {
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
         {/* carga por cliente */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Gauge className="h-4 w-4 text-primary" /> Trabalho em aberto por cliente
+              <Gauge className="h-4 w-4 text-accent" aria-hidden /> Trabalho em aberto por cliente
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             {porCliente.length === 0 ? (
-              <p className="py-4 text-sm text-muted-foreground">Nada em aberto.</p>
+              <p className="text-sm text-muted-foreground">Nada em aberto.</p>
             ) : (
               porCliente.map((c) => (
                 <div key={c.nome}>
-                  <div className="mb-1 flex justify-between text-xs">
+                  <div className="mb-1.5 flex justify-between gap-3 text-xs">
                     <span className="truncate">{c.nome}</span>
                     <span className="shrink-0 font-medium tabular-nums">{c.total}</span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-muted">
-                    <div className="gradient-accent h-full rounded-full"
+                    <div className="h-full rounded-full bg-accent"
                       style={{ width: `${(c.total / maxCliente) * 100}%` }} />
                   </div>
                 </div>
@@ -359,12 +366,12 @@ export function AnaliseEquipe({ empresaFiltro }: { empresaFiltro?: string }) {
 
         {/* resumo do time */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Target className="h-4 w-4 text-primary" /> Resumo do time
+              <Target className="h-4 w-4 text-accent" aria-hidden /> Resumo do time
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
+          <CardContent className="grid grid-cols-2 gap-3">
             {[
               {
                 rotulo: "Pessoas com tarefa",
@@ -397,11 +404,11 @@ export function AnaliseEquipe({ empresaFiltro }: { empresaFiltro?: string }) {
                 icone: CalendarClock,
               },
             ].map((k) => (
-              <div key={k.rotulo}>
-                <div className="mb-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <k.icone className="h-3.5 w-3.5" /> {k.rotulo}
+              <div key={k.rotulo} className="rounded-md border bg-muted/50 p-3">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <k.icone className="h-3.5 w-3.5 shrink-0" aria-hidden /> {k.rotulo}
                 </div>
-                <p className="text-xl font-bold tabular-nums">{k.valor}</p>
+                <p className="mt-1.5 font-display text-2xl font-semibold leading-none tabular-nums">{k.valor}</p>
               </div>
             ))}
           </CardContent>
