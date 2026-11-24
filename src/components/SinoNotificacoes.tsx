@@ -14,7 +14,7 @@ import { notificacaoAjuda, notificacaoLabels } from "@/lib/labels-clientes";
 import type { TipoNotificacao } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -28,10 +28,10 @@ import { cn } from "@/lib/utils";
 const visual: Record<TipoNotificacao, { icone: typeof Bell; tom: string }> = {
   nova_tarefa: { icone: Plus, tom: "bg-primary/10 text-primary" },
   comentario: { icone: MessageSquare, tom: "bg-info/10 text-info" },
-  mencao: { icone: AtSign, tom: "bg-warning/10 text-warning" },
+  mencao: { icone: AtSign, tom: "bg-warning/15 text-warning-strong" },
   mudanca_status: { icone: Circle, tom: "bg-info/10 text-info" },
   mudanca_responsavel: { icone: UserPlus, tom: "bg-primary/10 text-primary" },
-  prazo_proximo: { icone: Clock, tom: "bg-warning/10 text-warning" },
+  prazo_proximo: { icone: Clock, tom: "bg-warning/15 text-warning-strong" },
   atrasada: { icone: AlertTriangle, tom: "bg-destructive/10 text-destructive" },
   concluida: { icone: CheckCircle2, tom: "bg-success/10 text-success" },
   subtarefa: { icone: ListTree, tom: "bg-accent/10 text-accent" },
@@ -99,41 +99,78 @@ export function SinoNotificacoes() {
       <Popover open={aberto} onOpenChange={setAberto}>
         <PopoverTrigger asChild>
           <button
+            type="button"
             aria-label={naoLidas > 0 ? `Avisos: ${naoLidas} não lidos` : "Avisos"}
-            className="relative rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="relative flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           >
             <Bell className="h-5 w-5" />
             {naoLidas > 0 && (
-              <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
+              <span
+                aria-hidden
+                className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-destructive px-1 text-xs font-semibold leading-none tabular-nums text-destructive-foreground ring-2 ring-background"
+              >
                 {naoLidas > 9 ? "9+" : naoLidas}
               </span>
             )}
           </button>
         </PopoverTrigger>
 
-        <PopoverContent align="end" className="w-[22rem] p-0">
-          <div className="flex items-center justify-between border-b px-3 py-2">
-            <span className="text-sm font-semibold">Avisos</span>
-            <div className="flex items-center gap-0.5">
+        <PopoverContent
+          align="end"
+          className="w-[min(23rem,calc(100vw-1.5rem))] overflow-hidden rounded-lg border bg-popover p-0 shadow-pop"
+        >
+          <div className="flex items-center justify-between gap-2 border-b px-4 py-2.5">
+            <div className="flex min-w-0 items-baseline gap-2">
+              <span className="font-display text-sm font-semibold">Avisos</span>
               {naoLidas > 0 && (
-                <Button variant="ghost" size="icon" className="h-7 w-7" title="Marcar tudo como lido"
+                <span className="truncate text-xs tabular-nums text-muted-foreground">
+                  {naoLidas} não {naoLidas === 1 ? "lido" : "lidos"}
+                </span>
+              )}
+            </div>
+            <div className="flex shrink-0 items-center gap-0.5">
+              {naoLidas > 0 && (
+                <Button variant="ghost" size="icon" className="h-9 w-9" title="Marcar tudo como lido"
+                  aria-label="Marcar tudo como lido"
                   onClick={() => lerTudo.mutate()}>
-                  <CheckCheck className="h-3.5 w-3.5" />
+                  <CheckCheck className="h-4 w-4" />
                 </Button>
               )}
-              <Button variant="ghost" size="icon" className="h-7 w-7" title="Preferências"
+              <Button variant="ghost" size="icon" className="h-9 w-9" title="Preferências"
+                aria-label="Preferências de aviso"
                 onClick={() => { setAberto(false); setAjustes(true); }}>
-                <Settings2 className="h-3.5 w-3.5" />
+                <Settings2 className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
-          <div className="max-h-[24rem] overflow-y-auto">
-            {lista.length === 0 ? (
-              <p className="px-3 py-10 text-center text-xs text-muted-foreground">
-                Nada por aqui. Quando alguém te citar, mudar uma tarefa sua ou um prazo
-                chegar, o aviso aparece neste sino.
-              </p>
+          <div className="max-h-[min(24rem,60vh)] divide-y overflow-y-auto">
+            {avisos === undefined && Boolean(userId) ? (
+              Array.from({ length: 3 }, (_, i) => (
+                <div key={i} className="flex gap-3 px-4 py-3" aria-hidden>
+                  <Skeleton className="h-8 w-8 shrink-0 rounded-md" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-3.5 w-2/5" />
+                    <Skeleton className="h-3 w-4/5" />
+                  </div>
+                </div>
+              ))
+            ) : lista.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
+                <span
+                  aria-hidden
+                  className="flex h-11 w-11 items-center justify-center rounded-lg border bg-card text-accent shadow-card"
+                >
+                  <Bell className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="font-display text-sm font-semibold">Nada por aqui</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    Quando alguém te citar, mudar uma tarefa sua ou um prazo
+                    chegar, o aviso aparece neste sino.
+                  </p>
+                </div>
+              </div>
             ) : (
               lista.map((n) => {
                 const v = visual[n.tipo];
@@ -146,23 +183,30 @@ export function SinoNotificacoes() {
                       if (n.tarefa_id) { setAberto(false); navegar("/tarefas"); }
                     }}
                     className={cn(
-                      "flex w-full gap-2.5 border-b px-3 py-2.5 text-left transition-colors last:border-0 hover:bg-muted/50",
-                      !n.lida && "bg-primary/5"
+                      "flex w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50",
+                      !n.lida && "bg-accent/5"
                     )}
                   >
-                    <span className={cn("mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full", v.tom)}>
-                      <v.icone className="h-3.5 w-3.5" />
+                    <span aria-hidden className={cn("mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md", v.tom)}>
+                      <v.icone className="h-4 w-4" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="text-[11px] font-medium">{notificacaoLabels[n.tipo]}</span>
-                        <span className="shrink-0 text-[10px] text-muted-foreground">
+                      <span className="flex items-baseline justify-between gap-2">
+                        <span className={cn("truncate text-sm", n.lida ? "font-medium text-foreground/80" : "font-semibold text-foreground")}>
+                          {notificacaoLabels[n.tipo]}
+                        </span>
+                        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                           {quando(n.created_at)}
                         </span>
                       </span>
-                      <span className="block text-xs text-muted-foreground">{n.texto}</span>
+                      <span className="mt-0.5 block break-words text-xs leading-relaxed text-muted-foreground">{n.texto}</span>
                     </span>
-                    {!n.lida && <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
+                    {!n.lida && (
+                      <>
+                        <span aria-hidden className="mt-2 h-2 w-2 shrink-0 rounded-full bg-accent" />
+                        <span className="sr-only">Não lido</span>
+                      </>
+                    )}
                   </button>
                 );
               })
@@ -170,8 +214,8 @@ export function SinoNotificacoes() {
           </div>
 
           {lista.length > 0 && (
-            <div className="border-t p-2">
-              <Button variant="ghost" size="sm" className="h-7 w-full text-xs"
+            <div className="border-t bg-muted/50 p-1.5">
+              <Button variant="ghost" size="sm" className="h-9 w-full text-xs text-muted-foreground hover:text-foreground"
                 onClick={() => limpar.mutate()}>
                 Limpar tudo
               </Button>
@@ -189,28 +233,25 @@ export function SinoNotificacoes() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-1">
-            {ordemPreferencias.map((tipo, i) => {
+          <div className="divide-y overflow-hidden rounded-md border">
+            {ordemPreferencias.map((tipo) => {
               const v = visual[tipo];
               return (
-                <div key={tipo}>
-                  {i > 0 && <Separator />}
-                  <label className="flex cursor-pointer items-center gap-3 py-2.5">
-                    <span className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full", v.tom)}>
-                      <v.icone className="h-3.5 w-3.5" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <Label className="cursor-pointer text-sm">{notificacaoLabels[tipo]}</Label>
-                      <p className="text-[11px] text-muted-foreground">{notificacaoAjuda[tipo]}</p>
-                    </span>
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 shrink-0 accent-[hsl(var(--primary))]"
-                      checked={ligado(tipo)}
-                      onChange={(e) => trocarPref.mutate({ tipo, ativo: e.target.checked })}
-                    />
-                  </label>
-                </div>
+                <label key={tipo} className="flex cursor-pointer items-center gap-3 px-3 py-3 transition-colors hover:bg-muted/50">
+                  <span aria-hidden className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-md", v.tom)}>
+                    <v.icone className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <Label className="cursor-pointer text-sm">{notificacaoLabels[tipo]}</Label>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{notificacaoAjuda[tipo]}</p>
+                  </span>
+                  <input
+                    type="checkbox"
+                    className="h-[18px] w-[18px] shrink-0 cursor-pointer accent-[hsl(var(--primary))]"
+                    checked={ligado(tipo)}
+                    onChange={(e) => trocarPref.mutate({ tipo, ativo: e.target.checked })}
+                  />
+                </label>
               );
             })}
           </div>

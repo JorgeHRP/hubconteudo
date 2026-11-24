@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 
 /** Escolha de capa: arquivo do computador ou endereço de uma imagem na web. */
@@ -38,20 +38,21 @@ export function EscolherCapa({
 
   return (
     <div>
-      <Label className="text-xs">Foto de capa</Label>
+      <Label>Foto de capa</Label>
       {valor ? (
-        <div className="relative mt-1.5 overflow-hidden rounded-lg border">
-          <img src={valor} alt="Capa" className="h-32 w-full object-cover" />
+        <div className="relative mt-1.5 aspect-video max-h-48 w-full overflow-hidden rounded-lg border bg-muted">
+          <img src={valor} alt="Capa" className="h-full w-full object-cover" />
           <button type="button" onClick={() => aoTrocar(null)}
-            className="absolute right-2 top-2 rounded-full bg-background/90 p-1 shadow">
-            <X className="h-3.5 w-3.5" />
+            title="Remover capa" aria-label="Remover capa"
+            className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-md border bg-card text-muted-foreground shadow-card transition-colors hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+            <X className="h-4 w-4" />
           </button>
         </div>
       ) : (
         <button type="button" onClick={() => arquivo.current?.click()} disabled={enviando}
-          className="mt-1.5 flex h-32 w-full flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed text-muted-foreground transition-colors hover:bg-muted/50">
-          <ImagePlus className="h-5 w-5" />
-          <span className="text-xs">{enviando ? "Enviando…" : `Escolher imagem (até ${limiteLegivel})`}</span>
+          className="mt-1.5 flex h-32 w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/50 text-muted-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60">
+          <ImagePlus className="h-5 w-5 text-accent" aria-hidden />
+          <span className="px-3 text-center text-sm">{enviando ? "Enviando…" : `Escolher imagem (até ${limiteLegivel})`}</span>
         </button>
       )}
       <input ref={arquivo} type="file" accept="image/*" className="hidden"
@@ -61,8 +62,9 @@ export function EscolherCapa({
           e.target.value = "";
         }} />
       <Input
-        className="mt-2 h-8 text-xs"
+        className="mt-2"
         placeholder="ou cole o endereço de uma imagem"
+        aria-label="Endereço de uma imagem na web"
         value={valor?.startsWith("data:") ? "" : valor ?? ""}
         onChange={(e) => aoTrocar(e.target.value || null)}
       />
@@ -113,26 +115,28 @@ export function TrilhaDialog({ trilha, gatilho }: { trilha?: Trilha; gatilho?: R
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
-            <Label>Título *</Label>
-            <Input className="mt-1.5" value={titulo} placeholder="Fundamentos de Inbound"
+            <Label htmlFor="trilha-titulo">Título *</Label>
+            <Input id="trilha-titulo" className="mt-1.5" value={titulo} placeholder="Fundamentos de Inbound"
               onChange={(e) => setTitulo(e.target.value)} />
           </div>
           <div>
-            <Label>Descrição</Label>
-            <Textarea className="mt-1.5" value={descricao}
+            <Label htmlFor="trilha-descricao">Descrição</Label>
+            <Textarea id="trilha-descricao" className="mt-1.5" rows={3} value={descricao}
               placeholder="Para quem é a trilha e o que a pessoa vai saber ao final."
               onChange={(e) => setDescricao(e.target.value)} />
           </div>
 
           <EscolherCapa valor={capa} aoTrocar={setCapa} />
+        </div>
 
-          <Button className="w-full" disabled={!titulo.trim() || gravar.isPending}
+        <DialogFooter className="border-t pt-4">
+          <Button className="w-full sm:w-auto" disabled={!titulo.trim() || gravar.isPending}
             onClick={() => gravar.mutate()}>
             {trilha ? "Salvar alterações" : "Criar trilha"}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

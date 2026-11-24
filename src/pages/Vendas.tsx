@@ -9,16 +9,30 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { EsqueletoIndicadores, EsqueletoTabela } from "@/components/Esqueletos";
+import { cn } from "@/lib/utils";
 
-function Kpi({ icone: Icone, rotulo, valor }: { icone: typeof Wallet; rotulo: string; valor: string | number }) {
+function Kpi({
+  icone: Icone, rotulo, valor, tom = "bg-primary/10 text-primary",
+}: {
+  icone: typeof Wallet; rotulo: string; valor: string | number; tom?: string;
+}) {
   return (
     <Card>
-      <CardContent className="p-4 pt-4">
-        <div className="mb-2 flex items-center justify-between">
+      <CardContent className="flex items-start justify-between gap-3 p-4">
+        <div className="min-w-0">
           <p className="text-xs text-muted-foreground">{rotulo}</p>
-          <Icone className="h-4 w-4 text-primary" />
+          <p className="mt-1.5 break-words font-display text-xl font-semibold leading-tight tabular-nums sm:text-2xl">
+            {valor}
+          </p>
         </div>
-        <p className="text-2xl font-bold">{valor}</p>
+        <span
+          aria-hidden
+          className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-md", tom)}
+        >
+          <Icone className="h-4 w-4" />
+        </span>
       </CardContent>
     </Card>
   );
@@ -69,109 +83,130 @@ export default function Vendas() {
         acao={<NegocioDialog gatilho={<Button><Plus /> Novo negócio</Button>} />}
       />
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Kpi icone={Wallet} rotulo="Pipeline aberto" valor={formatCurrency(pipeline)} />
-        <Kpi icone={Trophy} rotulo="Receita ganha" valor={formatCurrency(receita)} />
-        <Kpi icone={Briefcase} rotulo="Negócios abertos" valor={abertos.length} />
-        <Kpi icone={Percent} rotulo="Taxa de conversão" valor={`${conversao}%`} />
-      </div>
+      {!negocios ? (
+        <div role="status" aria-label="Carregando resultados de vendas" className="space-y-6">
+          <EsqueletoIndicadores />
+          <EsqueletoTabela linhas={6} colunas={5} />
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <Kpi icone={Wallet} rotulo="Pipeline aberto" valor={formatCurrency(pipeline)} />
+            <Kpi icone={Trophy} rotulo="Receita ganha" valor={formatCurrency(receita)} tom="bg-success/10 text-success" />
+            <Kpi icone={Briefcase} rotulo="Negócios abertos" valor={abertos.length} />
+            <Kpi icone={Percent} rotulo="Taxa de conversão" valor={`${conversao}%`} tom="bg-accent/10 text-accent" />
+          </div>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Funil por etapa</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <FunilBarras dados={dadosFunil} />
-          </CardContent>
-        </Card>
+          <div className="grid gap-4 lg:grid-cols-3 lg:items-start">
+            <Card className="min-w-0 lg:col-span-2">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Funil por etapa</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <FunilBarras dados={dadosFunil} />
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Receita por unidade</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {porUnidade.map((u) => {
-              const pct = receita > 0 ? (u.valor / receita) * 100 : 0;
-              return (
-                <div key={u.unidade}>
-                  <div className="mb-1 flex justify-between text-xs">
-                    <span className="truncate">{u.unidade}</span>
-                    <span className="shrink-0 font-medium">{formatCurrency(u.valor)}</span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-muted">
-                    <div className="gradient-primary h-full rounded-full" style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              );
-            })}
-            {porUnidade.length === 0 && (
-              <p className="text-sm text-muted-foreground">Nenhum negócio ganho ainda.</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            <Card className="min-w-0">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Receita por unidade</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {porUnidade.map((u) => {
+                  const pct = receita > 0 ? (u.valor / receita) * 100 : 0;
+                  return (
+                    <div key={u.unidade}>
+                      <div className="mb-1.5 flex justify-between gap-3 text-xs">
+                        <span className="truncate font-medium text-foreground">{u.unidade}</span>
+                        <span className="shrink-0 tabular-nums text-muted-foreground">
+                          {formatCurrency(u.valor)}
+                        </span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-muted">
+                        <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+                {porUnidade.length === 0 && (
+                  <p className="text-sm text-muted-foreground">Nenhum negócio ganho ainda.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-      <Card className="mt-4">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Negócios</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/30">
-              <tr className="text-left text-xs text-muted-foreground">
-                <th className="p-3 font-medium">Negócio</th>
-                <th className="hidden p-3 font-medium md:table-cell">Empresa</th>
-                <th className="p-3 font-medium">Etapa</th>
-                <th className="p-3 font-medium">Valor</th>
-                <th className="hidden p-3 font-medium lg:table-cell">Responsável</th>
-                <th className="hidden p-3 font-medium lg:table-cell">Origem</th>
-                <th className="hidden p-3 font-medium xl:table-cell">Fechamento</th>
-                <th className="w-10" />
-              </tr>
-            </thead>
-            <tbody>
-              {lista.map((n) => (
-                <tr key={n.id} className="border-b hover:bg-muted/20">
-                  <td className="p-3 font-medium">
-                    {n.nome}
-                    {n.rd_deal_id && <Badge variant="outline" className="ml-2 text-[9px]">RD Station</Badge>}
-                  </td>
-                  <td className="hidden p-3 text-muted-foreground md:table-cell">{n.empresa}</td>
-                  <td className="p-3">
-                    <Badge
-                      variant={n.etapa === "ganho" ? "success" : n.etapa === "perdido" ? "destructive" : "secondary"}
-                      className="text-[9px]"
-                    >
-                      {etapaLabel(n.etapa)}
-                    </Badge>
-                  </td>
-                  <td className="p-3">{formatCurrency(n.valor)}</td>
-                  <td className="hidden p-3 text-muted-foreground lg:table-cell">{n.responsavel}</td>
-                  <td className="hidden p-3 text-muted-foreground lg:table-cell">{n.origem}</td>
-                  <td className="hidden p-3 text-muted-foreground xl:table-cell">{formatDate(n.data_fechamento)}</td>
-                  <td className="p-2">
-                    {!n.rd_deal_id && (
-                      <NegocioDialog negocio={n} gatilho={
-                        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Editar ${n.nome}`}>
-                          <Pencil className="h-4 w-4 text-muted-foreground" />
-                        </Button>
-                      } />
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {lista.length === 0 && (
+          {lista.length === 0 ? (
             <EstadoVazio
               icone={Briefcase}
               titulo="Nenhum negócio ainda"
               descricao="Cadastre os negócios em andamento. Quando o RD Station for conectado, os de lá entram aqui sozinhos."
             />
+          ) : (
+            <Card className="overflow-hidden">
+              <CardHeader className="flex-row flex-wrap items-center justify-between gap-x-4 gap-y-1 space-y-0 pb-4">
+                <CardTitle className="text-base">Negócios</CardTitle>
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  {lista.length} no total · {abertos.length} em aberto
+                </span>
+              </CardHeader>
+              <div className="border-t">
+                <Table className="min-w-[34rem]">
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead>Negócio</TableHead>
+                      <TableHead className="hidden md:table-cell">Empresa</TableHead>
+                      <TableHead>Etapa</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                      <TableHead className="hidden lg:table-cell">Responsável</TableHead>
+                      <TableHead className="hidden lg:table-cell">Origem</TableHead>
+                      <TableHead className="hidden xl:table-cell">Fechamento</TableHead>
+                      <TableHead className="w-12"><span className="sr-only">Ações</span></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {lista.map((n) => (
+                      <TableRow key={n.id}>
+                        <TableCell className="font-medium">
+                          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            {n.nome}
+                            {n.rd_deal_id && <Badge variant="outline">RD Station</Badge>}
+                          </span>
+                        </TableCell>
+                        <TableCell className="hidden text-muted-foreground md:table-cell">{n.empresa}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={n.etapa === "ganho" ? "success" : n.etapa === "perdido" ? "destructive" : "secondary"}
+                            className="whitespace-nowrap"
+                          >
+                            {etapaLabel(n.etapa)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-right tabular-nums">
+                          {formatCurrency(n.valor)}
+                        </TableCell>
+                        <TableCell className="hidden text-muted-foreground lg:table-cell">{n.responsavel}</TableCell>
+                        <TableCell className="hidden text-muted-foreground lg:table-cell">{n.origem}</TableCell>
+                        <TableCell className="hidden whitespace-nowrap tabular-nums text-muted-foreground xl:table-cell">
+                          {formatDate(n.data_fechamento)}
+                        </TableCell>
+                        <TableCell className="p-2">
+                          {!n.rd_deal_id && (
+                            <NegocioDialog negocio={n} gatilho={
+                              <Button variant="ghost" size="icon" className="h-9 w-9" aria-label={`Editar ${n.nome}`}>
+                                <Pencil className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            } />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </Card>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      )}
     </div>
   );
 }

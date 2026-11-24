@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Plus, Search, Trash2, type LucideIcon } from "lucide-react";
+import { Plus, Search, Trash2, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { criarDocumento, listarDocumentos, podeEnviarDocumento, removerDocumento } from "@/data/store";
 import { DOCUMENTO_ACEITA, DOCUMENTO_MAX_BYTES } from "@/integrations/supabase/documentos";
-import { BaixarDocumento } from "@/components/BaixarDocumento";
+import { BaixarDocumento, IconeDocumento } from "@/components/BaixarDocumento";
 import type { DocumentoCategoria } from "@/lib/types";
 import { formatDate } from "@/lib/cs-data";
 import { PageHeader } from "@/components/PageHeader";
 import { EstadoVazio } from "@/components/EstadoVazio";
+import { EsqueletoLista } from "@/components/Esqueletos";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -144,42 +145,59 @@ export function ListaDocumentos({
         }
       />
 
-      <div className="relative mb-5">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Buscar…" value={busca} onChange={(e) => setBusca(e.target.value)} className="pl-9" />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <div className="relative w-full sm:max-w-sm">
+          <Search aria-hidden className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder="Buscar…" aria-label={`Buscar em ${titulo}`} value={busca}
+            onChange={(e) => setBusca(e.target.value)} className="bg-card pl-9" />
+        </div>
+        {documentos && itens.length > 0 && (
+          <p className="text-xs tabular-nums text-muted-foreground">
+            {itens.length} {itens.length === 1 ? "documento" : "documentos"}
+          </p>
+        )}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {itens.map((d) => (
-          <Card key={d.id}>
-            <CardContent className="flex gap-3 p-4 pt-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                <FileText className="h-5 w-5 text-primary" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{d.nome}</p>
-                {d.descricao && (
-                  <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{d.descricao}</p>
-                )}
-                <p className="mt-1.5 text-[10px] text-muted-foreground">
-                  {d.arquivo_nome ?? "—"} · {formatDate(d.created_at.slice(0, 10))}
-                </p>
-              </div>
-              <div className="flex shrink-0 flex-col gap-1">
-                <BaixarDocumento doc={d} className="h-7 w-7" />
-                {isGestor && (
-                  <Button variant="ghost" size="icon" className="h-7 w-7" title="Remover"
-                    disabled={apagar.isPending} onClick={() => apagar.mutate(d.id)}>
-                    <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {!documentos && (
+        <div role="status" aria-label="Carregando documentos">
+          <EsqueletoLista />
+        </div>
+      )}
 
-      {itens.length === 0 && (
+      {itens.length > 0 && (
+        <Card className="overflow-hidden">
+          <ul className="divide-y">
+            {itens.map((d) => (
+              <li key={d.id} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/40 sm:px-5">
+                <IconeDocumento doc={d} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{d.nome}</p>
+                  {d.descricao && (
+                    <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{d.descricao}</p>
+                  )}
+                  <p className="mt-1 flex flex-wrap gap-x-1.5 text-xs text-muted-foreground">
+                    <span className="max-w-full truncate">{d.arquivo_nome ?? "—"}</span>
+                    <span aria-hidden>·</span>
+                    <span className="shrink-0 tabular-nums">{formatDate(d.created_at.slice(0, 10))}</span>
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <BaixarDocumento doc={d} />
+                  {isGestor && (
+                    <Button variant="ghost" size="icon" title="Remover" aria-label={`Remover ${d.nome}`}
+                      className="h-9 w-9 text-muted-foreground hover:text-destructive"
+                      disabled={apagar.isPending} onClick={() => apagar.mutate(d.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {documentos && itens.length === 0 && (
         <EstadoVazio
           icone={icone}
           titulo={busca ? "Nada encontrado" : `Nenhum item em ${titulo}`}

@@ -23,26 +23,55 @@ import { VisualizadorCertificado } from "@/components/Certificado";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
-/** Capa do card. Sem imagem, mostra um degradê com a inicial. */
+const focoVisivel = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
+
+/* Em tela de toque as ações ficam sempre à vista; com mouse, aparecem ao passar ou focar. */
+const acoesDiscretas =
+  "transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100";
+
+/** Capa do card, em proporção fixa. Sem imagem, mostra a inicial sobre fundo suave. */
 function Capa({ src, titulo, alto }: { src: string | null; titulo: string; alto?: boolean }) {
-  const altura = alto ? "h-36" : "h-28";
+  const proporcao = alto ? "aspect-video" : "aspect-[2/1]";
   if (src) {
-    return <img src={src} alt="" className={cn(altura, "w-full object-cover")} />;
+    return (
+      <div className={cn(proporcao, "w-full overflow-hidden border-b bg-muted")}>
+        <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
+      </div>
+    );
   }
   return (
-    <div className={cn(altura, "gradient-primary flex w-full items-center justify-center")}>
-      <span className="text-3xl font-bold text-primary-foreground/90">
+    <div className={cn(proporcao, "flex w-full items-center justify-center border-b bg-primary/10")} aria-hidden>
+      <span className="font-display text-4xl font-semibold text-primary/70">
         {titulo.slice(0, 1).toUpperCase()}
       </span>
+    </div>
+  );
+}
+
+/** Grade de cartões de espera, no mesmo formato do catálogo. */
+function EsqueletoCatalogo() {
+  return (
+    <div role="status" aria-label="Carregando treinamentos" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 6 }, (_, i) => (
+        <Card key={i} className="overflow-hidden" aria-hidden>
+          <Skeleton className="aspect-video w-full rounded-none" />
+          <CardContent className="space-y-3 p-4">
+            <Skeleton className="h-4 w-3/5" />
+            <Skeleton className="h-3 w-4/5" />
+            <Skeleton className="h-1.5 w-full rounded-full" />
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
@@ -54,8 +83,8 @@ export default function Treinamentos() {
   const [trilhaAberta, setTrilhaAberta] = useState<Trilha | null>(null);
   const [certificado, setCertificado] = useState<Certificado | null>(null);
 
-  const { data: trilhas } = useQuery({ queryKey: ["trilhas"], queryFn: listarTrilhas });
-  const { data: cursos } = useQuery({ queryKey: ["cursos"], queryFn: listarCursos });
+  const { data: trilhas, isLoading: carregandoTrilhas } = useQuery({ queryKey: ["trilhas"], queryFn: listarTrilhas });
+  const { data: cursos, isLoading: carregandoCursos } = useQuery({ queryKey: ["cursos"], queryFn: listarCursos });
   const { data: progresso } = useQuery({
     queryKey: ["progresso-cursos", userId],
     queryFn: () => listarProgressoCursos(userId!),
@@ -104,7 +133,7 @@ export default function Treinamentos() {
 
     return (
       <div className="animate-fade-in">
-        <Button variant="ghost" size="sm" className="mb-2 -ml-2"
+        <Button variant="ghost" size="sm" className="-ml-2 mb-3 text-muted-foreground"
           onClick={() => setTrilhaAberta(null)}>
           <ChevronLeft /> Treinamentos
         </Button>
@@ -120,18 +149,27 @@ export default function Treinamentos() {
           acao={isMaster && <CursoDialog trilhaFixa={trilhaAberta.id} />}
         />
 
-        {trilhaAberta.descricao && (
-          <p className="mb-4 text-sm text-muted-foreground">{trilhaAberta.descricao}</p>
-        )}
+        {(trilhaAberta.descricao || (p && p.total > 0)) && (
+          <Card className="mb-6">
+            <CardContent className="space-y-4 p-5">
+              {trilhaAberta.descricao && (
+                <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">{trilhaAberta.descricao}</p>
+              )}
 
-        {p && p.total > 0 && (
-          <div className="mb-5">
-            <div className="h-2 overflow-hidden rounded-full bg-muted">
-              <div className="gradient-primary h-full transition-all"
-                style={{ width: `${p.percentual}%` }} />
-            </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">{p.percentual}% concluído</p>
-          </div>
+              {p && p.total > 0 && (
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
+                    <span className="font-semibold uppercase tracking-wide text-muted-foreground">Seu progresso</span>
+                    <span className="font-medium tabular-nums text-foreground">{p.percentual}% concluído</span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
+                    <div className={cn("h-full rounded-full transition-all", p.percentual >= 100 ? "bg-success" : "bg-primary")}
+                      style={{ width: `${p.percentual}%` }} />
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
 
         {daTrilha.length === 0 ? (
@@ -142,49 +180,56 @@ export default function Treinamentos() {
             acao={isMaster && <CursoDialog trilhaFixa={trilhaAberta.id} />}
           />
         ) : (
-          <div className="space-y-2">
-            {daTrilha.map((c, i) => (
-              <Card key={c.id} className="group">
-                <CardContent className="flex flex-wrap items-center gap-3 p-3 pt-3">
-                  <span className={cn(
-                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
-                    feito(c.id) ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"
+          <Card className="overflow-hidden">
+            <ol className="divide-y">
+              {daTrilha.map((c, i) => (
+                <li key={c.id} className="group flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-5">
+                  <span aria-hidden className={cn(
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums",
+                    feito(c.id) ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
                   )}>
                     {feito(c.id) ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
                   </span>
 
                   <button type="button" onClick={() => setAssistindo(c)}
-                    className="min-w-0 flex-1 text-left">
-                    <p className="truncate text-sm font-medium hover:underline">{c.titulo}</p>
-                    <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                    className={cn("min-w-0 flex-1 basis-40 rounded-sm text-left", focoVisivel)}>
+                    <p className="truncate text-sm font-medium transition-colors hover:text-primary">{c.titulo}</p>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                       {c.professor && <span>{c.professor}</span>}
                       <span>{cargaLegivel(c.carga_horaria)}</span>
                       {c.exige_questionario && <span>· com questionário</span>}
                     </div>
                   </button>
 
-                  <Button size="sm" variant={feito(c.id) ? "outline" : "default"}
-                    className="h-8 text-xs" onClick={() => setAssistindo(c)}>
-                    {feito(c.id) ? "Rever" : "Assistir"}
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    {feito(c.id) && (
+                      <Badge variant="success" className="mr-1 hidden sm:inline-flex">Concluído</Badge>
+                    )}
+                    <Button size="sm" variant={feito(c.id) ? "outline" : "default"}
+                      className="h-9 sm:h-8" onClick={() => setAssistindo(c)}>
+                      <PlayCircle /> {feito(c.id) ? "Rever" : "Assistir"}
+                    </Button>
 
-                  {isMaster && (
-                    <div className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                      <CursoDialog curso={c} gatilho={
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Pencil className="h-3.5 w-3.5" />
+                    {isMaster && (
+                      <div className={cn("flex gap-0.5", acoesDiscretas)}>
+                        <CursoDialog curso={c} gatilho={
+                          <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-8 sm:w-8"
+                            title="Editar curso" aria-label="Editar curso">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        } />
+                        <Button variant="ghost" size="icon" title="Excluir curso" aria-label="Excluir curso"
+                          className="h-9 w-9 text-muted-foreground hover:text-destructive sm:h-8 sm:w-8"
+                          onClick={() => apagarCurso.mutate(c.id)}>
+                          <Trash2 className="h-4 w-4" />
                         </Button>
-                      } />
-                      <Button variant="ghost" size="icon" className="h-8 w-8"
-                        onClick={() => apagarCurso.mutate(c.id)}>
-                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                      </div>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </Card>
         )}
 
         <PlayerCurso curso={assistindo} aberto={assistindo !== null}
@@ -215,7 +260,9 @@ export default function Treinamentos() {
         }
       />
 
-      {vazio ? (
+      {carregandoTrilhas || carregandoCursos ? (
+        <EsqueletoCatalogo />
+      ) : vazio ? (
         <EstadoVazio
           icone={GraduationCap}
           titulo="Nenhum treinamento publicado"
@@ -244,48 +291,58 @@ export default function Treinamentos() {
                   {listaTrilhas.map((t) => {
                     const p = userId ? progressoDaTrilha(t.id, userId) : null;
                     return (
-                      <Card key={t.id} className="group overflow-hidden">
-                        <button type="button" onClick={() => setTrilhaAberta(t)} className="block w-full text-left">
+                      <Card key={t.id} className="group flex flex-col overflow-hidden transition-colors hover:border-primary/30">
+                        <button type="button" onClick={() => setTrilhaAberta(t)} tabIndex={-1} aria-hidden
+                          className="block w-full text-left">
                           <Capa src={t.capa} titulo={t.titulo} alto />
                         </button>
-                        <CardContent className="p-4 pt-4">
+                        <CardContent className="flex flex-1 flex-col p-4">
                           <div className="flex items-start justify-between gap-2">
                             <button type="button" onClick={() => setTrilhaAberta(t)}
-                              className="min-w-0 text-left">
-                              <p className="truncate font-semibold hover:text-primary">{t.titulo}</p>
+                              className={cn("min-w-0 rounded-sm text-left", focoVisivel)}>
+                              <p className="line-clamp-2 font-display text-base font-semibold leading-snug transition-colors hover:text-primary">
+                                {t.titulo}
+                              </p>
                             </button>
                             {isMaster && (
-                              <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                              <div className={cn("-mr-1.5 -mt-1 flex shrink-0 gap-0.5", acoesDiscretas)}>
                                 <TrilhaDialog trilha={t} gatilho={
-                                  <Button variant="ghost" size="icon" className="h-7 w-7">
-                                    <Pencil className="h-3.5 w-3.5" />
+                                  <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-8 sm:w-8"
+                                    title="Editar trilha" aria-label="Editar trilha">
+                                    <Pencil className="h-4 w-4" />
                                   </Button>
                                 } />
-                                <Button variant="ghost" size="icon" className="h-7 w-7"
+                                <Button variant="ghost" size="icon" title="Excluir trilha" aria-label="Excluir trilha"
+                                  className="h-9 w-9 text-muted-foreground hover:text-destructive sm:h-8 sm:w-8"
                                   onClick={() => apagarTrilha.mutate(t.id)}>
-                                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                             )}
                           </div>
 
                           {t.descricao && (
-                            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                            <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
                               {t.descricao}
                             </p>
                           )}
 
                           {p && (
-                            <div className="mt-3">
-                              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                                <div className="gradient-primary h-full transition-all"
+                            <div className="mt-auto pt-4">
+                              <div className="mb-1.5 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                                <span className="truncate">
+                                  {p.total === 0
+                                    ? "Sem cursos ainda"
+                                    : `${p.feitos} de ${p.total} · ${cargaLegivel(p.horas)}`}
+                                </span>
+                                {p.total > 0 && p.percentual >= 100 && (
+                                  <Badge variant="success" className="shrink-0">Concluída</Badge>
+                                )}
+                              </div>
+                              <div className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
+                                <div className={cn("h-full rounded-full transition-all", p.percentual >= 100 ? "bg-success" : "bg-primary")}
                                   style={{ width: `${p.percentual}%` }} />
                               </div>
-                              <p className="mt-1 text-[11px] text-muted-foreground">
-                                {p.total === 0
-                                  ? "Sem cursos ainda"
-                                  : `${p.feitos} de ${p.total} · ${cargaLegivel(p.horas)}`}
-                              </p>
                             </div>
                           )}
                         </CardContent>
@@ -303,56 +360,69 @@ export default function Treinamentos() {
                 </p>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {avulsos.map((c) => (
-                    <Card key={c.id} className="group overflow-hidden">
-                      <button type="button" onClick={() => setAssistindo(c)} className="block w-full">
+                    <Card key={c.id} className="group flex flex-col overflow-hidden transition-colors hover:border-primary/30">
+                      <button type="button" onClick={() => setAssistindo(c)} tabIndex={-1} aria-hidden
+                        className="block w-full">
                         <Capa src={c.capa} titulo={c.titulo} />
                       </button>
-                      <CardContent className="p-4 pt-4">
+                      <CardContent className="flex flex-1 flex-col p-4">
                         <div className="flex items-start justify-between gap-2">
-                          <button type="button" onClick={() => setAssistindo(c)} className="min-w-0 text-left">
-                            <p className="truncate font-semibold hover:text-primary">{c.titulo}</p>
+                          <button type="button" onClick={() => setAssistindo(c)}
+                            className={cn("min-w-0 rounded-sm text-left", focoVisivel)}>
+                            <p className="line-clamp-2 font-display text-base font-semibold leading-snug transition-colors hover:text-primary">
+                              {c.titulo}
+                            </p>
                           </button>
-                          {feito(c.id) && (
-                            <Badge variant="success" className="shrink-0 text-[9px]">
-                              <CheckCircle2 className="h-3 w-3" /> Feito
+                          {feito(c.id) ? (
+                            <Badge variant="success" className="shrink-0 gap-1">
+                              <CheckCircle2 className="h-3 w-3" /> Concluído
                             </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="shrink-0">A fazer</Badge>
                           )}
                         </div>
 
                         {c.resumo && (
-                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.resumo}</p>
+                          <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{c.resumo}</p>
                         )}
 
-                        <div className="mt-2.5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
                           {c.professor && (
-                            <span className="flex items-center gap-1">
-                              <User className="h-3 w-3" /> {c.professor}
+                            <span className="flex min-w-0 items-center gap-1">
+                              <User className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">{c.professor}</span>
                             </span>
                           )}
                           <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" /> {cargaLegivel(c.carga_horaria)}
+                            <Clock className="h-3.5 w-3.5" /> {cargaLegivel(c.carga_horaria)}
                           </span>
-                          {c.nivel && <Badge variant="outline" className="text-[9px]">{c.nivel}</Badge>}
+                          {c.nivel && <Badge variant="outline" className="font-normal text-muted-foreground">{c.nivel}</Badge>}
                         </div>
 
-                        <div className="mt-3 flex items-center gap-1 border-t pt-2.5">
-                          <Button size="sm" variant={feito(c.id) ? "outline" : "default"}
-                            className="h-7 flex-1 text-xs" onClick={() => setAssistindo(c)}>
-                            <PlayCircle className="h-3.5 w-3.5" /> {feito(c.id) ? "Rever" : "Assistir"}
-                          </Button>
-                          {isMaster && (
-                            <div className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                              <CursoDialog curso={c} gatilho={
-                                <Button variant="ghost" size="icon" className="h-7 w-7">
-                                  <Pencil className="h-3.5 w-3.5" />
+                        <div className="mt-auto pt-4">
+                          <div className="h-1 overflow-hidden rounded-full bg-muted" aria-hidden>
+                            <div className={cn("h-full rounded-full bg-success transition-all", feito(c.id) ? "w-full" : "w-0")} />
+                          </div>
+                          <div className="mt-3 flex items-center gap-1">
+                            <Button size="sm" variant={feito(c.id) ? "outline" : "default"}
+                              className="h-9 flex-1 sm:h-8" onClick={() => setAssistindo(c)}>
+                              <PlayCircle /> {feito(c.id) ? "Rever" : "Assistir"}
+                            </Button>
+                            {isMaster && (
+                              <div className={cn("flex gap-0.5", acoesDiscretas)}>
+                                <CursoDialog curso={c} gatilho={
+                                  <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-8 sm:w-8"
+                                    title="Editar curso" aria-label="Editar curso">
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                } />
+                                <Button variant="ghost" size="icon" title="Excluir curso" aria-label="Excluir curso"
+                                  className="h-9 w-9 text-muted-foreground hover:text-destructive sm:h-8 sm:w-8"
+                                  onClick={() => apagarCurso.mutate(c.id)}>
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
-                              } />
-                              <Button variant="ghost" size="icon" className="h-7 w-7"
-                                onClick={() => apagarCurso.mutate(c.id)}>
-                                <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                              </Button>
-                            </div>
-                          )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -370,26 +440,29 @@ export default function Treinamentos() {
                 descricao="Conclua um curso que emita certificado e ele aparece aqui, pronto para baixar em PDF."
               />
             ) : (
-              <div className="space-y-2">
-                {certificados?.map((c) => (
-                  <Card key={c.id}>
-                    <CardContent className="flex flex-wrap items-center gap-3 p-4 pt-4">
-                      <Award className="h-5 w-5 shrink-0 text-warning" />
-                      <div className="min-w-0 flex-1">
+              <Card className="overflow-hidden">
+                <ul className="divide-y">
+                  {certificados?.map((c) => (
+                    <li key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-5">
+                      <span aria-hidden
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-warning/15 text-warning-strong">
+                        <Award className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0 flex-1 basis-40">
                         <p className="truncate text-sm font-medium">{c.titulo}</p>
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="mt-0.5 text-xs text-muted-foreground">
                           {cargaLegivel(c.carga_horaria)} · emitido em{" "}
                           {formatDate(c.emitido_em.slice(0, 10))} · código {c.codigo}
                         </p>
                       </div>
-                      <Button size="sm" variant="outline" className="h-8 text-xs"
+                      <Button size="sm" variant="outline" className="h-9 sm:h-8"
                         onClick={() => setCertificado(c)}>
                         Ver certificado
                       </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
             )}
           </TabsContent>
         </Tabs>
@@ -446,41 +519,47 @@ function ModeloDialog({ modelo }: { modelo?: ModeloCertificado }) {
         </DialogHeader>
 
         {atual && (
-          <div className="space-y-3">
-            <div>
-              <Label>Título do documento</Label>
-              <Input className="mt-1.5" value={atual.titulo}
-                onChange={(e) => set("titulo", e.target.value)} />
-            </div>
-            <div>
-              <Label>Texto</Label>
-              <Textarea className="mt-1.5" rows={4} value={atual.texto}
-                onChange={(e) => set("texto", e.target.value)} />
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Use <code>{"{nome}"}</code>, <code>{"{curso}"}</code> e <code>{"{horas}"}</code> —
-                são trocados pelos dados reais na hora de emitir.
-              </p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
+          <>
+            <div className="space-y-4">
               <div>
-                <Label>Quem assina</Label>
-                <Input className="mt-1.5" value={atual.assinante}
-                  onChange={(e) => set("assinante", e.target.value)} />
+                <Label htmlFor="modelo-titulo">Título do documento</Label>
+                <Input id="modelo-titulo" className="mt-1.5" value={atual.titulo}
+                  onChange={(e) => set("titulo", e.target.value)} />
               </div>
               <div>
-                <Label>Cargo</Label>
-                <Input className="mt-1.5" value={atual.cargo_assinante}
-                  onChange={(e) => set("cargo_assinante", e.target.value)} />
+                <Label htmlFor="modelo-texto">Texto</Label>
+                <Textarea id="modelo-texto" className="mt-1.5" rows={4} value={atual.texto}
+                  onChange={(e) => set("texto", e.target.value)} />
+                <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                  Use <code className="rounded bg-muted px-1">{"{nome}"}</code>,{" "}
+                  <code className="rounded bg-muted px-1">{"{curso}"}</code> e{" "}
+                  <code className="rounded bg-muted px-1">{"{horas}"}</code> —
+                  são trocados pelos dados reais na hora de emitir.
+                </p>
               </div>
-            </div>
-            <div>
-              <Label>Cidade</Label>
-              <Input className="mt-1.5" value={atual.cidade}
-                onChange={(e) => set("cidade", e.target.value)} />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="modelo-assinante">Quem assina</Label>
+                  <Input id="modelo-assinante" className="mt-1.5" value={atual.assinante}
+                    onChange={(e) => set("assinante", e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="modelo-cargo">Cargo</Label>
+                  <Input id="modelo-cargo" className="mt-1.5" value={atual.cargo_assinante}
+                    onChange={(e) => set("cargo_assinante", e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="modelo-cidade">Cidade</Label>
+                <Input id="modelo-cidade" className="mt-1.5" value={atual.cidade}
+                  onChange={(e) => set("cidade", e.target.value)} />
+              </div>
             </div>
 
-            <Button className="w-full" onClick={() => gravar.mutate()}>Salvar modelo</Button>
-          </div>
+            <DialogFooter className="border-t pt-4">
+              <Button className="w-full sm:w-auto" onClick={() => gravar.mutate()}>Salvar modelo</Button>
+            </DialogFooter>
+          </>
         )}
       </DialogContent>
     </Dialog>

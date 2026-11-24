@@ -163,7 +163,7 @@ export default function Calendario() {
       <div className="grid items-start gap-4 lg:grid-cols-3 lg:gap-6">
         <Card className="overflow-hidden lg:col-span-2">
           <div className="flex items-center justify-between gap-3 border-b px-4 py-3 sm:px-5">
-            <h2 className="font-display text-base font-semibold capitalize" aria-live="polite">
+            <h2 className="font-display text-base font-semibold first-letter:uppercase" aria-live="polite">
               {ref.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
             </h2>
             <div className="flex items-center gap-1.5">

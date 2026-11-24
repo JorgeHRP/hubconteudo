@@ -92,9 +92,11 @@ export function AssistenteIA() {
   if (!aberto) {
     return (
       <button
+        type="button"
         onClick={() => setAberto(true)}
         title="Consultar a IA"
-        className="gradient-primary fixed bottom-5 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full text-primary-foreground shadow-lg transition-transform hover:scale-105"
+        aria-label="Consultar a IA"
+        className="fixed bottom-5 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-pop transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <Sparkles className="h-5 w-5" />
       </button>
@@ -102,69 +104,88 @@ export function AssistenteIA() {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-40 flex h-[540px] w-[min(24rem,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-lg border bg-card shadow-xl">
-      <div className="gradient-primary flex items-center gap-2 px-4 py-3 text-primary-foreground">
-        <Sparkles className="h-4 w-4" />
+    <div
+      role="dialog"
+      aria-label="Consultar IA"
+      className="fixed bottom-3 right-3 z-40 flex h-[min(34rem,calc(100dvh-1.5rem))] w-[min(24rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-lg border bg-card shadow-pop sm:bottom-5 sm:right-5"
+    >
+      <div className="flex items-center gap-3 border-b px-4 py-3">
+        <span
+          aria-hidden
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary"
+        >
+          <Sparkles className="h-4 w-4" />
+        </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">Consultar IA</p>
-          <p className="truncate text-[10px] opacity-80">{nomeDaTela(pathname)}</p>
+          <p className="font-display text-sm font-semibold leading-tight">Consultar IA</p>
+          <p className="truncate text-xs text-muted-foreground">{nomeDaTela(pathname)}</p>
         </div>
-        <button onClick={() => setAberto(false)} aria-label="Fechar assistente">
+        <button
+          type="button"
+          onClick={() => setAberto(false)}
+          aria-label="Fechar assistente"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        >
           <X className="h-4 w-4" />
         </button>
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+      <div className="flex-1 space-y-3 overflow-y-auto bg-background/60 p-4" aria-live="polite">
         {mensagens.length === 0 && (
-          <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
+          <div className="rounded-md border bg-card p-3 text-sm leading-relaxed text-muted-foreground">
             Pergunte como usar a Central Interna — churn, cadastro de pessoas, viagens,
             contracheques, integrações. Estou vendo que você está em{" "}
-            <strong className="text-foreground">{nomeDaTela(pathname)}</strong>.
+            <strong className="font-semibold text-foreground">{nomeDaTela(pathname)}</strong>.
           </div>
         )}
 
         {mensagens.map((m, i) => (
-          <div key={i} className={cn("flex gap-2", m.autor === "pessoa" && "flex-row-reverse")}>
+          <div key={i} className={cn("flex items-start gap-2", m.autor === "pessoa" && "flex-row-reverse")}>
             <div
+              aria-hidden
               className={cn(
-                "flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
-                m.autor === "ia" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border bg-card",
+                m.autor === "ia" ? "text-accent" : "text-muted-foreground"
               )}
             >
-              {m.autor === "ia" ? <Bot className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
+              {m.autor === "ia" ? <Bot className="h-4 w-4" /> : <User className="h-4 w-4" />}
             </div>
             <div
               className={cn(
-                "max-w-[85%] rounded-lg px-3 py-2 text-xs leading-relaxed",
-                m.autor === "ia" ? "bg-muted/60" : "bg-primary text-primary-foreground"
+                "min-w-0 max-w-[85%] rounded-lg border px-3 py-2 text-sm leading-relaxed",
+                m.autor === "ia"
+                  ? "bg-card text-foreground"
+                  : "border-primary/15 bg-primary/10 text-foreground"
               )}
             >
-              <p className="whitespace-pre-wrap">{m.texto}</p>
+              <p className="whitespace-pre-wrap break-words">{m.texto}</p>
               {m.motor && (
-                <p className="mt-1.5 text-[9px] text-muted-foreground">via {m.motor}</p>
+                <p className="mt-1.5 text-xs text-muted-foreground">via {m.motor}</p>
               )}
             </div>
           </div>
         ))}
 
         {pensando && (
-          <div className="flex gap-2">
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Bot className="h-3.5 w-3.5" />
+          <div className="flex items-start gap-2" role="status" aria-label="A IA está respondendo">
+            <div aria-hidden className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border bg-card text-accent">
+              <Bot className="h-4 w-4" />
             </div>
-            <div className="rounded-lg bg-muted/60 px-3 py-2">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+            <div className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Pensando…
             </div>
           </div>
         )}
 
         {sugestoes.length > 0 && !pensando && (
           <div className="space-y-1.5 pt-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sugestões</p>
             {sugestoes.map((s) => (
               <button
                 key={s}
+                type="button"
                 onClick={() => perguntar(s)}
-                className="block w-full rounded-md border px-3 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                className="block min-h-9 w-full rounded-md border bg-card px-3 py-2 text-left text-xs leading-relaxed text-muted-foreground transition-colors hover:border-accent/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               >
                 {s}
               </button>
@@ -176,17 +197,19 @@ export function AssistenteIA() {
       </div>
 
       <form
-        className="flex gap-2 border-t p-3"
+        className="flex items-center gap-2 border-t bg-card p-3"
         onSubmit={(e) => { e.preventDefault(); perguntar(pergunta); }}
       >
         <Input
           value={pergunta}
           onChange={(e) => setPergunta(e.target.value)}
           placeholder="Pergunte alguma coisa…"
-          className="h-9 text-xs"
+          aria-label="Pergunta para a IA"
+          className="h-10 text-sm"
         />
-        <Button type="submit" size="sm" className="h-9 px-3" disabled={!pergunta.trim() || pensando}>
-          <Send className="h-3.5 w-3.5" />
+        <Button type="submit" size="icon" className="h-10 w-10 shrink-0" aria-label="Enviar pergunta"
+          disabled={!pergunta.trim() || pensando}>
+          <Send className="h-4 w-4" />
         </Button>
       </form>
     </div>
