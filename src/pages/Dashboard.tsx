@@ -12,6 +12,7 @@ import { formatDate } from "@/lib/cs-data";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EsqueletoIndicadores } from "@/components/Esqueletos";
 
 function saudacao() {
   const h = new Date().getHours();
@@ -26,56 +27,72 @@ const atalhos = [
     descricao: "RH, TI, Financeiro ou Facilities",
     rota: "/solicitacoes",
     icone: FileSignature,
-    tom: "bg-primary/10 text-primary",
   },
   {
     titulo: "Meus contracheques",
     descricao: "Holerites e documentos pessoais",
     rota: "/contracheques",
     icone: Receipt,
-    tom: "bg-accent/10 text-accent",
   },
   {
     titulo: "Relatório de viagem",
     descricao: "Lançar despesas e comprovantes",
     rota: "/viagens",
     icone: Plane,
-    tom: "bg-info/10 text-info",
   },
   {
     titulo: "Manual interno",
     descricao: "Processos e combinados da empresa",
     rota: "/manual",
     icone: BookMarked,
-    tom: "bg-warning/10 text-warning",
   },
   {
     titulo: "Ativos da marca",
     descricao: "Logos, brandbook e templates",
     rota: "/ativos",
     icone: Palette,
-    tom: "bg-success/10 text-success",
   },
   {
     titulo: "Colaboradores",
     descricao: "Time, contatos e cadastro",
     rota: "/colaboradores",
     icone: UserPlus,
-    tom: "bg-secondary text-secondary-foreground",
   },
 ];
+
+const linkDiscreto =
+  "rounded-sm font-medium text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
 
 function Kpi({ icone: Icone, rotulo, valor }: { icone: typeof Users; rotulo: string; valor: number | string }) {
   return (
     <Card>
-      <CardContent className="p-4 pt-4">
-        <div className="mb-2 flex items-center justify-between">
+      <CardContent className="flex items-start justify-between gap-3 p-4">
+        <div className="min-w-0">
           <p className="text-xs text-muted-foreground">{rotulo}</p>
-          <Icone className="h-4 w-4 text-primary" />
+          <p className="mt-1.5 font-display text-2xl font-semibold leading-none">{valor}</p>
         </div>
-        <p className="text-2xl font-bold">{valor}</p>
+        <span
+          aria-hidden
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary"
+        >
+          <Icone className="h-4 w-4" />
+        </span>
       </CardContent>
     </Card>
+  );
+}
+
+/** Linhas de espera para as listas dos cartões, enquanto os dados chegam. */
+function LinhasEspera({ linhas = 3 }: { linhas?: number }) {
+  return (
+    <div className="divide-y border-t" aria-hidden>
+      {Array.from({ length: linhas }, (_, i) => (
+        <div key={i} className="space-y-2 px-5 py-3">
+          <Skeleton className="h-3.5 w-3/5" />
+          <Skeleton className="h-3 w-2/5" />
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -106,9 +123,9 @@ export default function Dashboard() {
   const primeiroNome = profile?.nome.split(" ")[0] ?? "";
 
   return (
-    <div className="animate-fade-in">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">
+    <div className="animate-fade-in space-y-6">
+      <div>
+        <h1 className="text-xl font-semibold leading-tight sm:text-2xl">
           {saudacao()}, {primeiroNome} 👋
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -117,9 +134,7 @@ export default function Dashboard() {
       </div>
 
       {carregando ? (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-24" />)}
-        </div>
+        <EsqueletoIndicadores />
       ) : (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <Kpi icone={Users} rotulo="Colaboradores ativos" valor={profiles.filter((p) => p.ativo).length} />
@@ -129,65 +144,76 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3 lg:items-start">
         <div className="space-y-4 lg:col-span-2">
-          <Card>
-            <CardHeader className="pb-3">
+          <Card className="overflow-hidden">
+            <CardHeader className="flex-row flex-wrap items-center justify-between gap-x-4 gap-y-1 space-y-0 pb-4">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Pin className="h-4 w-4 text-primary" /> Avisos fixados
+                <Pin className="h-4 w-4 text-accent" aria-hidden /> Avisos fixados
               </CardTitle>
+              <Link to="/feed" className={`inline-flex items-center gap-1 text-xs ${linkDiscreto}`}>
+                Ver o mural completo <ArrowRight className="h-3 w-3" aria-hidden />
+              </Link>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {fixados.length === 0 ? (
-                <div className="flex items-center gap-3 rounded-md border border-dashed p-4">
-                  <Newspaper className="h-5 w-5 shrink-0 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm">Nenhum aviso fixado.</p>
-                    <Link to="/feed" className="text-xs font-medium text-primary hover:underline">
-                      Publicar o primeiro comunicado
-                    </Link>
-                  </div>
+            {!posts ? (
+              <LinhasEspera linhas={2} />
+            ) : fixados.length === 0 ? (
+              <div className="flex items-center gap-3 border-t px-5 py-4">
+                <span
+                  aria-hidden
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground"
+                >
+                  <Newspaper className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm">Nenhum aviso fixado.</p>
+                  <Link to="/feed" className={`text-xs ${linkDiscreto}`}>
+                    Publicar o primeiro comunicado
+                  </Link>
                 </div>
-              ) : (
-                fixados.map((p) => {
+              </div>
+            ) : (
+              <ul className="divide-y border-t">
+                {fixados.map((p) => {
                   const autor = profiles?.find((x) => x.user_id === p.autor_id);
                   return (
-                    <div key={p.id} className="rounded-md border-l-2 border-primary bg-muted/30 p-3">
-                      <p className="text-sm">{p.conteudo}</p>
-                      <p className="mt-2 text-xs text-muted-foreground">
+                    <li key={p.id} className="px-5 py-3">
+                      <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{p.conteudo}</p>
+                      <p className="mt-1.5 text-xs text-muted-foreground">
                         {autor?.nome} · {formatDate(p.created_at.slice(0, 10))}
                       </p>
-                    </div>
+                    </li>
                   );
-                })
-              )}
-              <Link
-                to="/feed"
-                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-              >
-                Ver o mural completo <ArrowRight className="h-3 w-3" />
-              </Link>
-            </CardContent>
+                })}
+              </ul>
+            )}
           </Card>
 
           <Card>
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-4">
               <CardTitle className="text-base">Atalhos rápidos</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2 sm:grid-cols-2">
-              {atalhos.map(({ titulo, descricao, rota, icone: Icone, tom }) => (
+              {atalhos.map(({ titulo, descricao, rota, icone: Icone }) => (
                 <Link
                   key={rota}
                   to={rota}
-                  className="flex items-center gap-3 rounded-md border p-3 transition-all hover:border-primary/40 hover:bg-muted/40"
+                  className="group flex items-center gap-3 rounded-md border p-3 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                 >
-                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${tom}`}>
-                    <Icone className="h-4.5 w-4.5" />
-                  </div>
-                  <div className="min-w-0">
+                  <span
+                    aria-hidden
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary"
+                  >
+                    <Icone className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{titulo}</p>
                     <p className="truncate text-xs text-muted-foreground">{descricao}</p>
                   </div>
+                  <ArrowRight
+                    aria-hidden
+                    className="h-4 w-4 shrink-0 text-muted-foreground/50 transition-colors group-hover:text-accent"
+                  />
                 </Link>
               ))}
             </CardContent>
@@ -195,59 +221,65 @@ export default function Dashboard() {
         </div>
 
         <div className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-base">
-                <CalendarDays className="h-4 w-4 text-primary" /> Próximos eventos
+                <CalendarDays className="h-4 w-4 text-accent" aria-hidden /> Próximos eventos
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {proximos.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Nada agendado.{" "}
-                  <Link to="/calendario" className="font-medium text-primary hover:underline">
-                    Abrir calendário
-                  </Link>
-                </p>
-              ) : (
-                proximos.map((e) => (
-                  <div key={e.id} className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-md bg-muted text-center">
-                      <span className="text-[10px] leading-none text-muted-foreground">
+            {!eventos ? (
+              <LinhasEspera />
+            ) : proximos.length === 0 ? (
+              <p className="border-t px-5 py-4 text-sm text-muted-foreground">
+                Nada agendado.{" "}
+                <Link to="/calendario" className={linkDiscreto}>
+                  Abrir calendário
+                </Link>
+              </p>
+            ) : (
+              <ul className="divide-y border-t">
+                {proximos.map((e) => (
+                  <li key={e.id} className="flex items-center gap-3 px-5 py-3">
+                    <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-md bg-muted text-center">
+                      <span className="text-xs leading-none text-muted-foreground">
                         {new Date(e.data + "T12:00:00").toLocaleDateString("pt-BR", { month: "short" })}
                       </span>
-                      <span className="text-sm font-bold leading-tight">{e.data.slice(8)}</span>
+                      <span className="mt-0.5 font-display text-sm font-semibold leading-none">
+                        {e.data.slice(8)}
+                      </span>
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{e.titulo}</p>
-                      <Badge variant="secondary" className="mt-0.5 text-[9px]">{e.tipo}</Badge>
+                      <Badge variant="secondary" className="mt-1 capitalize">{e.tipo}</Badge>
                     </div>
-                  </div>
-                ))
-              )}
-            </CardContent>
+                  </li>
+                ))}
+              </ul>
+            )}
           </Card>
 
-          <Card>
-            <CardHeader className="pb-3">
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Cake className="h-4 w-4 text-accent" /> Aniversariantes do mês
+                <Cake className="h-4 w-4 text-accent" aria-hidden /> Aniversariantes do mês
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              {aniversariantes.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhum aniversário este mês.</p>
-              ) : (
-                aniversariantes.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between text-sm">
+            {!profiles ? (
+              <LinhasEspera />
+            ) : aniversariantes.length === 0 ? (
+              <p className="border-t px-5 py-4 text-sm text-muted-foreground">Nenhum aniversário este mês.</p>
+            ) : (
+              <ul className="divide-y border-t">
+                {aniversariantes.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
                     <span className="truncate">{p.nome}</span>
-                    <span className="shrink-0 text-xs text-muted-foreground">
+                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                       {p.data_nascimento?.slice(8)}/{p.data_nascimento?.slice(5, 7)}
                     </span>
-                  </div>
-                ))
-              )}
-            </CardContent>
+                  </li>
+                ))}
+              </ul>
+            )}
           </Card>
         </div>
       </div>

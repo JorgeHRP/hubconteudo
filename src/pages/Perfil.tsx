@@ -11,7 +11,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { BaixarDocumento } from "@/components/BaixarDocumento";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -70,43 +71,53 @@ export default function Perfil() {
     <div className="animate-fade-in">
       <PageHeader icone={UserCircle} titulo="Meu perfil" subtitulo="Seus dados e documentos" />
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardContent className="p-5 pt-5">
-            <div className="mb-5 flex items-center gap-4">
-              <AvatarPessoa nome={profile?.nome ?? "?"} foto={profile?.foto_url} className="h-16 w-16"
-                classeIniciais="gradient-primary text-lg text-primary-foreground" />
-              <div>
-                <p className="font-semibold">{profile?.nome}</p>
-                <p className="text-sm text-muted-foreground">{profile?.email}</p>
-                <Badge variant="secondary" className="mt-1 text-[10px]">
-                  {role ? roleLabels[role] : ""}
-                </Badge>
-                {podeTrocarFoto() && (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    <Button size="sm" variant="outline" className="h-7 text-xs" disabled={foto.isPending}
-                      onClick={() => fotoRef.current?.click()}>
-                      <Camera className="h-3.5 w-3.5" />
-                      {foto.isPending ? "Enviando…" : profile?.foto_url ? "Trocar foto" : "Pôr foto"}
-                    </Button>
-                    {profile?.foto_url && (
-                      <Button size="sm" variant="ghost" className="h-7 text-xs" disabled={foto.isPending}
-                        onClick={() => foto.mutate(null)}>
-                        Tirar foto
-                      </Button>
-                    )}
-                    <input ref={fotoRef} type="file" accept="image/*" className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) foto.mutate(f);
-                        e.target.value = "";
-                      }} />
-                  </div>
-                )}
+      <div className="grid gap-4 lg:grid-cols-3 lg:items-start">
+        <Card className="overflow-hidden lg:col-span-2">
+          <div className="flex flex-col gap-4 border-b p-5 sm:flex-row sm:items-center sm:gap-5">
+            <AvatarPessoa nome={profile?.nome ?? "?"} foto={profile?.foto_url}
+              className="h-20 w-20 shrink-0 border"
+              classeIniciais="bg-primary font-display text-xl font-semibold text-primary-foreground" />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                <p className="font-display text-lg font-semibold leading-tight">{profile?.nome}</p>
+                {role && <Badge variant="secondary">{roleLabels[role]}</Badge>}
               </div>
+              {profile?.cargo && (
+                <p className="mt-1 text-sm text-foreground">
+                  {profile.cargo}
+                  {profile.departamento ? ` · ${profile.departamento}` : ""}
+                </p>
+              )}
+              <p className="mt-0.5 break-all text-sm text-muted-foreground">{profile?.email}</p>
+              {podeTrocarFoto() && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" disabled={foto.isPending}
+                    onClick={() => fotoRef.current?.click()}>
+                    <Camera />
+                    {foto.isPending ? "Enviando…" : profile?.foto_url ? "Trocar foto" : "Pôr foto"}
+                  </Button>
+                  {profile?.foto_url && (
+                    <Button size="sm" variant="ghost" className="text-muted-foreground" disabled={foto.isPending}
+                      onClick={() => foto.mutate(null)}>
+                      Tirar foto
+                    </Button>
+                  )}
+                  <input ref={fotoRef} type="file" accept="image/*" className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) foto.mutate(f);
+                      e.target.value = "";
+                    }} />
+                </div>
+              )}
             </div>
+          </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
+          <CardContent className="p-5">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Dados pessoais
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <Label htmlFor="p-nome">Nome</Label>
                 <Input id="p-nome" className="mt-1.5" value={form.nome}
@@ -133,12 +144,13 @@ export default function Perfil() {
                   onChange={(e) => setForm({ ...form, data_nascimento: e.target.value })} />
               </div>
 
-              <div className="sm:col-span-2">
-                <Separator className="my-1" />
-                <p className="mb-2 mt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Contato de emergência
-                </p>
-              </div>
+            </div>
+
+            <Separator className="my-5" />
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Contato de emergência
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label htmlFor="p-emerg-nome">Nome</Label>
                 <Input id="p-emerg-nome" className="mt-1.5" value={form.contato_emergencia_nome}
@@ -154,39 +166,52 @@ export default function Perfil() {
             </div>
 
             {profile?.cpf && (
-              <p className="mt-4 text-xs text-muted-foreground">
+              <p className="mt-5 rounded-md bg-muted/50 px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
                 CPF {profile.cpf} · admitido em {formatDate(profile.data_admissao)}. Para corrigir
                 estes dados, fale com a gestão de pessoas.
               </p>
             )}
+          </CardContent>
 
-            <Button className="mt-5" onClick={() => salvar.mutate()} disabled={salvar.isPending}>
+          <div className="flex justify-end border-t bg-muted/50 px-5 py-3">
+            <Button onClick={() => salvar.mutate()} disabled={salvar.isPending}>
               <Save /> Salvar alterações
             </Button>
-          </CardContent>
+          </div>
         </Card>
 
-        <Card>
-          <CardContent className="p-5 pt-5">
-            <p className="mb-3 text-sm font-semibold">Meus documentos</p>
-            <div className="space-y-2">
+        <Card className="overflow-hidden">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FileText className="h-4 w-4 text-accent" aria-hidden /> Meus documentos
+            </CardTitle>
+          </CardHeader>
+          {!documentos ? (
+            <div className="divide-y border-t" aria-hidden>
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="space-y-2 px-5 py-3">
+                  <Skeleton className="h-3.5 w-3/5" />
+                  <Skeleton className="h-3 w-2/5" />
+                </div>
+              ))}
+            </div>
+          ) : meus.length === 0 ? (
+            <p className="border-t px-5 py-4 text-sm text-muted-foreground">Nenhum documento vinculado.</p>
+          ) : (
+            <ul className="divide-y border-t">
               {meus.map((d) => (
-                <div key={d.id} className="flex items-center gap-2 rounded-md border p-2">
-                  <FileText className="h-4 w-4 shrink-0 text-primary" />
+                <li key={d.id} className="flex items-center gap-3 py-3 pl-5 pr-3">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium">{d.nome}</p>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="truncate text-sm font-medium">{d.nome}</p>
+                    <p className="text-xs text-muted-foreground">
                       {formatDate(d.created_at.slice(0, 10))}
                     </p>
                   </div>
-                  <BaixarDocumento doc={d} className="h-7 w-7" />
-                </div>
+                  <BaixarDocumento doc={d} className="h-9 w-9" />
+                </li>
               ))}
-              {meus.length === 0 && (
-                <p className="text-sm text-muted-foreground">Nenhum documento vinculado.</p>
-              )}
-            </div>
-          </CardContent>
+            </ul>
+          )}
         </Card>
       </div>
     </div>
