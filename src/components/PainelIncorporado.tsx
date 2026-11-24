@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, Link2, Settings2, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { buscarPainel, salvarUrlPainel } from "@/data/store";
 import type { PainelExternoChave } from "@/lib/types";
 import { PageHeader } from "@/components/PageHeader";
@@ -13,6 +14,31 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
+
+/**
+ * Painel de tráfego: antes de montar o iframe, entrega a sessão do Hub ao painel
+ * (POST /entrar/ponte com o token no cabeçalho, nunca na URL). O painel confere o
+ * token e abre a própria sessão, então a pessoa não digita e-mail e senha de novo.
+ * Se der errado, o iframe abre do mesmo jeito e mostra a tela de entrar do painel.
+ */
+async function entregarSessaoAoPainel(urlPainel: string): Promise<void> {
+  if (!supabase) return;
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return;
+  const controle = new AbortController();
+  const limite = setTimeout(() => controle.abort(), 8000);
+  try {
+    await fetch(`${new URL(urlPainel).origin}/entrar/ponte`, {
+      method: "POST",
+      credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+      signal: controle.signal,
+    });
+  } finally {
+    clearTimeout(limite);
+  }
+}
 
 /**
  * Casca para os painéis construídos fora da Central Interna.
@@ -41,6 +67,20 @@ export function PainelIncorporado({
     queryKey: ["painel", chave],
     queryFn: () => buscarPainel(chave),
   });
+
+  // Só o painel de tráfego tem a ponte de login; os outros montam direto.
+  const usaPonte = chave === "trafego";
+  const [ponteFeita, setPonteFeita] = useState<string | null>(null);
+  useEffect(() => {
+    if (!usaPonte || !painel?.url) return;
+    let ativo = true;
+    const alvo = painel.url;
+    entregarSessaoAoPainel(alvo)
+      .catch(() => undefined)
+      .finally(() => { if (ativo) setPonteFeita(alvo); });
+    return () => { ativo = false; };
+  }, [usaPonte, painel?.url]);
+  const iframePronto = !usaPonte || ponteFeita === painel?.url;
 
   const salvar = useMutation({
     mutationFn: () => salvarUrlPainel(chave, url.trim() || null),
@@ -120,12 +160,18 @@ export function PainelIncorporado({
 
       {painel?.url ? (
         <div className="min-h-[70vh] flex-1 overflow-hidden rounded-lg border bg-card">
-          <iframe
-            src={painel.url}
-            title={titulo}
-            className="h-full min-h-[70vh] w-full"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-          />
+          {iframePronto ? (
+            <iframe
+              src={painel.url}
+              title={titulo}
+              className="h-full min-h-[70vh] w-full"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            />
+          ) : (
+            <div className="flex h-full min-h-[70vh] items-center justify-center text-sm text-muted-foreground">
+              Abrindo o painel…
+            </div>
+          )}
         </div>
       ) : (
         <EstadoVazio
