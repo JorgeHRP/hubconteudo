@@ -102,7 +102,7 @@ export default function Feed() {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader icone={Newspaper} titulo="Feed / Mural" subtitulo="Comunicação interna da agência" />
+      <PageHeader icone={Newspaper} titulo="Mural" subtitulo="Comunicação interna da agência" />
 
       <Card className="mb-6 overflow-hidden">
         <CardContent className="p-0">

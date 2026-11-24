@@ -1,29 +1,31 @@
-import { useState } from "react";
+import { useState, type ComponentType } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Home, Newspaper, CalendarDays, Users, ClipboardList, FolderOpen, Receipt,
   Palette, BookOpen, GraduationCap, Shield, Headphones, TrendingUp,
-  Settings, ChevronDown, X, Plane, Wallet, Megaphone, Search, Rocket, Briefcase,
+  Settings, ChevronDown, X, Plane, Wallet, Megaphone, Search, Briefcase,
   ListChecks, Magnet, Building2, Share2, Globe2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { Marca } from "@/components/Marca";
+import { IconeRdStation } from "@/components/IconeRdStation";
 import type { AppModulo } from "@/lib/types";
 
 interface ItemNav {
   titulo: string;
   rota: string;
-  icone: typeof Home;
+  icone: ComponentType<{ className?: string }>;
   modulo?: AppModulo;
 }
 
-export const grupos: { grupo: string; itens: ItemNav[] }[] = [
+/** `grupo` é a chave (estado salvo no navegador); `rotulo` é o texto exibido, quando difere. */
+export const grupos: { grupo: string; rotulo?: string; itens: ItemNav[] }[] = [
   {
     grupo: "Principal",
     itens: [
       { titulo: "Início", rota: "/", icone: Home },
-      { titulo: "Feed / Mural", rota: "/feed", icone: Newspaper },
+      { titulo: "Mural", rota: "/feed", icone: Newspaper },
       { titulo: "Calendário", rota: "/calendario", icone: CalendarDays },
       { titulo: "Colaboradores", rota: "/colaboradores", icone: Users },
       { titulo: "Tarefas", rota: "/tarefas", icone: ListChecks, modulo: "tarefas" },
@@ -35,12 +37,12 @@ export const grupos: { grupo: string; itens: ItemNav[] }[] = [
       { titulo: "Visão geral", rota: "/clientes", icone: Briefcase, modulo: "clientes" },
       { titulo: "Cadastro de Empresas", rota: "/empresas", icone: Building2, modulo: "clientes" },
       { titulo: "Painel de CS", rota: "/cs", icone: Headphones, modulo: "cs" },
-      { titulo: "SEO / GEO", rota: "/seo-geo", icone: Search, modulo: "seo_geo" },
+      { titulo: "Painel SEO e GEO", rota: "/seo-geo", icone: Search, modulo: "seo_geo" },
       { titulo: "Gestão de Tráfego", rota: "/trafego", icone: Megaphone, modulo: "trafego" },
       { titulo: "Inbound", rota: "/inbound", icone: Magnet, modulo: "inbound" },
       { titulo: "Redes Sociais", rota: "/redes-sociais", icone: Share2, modulo: "social" },
       { titulo: "Sites e Hotsites", rota: "/sites", icone: Globe2, modulo: "sites" },
-      { titulo: "Projetos RD", rota: "/projetos-rd", icone: Rocket, modulo: "projetos_rd" },
+      { titulo: "Projetos RD", rota: "/projetos-rd", icone: IconeRdStation, modulo: "projetos_rd" },
     ],
   },
   {
@@ -58,6 +60,7 @@ export const grupos: { grupo: string; itens: ItemNav[] }[] = [
   },
   {
     grupo: "Gestão",
+    rotulo: "Restrito Diretoria",
     itens: [
       { titulo: "Resultados de Vendas", rota: "/vendas", icone: TrendingUp, modulo: "vendas" },
       { titulo: "Dashboard Financeiro", rota: "/financeiro", icone: Wallet, modulo: "financeiro" },
@@ -74,9 +77,9 @@ function rotaAtiva(rota: string, pathname: string) {
 export function telaAtual(pathname: string): { grupo?: string; titulo: string; rota: string } | null {
   if (rotaAtiva("/perfil", pathname)) return { titulo: "Meu perfil", rota: "/perfil" };
   if (rotaAtiva("/admin", pathname)) return { titulo: "Painel Admin", rota: "/admin" };
-  for (const { grupo, itens } of grupos) {
+  for (const { grupo, rotulo, itens } of grupos) {
     const item = itens.find((i) => rotaAtiva(i.rota, pathname));
-    if (item) return { grupo, titulo: item.titulo, rota: item.rota };
+    if (item) return { grupo: rotulo ?? grupo, titulo: item.titulo, rota: item.rota };
   }
   return null;
 }
@@ -155,12 +158,7 @@ export function AppSidebar({
         {recolhida ? (
           <Marca tipo="emblema" altura={24} className="shrink-0" />
         ) : (
-          <div className="min-w-0 flex-1">
-            <Marca altura={22} />
-            <p className="mt-1 truncate text-xs font-medium uppercase tracking-[0.14em] text-sidebar-foreground/60">
-              Central Interna
-            </p>
-          </div>
+          <Marca altura={30} className="min-w-0 max-w-full flex-1 object-left" />
         )}
         {movel && (
           <button
@@ -180,7 +178,7 @@ export function AppSidebar({
           recolhida ? "space-y-3 px-2.5" : "space-y-1 px-3"
         )}
       >
-        {grupos.map(({ grupo, itens }, indice) => {
+        {grupos.map(({ grupo, rotulo, itens }, indice) => {
           const visiveis = itens.filter((i) => !i.modulo || temModulo(i.modulo));
           if (visiveis.length === 0) return null;
           const aberto = recolhida || !fechados.includes(grupo);
@@ -196,7 +194,7 @@ export function AppSidebar({
                   aria-controls={idLista}
                   className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-xs font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/60 transition-colors hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring/60"
                 >
-                  <span className="flex-1 truncate">{grupo}</span>
+                  <span className="flex-1 truncate">{rotulo ?? grupo}</span>
                   {!aberto && temAtivo && (
                     <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-sidebar-primary" />
                   )}

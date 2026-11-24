@@ -15,7 +15,7 @@ interface Mensagem {
 
 const nomesDeTela: Record<string, string> = {
   "/": "Início",
-  "/feed": "Feed / Mural",
+  "/feed": "Mural",
   "/calendario": "Calendário",
   "/colaboradores": "Colaboradores",
   "/solicitacoes": "Solicitações",
@@ -29,7 +29,7 @@ const nomesDeTela: Record<string, string> = {
   "/cs": "Painel de CS",
   "/clientes": "Visão geral de clientes",
   "/empresas": "Cadastro de Empresas",
-  "/seo-geo": "SEO / GEO",
+  "/seo-geo": "Painel SEO e GEO",
   "/trafego": "Gestão de Tráfego",
   "/inbound": "Inbound",
   "/sites": "Sites e Hotsites",
