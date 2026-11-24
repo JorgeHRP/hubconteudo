@@ -75,12 +75,12 @@ const OnPage = () => {
   return (
     <div className="space-y-6 max-w-7xl">
       <div>
-        <h1 className="text-2xl font-bold gradient-text">SEO On-Page</h1>
+        <h2 className="text-lg font-semibold leading-tight text-foreground sm:text-xl">SEO On-Page</h2>
         <p className="text-muted-foreground text-sm mt-1">Clique em qualquer célula para editar</p>
       </div>
 
-      <Tabs defaultValue="paginas" className="w-full">
-        <TabsList>
+      <Tabs defaultValue="paginas" className="w-full min-w-0">
+        <TabsList className="h-auto max-w-full flex-wrap justify-start">
           <TabsTrigger value="paginas">Páginas Otimizadas</TabsTrigger>
           <TabsTrigger value="novas">Novas Otimizações</TabsTrigger>
         </TabsList>
@@ -96,29 +96,29 @@ const OnPage = () => {
         </TabsContent>
 
         <TabsContent value="novas" className="mt-4 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="glass-card md:col-span-1">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <Card className="md:col-span-1">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Total de Otimizações</CardTitle>
+                <CardTitle className="font-sans text-xs font-normal text-muted-foreground">Total de Otimizações</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-4xl font-bold gradient-text">{totalOtimizacoes}</div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <div className="font-display text-2xl font-semibold leading-none text-foreground">{totalOtimizacoes}</div>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                   {novasOtimizacoesData.length} on-page · {alteracoesData.length} alterações · {metaDescricaoCursosData.length} metas · {redirectData.length} redirects
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="glass-card md:col-span-3">
-              <CardHeader className="pb-2">
+            <Card className="md:col-span-3">
+              <CardHeader className="pb-3">
                 <CardTitle className="text-base">Resumo — Principais Otimizações</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
                   {principaisOtimizacoes.map((o) => (
                     <li key={o.item} className="flex gap-2 text-sm">
-                      <span className="text-primary">•</span>
-                      <span><span className="font-semibold">{o.item}:</span> <span className="text-muted-foreground">{o.descricao}</span></span>
+                      <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-primary/40" aria-hidden />
+                      <span className="min-w-0"><span className="font-semibold">{o.item}:</span> <span className="text-muted-foreground">{o.descricao}</span></span>
                     </li>
                   ))}
                 </ul>

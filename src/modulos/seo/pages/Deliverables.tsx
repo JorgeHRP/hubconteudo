@@ -109,7 +109,7 @@ export default function Deliverables() {
   );
 
   return (
-    <div className="animate-fade-in-up space-y-8">
+    <div className="space-y-6">
       <SecaoEditavel
         titulo="Entregáveis"
         descricao="Escopo completo de entregas do projeto SEO + GEO"
@@ -149,19 +149,19 @@ export default function Deliverables() {
           />
         )}
       >
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {conteudo.map((group, i) => (
-            <Card key={i} className="glass-card-hover">
+            <Card key={i}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base font-bold">
+                <CardTitle className="text-base">
                   {group.title || "Sem nome"}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 {group.items.map((item, j) => (
                   <div key={j} className="flex items-start gap-2">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                    <span className="text-sm leading-tight text-foreground/80">{item}</span>
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden />
+                    <span className="min-w-0 text-sm leading-snug text-foreground">{item}</span>
                   </div>
                 ))}
                 {group.items.length === 0 && (
@@ -175,7 +175,7 @@ export default function Deliverables() {
         </div>
 
         {conteudo.length === 0 && (
-          <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+          <p className="rounded-lg border border-dashed bg-card/60 px-6 py-12 text-center text-sm text-muted-foreground">
             Nenhum bloco de escopo. Use “Editar” para montar o escopo deste cliente.
           </p>
         )}

@@ -161,13 +161,13 @@ const weeklyData: Record<string, Record<string, WeekData>> = {
 };
 
 const categoryColors: Record<string, string> = {
-  "O que foi feito": "bg-emerald-100 text-emerald-700",
-  "Análises": "bg-blue-100 text-blue-700",
-  "Conteúdo": "bg-purple-100 text-purple-700",
-  "Técnico": "bg-amber-100 text-amber-700",
-  "Link Building": "bg-cyan-100 text-cyan-700",
-  "Relatórios": "bg-indigo-100 text-indigo-700",
-  "Planejamento": "bg-rose-100 text-rose-700",
+  "O que foi feito": "border-success/20 bg-success/10 text-success",
+  "Análises": "border-info/20 bg-info/10 text-info",
+  "Conteúdo": "border-accent/20 bg-accent/10 text-accent",
+  "Técnico": "border-warning/30 bg-warning/15 text-warning-strong",
+  "Link Building": "border-accent/20 bg-accent/10 text-accent",
+  "Relatórios": "border-primary/20 bg-primary/10 text-primary",
+  "Planejamento": "border-primary/20 bg-primary/10 text-primary",
 };
 
 const WeeklyUpdates = () => {
@@ -195,13 +195,13 @@ const WeeklyUpdates = () => {
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
-        <h1 className="text-2xl font-bold gradient-text">Atualizações Semanais</h1>
+        <h2 className="text-lg font-semibold leading-tight text-foreground sm:text-xl">Atualizações Semanais</h2>
         <p className="text-muted-foreground text-sm mt-1">Acompanhamento semanal das ações de SEO</p>
       </div>
 
-      <div className="flex flex-wrap gap-3 items-center">
+      <div className="flex flex-wrap items-center gap-3">
         <Select value={selectedMonth} onValueChange={(v) => { setSelectedMonth(v); setSelectedWeek("1"); }}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px]" aria-label="Mês">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -210,7 +210,7 @@ const WeeklyUpdates = () => {
           </SelectContent>
         </Select>
 
-        <div className="flex gap-2">
+        <div className="inline-flex max-w-full overflow-x-auto rounded-md border bg-muted p-1" role="group" aria-label="Semana">
           {["1", "2", "3", "4"].map((week) => {
             const hasData = monthData?.[week];
             return (
@@ -218,12 +218,13 @@ const WeeklyUpdates = () => {
                 key={week}
                 onClick={() => setSelectedWeek(week)}
                 disabled={!hasData}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                aria-pressed={selectedWeek === week}
+                className={`h-8 shrink-0 whitespace-nowrap rounded-sm px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
                   selectedWeek === week
-                    ? "bg-primary text-primary-foreground shadow-md"
+                    ? "bg-card text-foreground shadow-card"
                     : hasData
-                    ? "bg-muted text-foreground hover:bg-muted/80"
-                    : "bg-muted/30 text-muted-foreground cursor-not-allowed"
+                    ? "text-muted-foreground hover:text-foreground"
+                    : "cursor-not-allowed text-muted-foreground/50"
                 }`}
               >
                 Semana {week}
@@ -236,14 +237,14 @@ const WeeklyUpdates = () => {
       {weekData ? (
         <div className="space-y-4">
           {/* Summary */}
-          <div className="glass-card p-5 animate-fade-in-up">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg" style={{ background: "var(--gradient-accent)" }}>
-                <BarChart3 className="h-4 w-4 text-primary-foreground" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">Resumo — Semana {selectedWeek} de {monthLabel}</p>
-                <p className="text-sm text-muted-foreground">{weekData.summary}</p>
+          <div className="rounded-lg border bg-card p-4 shadow-card">
+            <div className="flex items-start gap-3">
+              <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                <BarChart3 className="h-4 w-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="font-display text-sm font-semibold text-foreground">Resumo — Semana {selectedWeek} de {monthLabel}</p>
+                <p className="mt-0.5 text-sm text-muted-foreground">{weekData.summary}</p>
               </div>
             </div>
           </div>
@@ -253,28 +254,28 @@ const WeeklyUpdates = () => {
             const Icon = entry.icon;
             const colorClass = categoryColors[entry.category] || "bg-muted text-foreground";
             return (
-              <div key={i} className="glass-card-hover p-5 animate-fade-in-up" style={{ animationDelay: `${i * 0.1}s` }}>
-                <div className="flex items-center gap-3 mb-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${colorClass}`}>
-                    <Icon className="inline h-3 w-3 mr-1" />
+              <div key={i} className="rounded-lg border bg-card p-5 shadow-card">
+                <div className="mb-3 flex items-center gap-3">
+                  <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${colorClass}`}>
+                    <Icon className="h-3 w-3" aria-hidden />
                     {entry.category}
                   </span>
                 </div>
-                <div className="space-y-2 pl-1">
+                <ul className="space-y-2">
                   {entry.items.map((item, j) => (
-                    <div key={j} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/20 transition-colors">
-                      <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-eseg-blue mt-2" />
+                    <li key={j} className="flex items-start gap-3">
+                      <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary/40" aria-hidden />
                       <p className="text-sm text-foreground">{item}</p>
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
             );
           })}
         </div>
       ) : (
-        <div className="glass-card p-12 text-center">
-          <p className="text-muted-foreground">Nenhuma atualização disponível para este período.</p>
+        <div className="rounded-lg border border-dashed bg-card/60 px-6 py-12 text-center">
+          <p className="text-sm text-muted-foreground">Nenhuma atualização disponível para este período.</p>
         </div>
       )}
     </div>

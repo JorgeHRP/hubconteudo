@@ -134,14 +134,14 @@ const Report = () => {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl font-bold gradient-text">Relatório Mensal</h1>
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold leading-tight text-foreground sm:text-xl">Relatório Mensal</h2>
           <p className="text-muted-foreground text-sm mt-1">Resumo de métricas e ações do projeto SEO</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[180px]" aria-label="Mês do relatório">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -150,7 +150,7 @@ const Report = () => {
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={exportPDF} disabled={exporting} style={{ background: "var(--gradient-primary)" }}>
+          <Button onClick={exportPDF} disabled={exporting}>
             <Download className="h-4 w-4 mr-2" />
             {exporting ? "Exportando..." : "Exportar PDF"}
           </Button>
@@ -159,14 +159,14 @@ const Report = () => {
 
       <div ref={reportRef} className="space-y-6">
         {/* Header */}
-        <div className="glass-card p-8 text-center animate-fade-in-up">
-          <h2 className="text-xl font-bold text-foreground">Relatório SEO — Faculdade ESEG</h2>
-          <p className="text-lg font-semibold gradient-text mt-1">{monthLabel}</p>
+        <div className="rounded-lg border bg-card px-5 py-6 text-center shadow-card">
+          <h2 className="text-lg font-semibold text-foreground sm:text-xl">Relatório SEO — Faculdade ESEG</h2>
+          <p className="mt-1 font-display text-base font-semibold text-primary">{monthLabel}</p>
           <p className="text-sm text-muted-foreground mt-2">Conteúdo Martech • Grupo Etapa</p>
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
           {[
             { label: "Keywords", value: data.resumo.keywords, icon: KeyRound },
             { label: "Artigos", value: data.resumo.artigos, icon: FileText },
@@ -175,55 +175,59 @@ const Report = () => {
             { label: "Tráfego Orgânico", value: data.resumo.trafegoOrganico.toLocaleString(), icon: BarChart3 },
             { label: "Páginas Otimizadas", value: data.resumo.paginasOtimizadas, icon: Globe },
           ].map((kpi, i) => (
-            <div key={i} className="glass-card p-4 text-center">
-              <kpi.icon className="h-5 w-5 mx-auto mb-2 text-eseg-blue" />
-              <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
-              <p className="text-xs text-muted-foreground">{kpi.label}</p>
+            <div key={i} className="flex items-start justify-between gap-3 rounded-lg border bg-card p-4 shadow-card">
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">{kpi.label}</p>
+                <p className="mt-1.5 font-display text-2xl font-semibold leading-none text-foreground">{kpi.value}</p>
+              </div>
+              <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                <kpi.icon className="h-4 w-4" />
+              </span>
             </div>
           ))}
         </div>
 
         {/* Destaques */}
-        <div className="glass-card p-6 animate-fade-in-up-delay-1">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Destaques do Mês</h3>
-          <div className="space-y-3">
+        <div className="rounded-lg border bg-card p-5 shadow-card">
+          <h3 className="mb-1 font-display text-base font-semibold text-foreground">Destaques do Mês</h3>
+          <ol className="divide-y">
             {data.destaques.map((d, i) => (
-              <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-eseg-blue/10 text-eseg-blue flex items-center justify-center text-xs font-bold">{i + 1}</span>
+              <li key={i} className="flex items-start gap-3 py-3 last:pb-0">
+                <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{i + 1}</span>
                 <p className="text-sm text-foreground">{d}</p>
-              </div>
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {/* Top Keywords */}
-          <div className="glass-card p-6 animate-fade-in-up-delay-2">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Top Keywords</h3>
-            <div className="space-y-3">
+          <div className="rounded-lg border bg-card p-5 shadow-card">
+            <h3 className="mb-1 font-display text-base font-semibold text-foreground">Top Keywords</h3>
+            <ul className="divide-y">
               {data.keywordsTop.map((kw, i) => (
-                <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg font-bold text-muted-foreground">#{kw.position}</span>
-                    <span className="text-sm font-medium text-foreground">{kw.keyword}</span>
+                <li key={i} className="flex items-center justify-between gap-3 py-3 last:pb-0">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="w-8 shrink-0 font-display text-sm font-semibold tabular-nums text-muted-foreground">#{kw.position}</span>
+                    <span className="min-w-0 text-sm font-medium text-foreground">{kw.keyword}</span>
                   </div>
-                  <span className={`text-sm font-bold ${kw.change > 0 ? "text-emerald-600" : kw.change < 0 ? "text-red-500" : "text-muted-foreground"}`}>
+                  <span className={`shrink-0 text-sm font-semibold tabular-nums ${kw.change > 0 ? "text-success" : kw.change < 0 ? "text-destructive" : "text-muted-foreground"}`}>
                     {kw.change > 0 ? `↑${kw.change}` : kw.change < 0 ? `↓${Math.abs(kw.change)}` : "—"}
                   </span>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
 
           {/* Progresso */}
-          <div className="glass-card p-6 animate-fade-in-up-delay-2">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Progresso do Projeto</h3>
+          <div className="rounded-lg border bg-card p-5 shadow-card">
+            <h3 className="mb-4 font-display text-base font-semibold text-foreground">Progresso do Projeto</h3>
             <div className="space-y-4">
               {data.progresso.map((item, i) => (
                 <div key={i} className="space-y-2">
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between gap-3 text-sm">
                     <span className="font-medium text-foreground">{item.task}</span>
-                    <span className="text-muted-foreground">{item.progress}%</span>
+                    <span className="tabular-nums text-muted-foreground">{item.progress}%</span>
                   </div>
                   <Progress value={item.progress} className="h-2" />
                 </div>
@@ -234,15 +238,15 @@ const Report = () => {
 
         {/* Novos Backlinks */}
         {data.backlinksNew.length > 0 && (
-          <div className="glass-card p-6 animate-fade-in-up-delay-3">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Novos Backlinks Adquiridos</h3>
-            <div className="flex flex-wrap gap-4">
+          <div className="rounded-lg border bg-card p-5 shadow-card">
+            <h3 className="mb-4 font-display text-base font-semibold text-foreground">Novos Backlinks Adquiridos</h3>
+            <div className="grid gap-3 sm:grid-cols-2">
               {data.backlinksNew.map((bl, i) => (
-                <div key={i} className="flex items-center gap-3 p-4 rounded-xl bg-muted/30">
-                  <Link2 className="h-5 w-5 text-eseg-blue" />
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{bl.domain}</p>
-                    <p className="text-xs text-muted-foreground">DA: <span className="font-bold text-emerald-600">{bl.da}</span></p>
+                <div key={i} className="flex items-center gap-3 rounded-md border p-3">
+                  <Link2 className="h-4 w-4 shrink-0 text-accent" aria-hidden />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-foreground">{bl.domain}</p>
+                    <p className="text-xs text-muted-foreground">DA: <span className="font-semibold text-success">{bl.da}</span></p>
                   </div>
                 </div>
               ))}

@@ -4,10 +4,10 @@ import geminiLogo from "@/assets/gemini-logo.svg";
 import chatgptLogo from "@/assets/chatgpt-logo.svg";
 
 const intentData = [
-  { label: "Informational", pct: 50, color: "bg-blue-500" },
-  { label: "Commercial", pct: 25, color: "bg-amber-500" },
-  { label: "Navigational", pct: 13, color: "bg-purple-500" },
-  { label: "Transactional", pct: 13, color: "bg-emerald-500" },
+  { label: "Informational", pct: 50, color: "bg-info" },
+  { label: "Commercial", pct: 25, color: "bg-warning" },
+  { label: "Navigational", pct: 13, color: "bg-accent" },
+  { label: "Transactional", pct: 13, color: "bg-success" },
 ];
 
 const topSources = [
@@ -44,8 +44,8 @@ const SourceIcon = ({ source }: { source: string }) => {
 const GeoKeywordEngCompSP = () => {
   return (
     <div className="space-y-6">
-      <div className="glass-card p-5">
-        <h3 className="text-lg font-bold text-foreground">
+      <div className="rounded-lg border bg-card px-5 py-4 shadow-card">
+        <h3 className="font-display text-base font-semibold leading-tight text-foreground">
           Summary <span className="text-sm font-normal text-muted-foreground">for</span>{" "}
           <span className="underline decoration-primary/30">curso de engenharia da computação são paulo</span>
         </h3>
@@ -59,19 +59,19 @@ const GeoKeywordEngCompSP = () => {
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
-        <div className="glass-card p-5 space-y-4">
-          <div className="flex flex-col items-center justify-center h-[120px] text-center">
+        <div className="overflow-hidden rounded-lg border bg-card shadow-card">
+          <div className="flex h-full min-h-[10rem] flex-col items-center justify-center p-5 text-center">
             <p className="text-sm font-semibold text-foreground">No search volume data</p>
             <p className="text-xs text-muted-foreground mt-1">No search volume data available for this keyword. Use a broader term to populate this chart.</p>
           </div>
         </div>
 
-        <div className="glass-card p-5 space-y-4">
-          <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+        <div className="overflow-hidden rounded-lg border bg-card shadow-card">
+          <h4 className="flex items-center gap-2 border-b px-5 py-3 font-display text-sm font-semibold text-foreground">
             <HelpCircle className="h-4 w-4 text-muted-foreground" />
             Prompts Intent
           </h4>
-          <div className="space-y-3">
+          <div className="space-y-3 p-5">
             {intentData.map((item, i) => (
               <div key={i} className="space-y-1">
                 <div className="flex justify-between text-xs">
@@ -87,19 +87,19 @@ const GeoKeywordEngCompSP = () => {
         </div>
       </div>
 
-      <div className="glass-card p-5 space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500">
-            <Globe className="h-5 w-5 text-white" />
+      <div className="overflow-hidden rounded-lg border bg-card shadow-card">
+        <div className="flex items-center gap-3 border-b px-5 py-4">
+          <div aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <Globe className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-foreground">Top Sources from AI Overview</h3>
+            <h3 className="font-display text-base font-semibold leading-tight text-foreground">Top Sources from AI Overview</h3>
             <p className="text-xs text-muted-foreground">Sites mais citados pelas IAs para esta keyword</p>
           </div>
         </div>
-        <div className="grid md:grid-cols-2 gap-x-8 gap-y-2">
+        <div className="grid gap-x-8 px-5 py-2 md:grid-cols-2">
           {topSources.map((source, i) => (
-            <div key={i} className="flex items-center gap-3 py-2 border-b border-border/30 last:border-0">
+            <div key={i} className="flex min-w-0 items-center gap-3 border-b py-2.5 last:border-0">
               <span className="text-sm font-semibold text-muted-foreground w-6 text-right">{i + 1}.</span>
               <span className="text-sm text-foreground/80">{source}</span>
             </div>
@@ -107,29 +107,29 @@ const GeoKeywordEngCompSP = () => {
         </div>
       </div>
 
-      <div className="glass-card p-5 space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500">
-            <Sparkles className="h-5 w-5 text-white" />
+      <div className="overflow-hidden rounded-lg border bg-card shadow-card">
+        <div className="flex items-center gap-3 border-b px-5 py-4">
+          <div aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent/10 text-accent">
+            <Sparkles className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-foreground">AI Prompt Ideas</h3>
+            <h3 className="font-display text-base font-semibold leading-tight text-foreground">AI Prompt Ideas</h3>
             <p className="text-xs text-muted-foreground">Prompts reais que usuários fazem às IAs sobre este tema</p>
           </div>
         </div>
-        <div className="border border-border/50 rounded-lg overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2 bg-muted/30 border-b border-border/50">
-            <span className="text-xs font-semibold text-muted-foreground">Prompt</span>
-            <span className="text-xs font-semibold text-muted-foreground">Brands Mentioned</span>
+        <div>
+          <div className="flex items-center justify-between gap-4 border-b bg-muted/50 px-5 py-2.5">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Prompt</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Brands Mentioned</span>
           </div>
-          <div className="divide-y divide-border/30">
+          <div className="divide-y">
             {aiPrompts.map((item, i) => (
-              <div key={i} className="flex items-center justify-between px-4 py-3 hover:bg-muted/20 transition-colors">
-                <div className="flex items-center gap-2 flex-1 pr-4">
+              <div key={i} className="flex items-center justify-between gap-4 px-5 py-3 transition-colors hover:bg-muted/50">
+                <div className="flex min-w-0 flex-1 items-center gap-2.5">
                   <SourceIcon source={item.source} />
                   <span className="text-sm text-foreground/80">{item.prompt}</span>
                 </div>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">Get AI Response</span>
+                <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground max-sm:hidden">Get AI Response</span>
               </div>
             ))}
           </div>

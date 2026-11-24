@@ -31,8 +31,8 @@ const createEmptyRow = (): RenataKeywordRow => ({
 
 const KeywordsRenata = () => (
   <div className="space-y-6">
-    <div className="glass-card p-5">
-      <h3 className="text-sm font-medium text-muted-foreground mb-1">Sobre esta aba</h3>
+    <div className="rounded-lg border bg-card p-4 shadow-card">
+      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sobre esta aba</h3>
       <p className="text-sm text-foreground/80">
         Palavras-chave relacionadas à <strong>Renata</strong>. Acompanhamento de termos estratégicos para posicionamento de marca pessoal e autoridade no segmento educacional.
       </p>

@@ -43,13 +43,13 @@ export function SecaoEditavel<T>({
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h1 className="gradient-text text-2xl font-bold">{titulo}</h1>
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold leading-tight text-foreground sm:text-xl">{titulo}</h2>
           {descricao && <p className="mt-1 text-sm text-muted-foreground">{descricao}</p>}
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           {editando ? (
             <>
               <Button variant="ghost" size="sm" onClick={() => setEditando(false)}>
@@ -102,7 +102,7 @@ export function ListaEditavel<T>({
   return (
     <div className="space-y-2">
       {itens.map((item, i) => (
-        <div key={i} className="flex items-start gap-2 rounded-lg border p-3">
+        <div key={i} className="flex items-start gap-2 rounded-lg border bg-card p-3">
           <div className="min-w-0 flex-1">
             {linha(item, (novo) => {
               const copia = [...itens];
@@ -110,7 +110,7 @@ export function ListaEditavel<T>({
               aoTrocar(copia);
             })}
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"
+          <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" aria-label="Remover item"
             onClick={() => aoTrocar(itens.filter((_, j) => j !== i))}>
             <Trash2 className="h-4 w-4 text-muted-foreground" />
           </Button>

@@ -165,9 +165,9 @@ export default function ModificationFooter({ storageKey, history: externalHistor
 
   if (loading) {
     return (
-      <div className="glass-card p-4 border-t border-border mt-6">
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <Clock className="h-4 w-4 flex-shrink-0 animate-pulse" />
+      <div className="mt-6 rounded-lg border bg-card px-4 py-3 shadow-card" role="status">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <Clock className="h-4 w-4 flex-shrink-0 animate-pulse" aria-hidden />
           <span>Carregando histórico...</span>
         </div>
       </div>
@@ -176,9 +176,9 @@ export default function ModificationFooter({ storageKey, history: externalHistor
 
   if (!lastMod) {
     return (
-      <div className="glass-card p-4 border-t border-border mt-6">
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <Clock className="h-4 w-4 flex-shrink-0" />
+      <div className="mt-6 rounded-lg border bg-card px-4 py-3 shadow-card">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <Clock className="h-4 w-4 flex-shrink-0" aria-hidden />
           <span>Nenhuma modificação registrada nesta página ainda.</span>
         </div>
       </div>
@@ -186,13 +186,14 @@ export default function ModificationFooter({ storageKey, history: externalHistor
   }
 
   return (
-    <div className="glass-card p-4 space-y-2 border-t border-border mt-6">
+    <div className="mt-6 space-y-2 rounded-lg border bg-card px-4 py-3 shadow-card">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        aria-expanded={expanded}
+        className="flex min-h-9 w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-sm text-left text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
       >
-        <div className="flex items-center gap-3">
-          <Clock className="h-4 w-4 flex-shrink-0" />
+        <div className="flex min-w-0 items-center gap-3">
+          <Clock className="h-4 w-4 flex-shrink-0" aria-hidden />
           <span>
             Última modificação por{" "}
             <span className="font-medium text-foreground">{lastMod.user}</span> em{" "}
@@ -200,33 +201,32 @@ export default function ModificationFooter({ storageKey, history: externalHistor
             <span className="font-medium text-foreground">{formatTime(lastMod.date)}</span>
           </span>
         </div>
-        <div className="flex items-center gap-1 text-xs">
-          <History className="h-3.5 w-3.5" />
+        <div className="flex shrink-0 items-center gap-1 pl-7 text-xs sm:pl-0">
+          <History className="h-3.5 w-3.5" aria-hidden />
           <span>{history.length} alterações</span>
-          {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+          {expanded ? <ChevronUp className="h-3.5 w-3.5" aria-hidden /> : <ChevronDown className="h-3.5 w-3.5" aria-hidden />}
         </div>
       </button>
 
-      <div className="text-xs text-muted-foreground pl-7">
+      <div className="break-words pl-7 text-xs text-muted-foreground">
         <span className="font-medium">Alterações:</span> {lastMod.changes}
       </div>
 
       {expanded && history.length > 0 && (
-        <div className="mt-3 border-t border-border pt-3 max-h-64 overflow-y-auto space-y-2 pl-7">
-          <h4 className="text-xs font-semibold text-muted-foreground mb-2">Histórico de Modificações</h4>
-          {history.map((entry, i) => (
-            <div
-              key={`${entry.date}-${i}`}
-              className={`text-xs p-2 rounded-md ${i === 0 ? "bg-primary/5 border border-primary/10" : "bg-muted/30"}`}
-            >
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <span className="font-medium text-foreground">{entry.user}</span>
-                <span>•</span>
-                <span>{formatDate(entry.date)} às {formatTime(entry.date)}</span>
-              </div>
-              <p className="mt-1 text-foreground/70">{entry.changes}</p>
-            </div>
-          ))}
+        <div className="mt-3 max-h-64 overflow-y-auto border-t pl-7 pt-3">
+          <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Histórico de Modificações</h4>
+          <ul className="divide-y">
+            {history.map((entry, i) => (
+              <li key={`${entry.date}-${i}`} className="py-2 text-xs">
+                <div className="flex flex-wrap items-center gap-x-2 text-muted-foreground">
+                  <span className="font-medium text-foreground">{entry.user}</span>
+                  <span aria-hidden>•</span>
+                  <span>{formatDate(entry.date)} às {formatTime(entry.date)}</span>
+                </div>
+                <p className="mt-1 break-words text-muted-foreground">{entry.changes}</p>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

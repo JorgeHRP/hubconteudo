@@ -57,9 +57,9 @@ const createEmptyRow = (): KeywordAnalysisRow => ({
 
 const getRowClassName = (row: KeywordAnalysisRow): string => {
   const val = row.valeInvestir || "";
-  if (val.includes("✅")) return "bg-emerald-100 dark:bg-emerald-900/40";
-  if (val.includes("⚠️")) return "bg-amber-100 dark:bg-amber-900/40";
-  if (row.dificuldade?.includes("ESEG")) return "bg-blue-100 dark:bg-blue-900/40";
+  if (val.includes("✅")) return "bg-success/10";
+  if (val.includes("⚠️")) return "bg-warning/15";
+  if (row.dificuldade?.includes("ESEG")) return "bg-info/10";
   return "";
 };
 
@@ -72,25 +72,25 @@ const KeywordsOportunidades = () => {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="glass-card p-5">
+        <div className="rounded-lg border bg-card p-4 shadow-card">
           <p className="text-xs text-muted-foreground">Total oportunidades</p>
-          <p className="text-3xl font-bold text-foreground mt-1">{total}</p>
-          <p className="text-xs text-muted-foreground mt-1">palavras selecionadas</p>
+          <p className="mt-1 font-display text-2xl font-semibold text-foreground">{total}</p>
+          <p className="mt-1 text-xs text-muted-foreground">palavras selecionadas</p>
         </div>
-        <div className="glass-card p-5">
+        <div className="rounded-lg border bg-card p-4 shadow-card">
           <p className="text-xs text-muted-foreground">Volume total/mês</p>
-          <p className="text-3xl font-bold text-foreground mt-1">{totalVolume.toLocaleString("pt-BR")}</p>
-          <p className="text-xs text-muted-foreground mt-1">buscas estimadas</p>
+          <p className="mt-1 font-display text-2xl font-semibold text-foreground">{totalVolume.toLocaleString("pt-BR")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">buscas estimadas</p>
         </div>
-        <div className="rounded-xl bg-emerald-100 dark:bg-emerald-900/40 p-5">
-          <p className="text-xs text-emerald-700 dark:text-emerald-300">✅ Investir</p>
-          <p className="text-3xl font-bold text-emerald-900 dark:text-emerald-200 mt-1">{sim}</p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">alta prioridade</p>
+        <div className="rounded-lg border border-success/20 bg-success/10 p-4">
+          <p className="text-xs font-medium text-success">✅ Investir</p>
+          <p className="mt-1 font-display text-2xl font-semibold text-success">{sim}</p>
+          <p className="mt-1 text-xs text-muted-foreground">alta prioridade</p>
         </div>
-        <div className="rounded-xl bg-amber-100 dark:bg-amber-900/40 p-5">
-          <p className="text-xs text-amber-700 dark:text-amber-300">⚠️ Considerar</p>
-          <p className="text-3xl font-bold text-amber-900 dark:text-amber-200 mt-1">{considerar}</p>
-          <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">potencial</p>
+        <div className="rounded-lg border border-warning/30 bg-warning/15 p-4">
+          <p className="text-xs font-medium text-warning-strong">⚠️ Considerar</p>
+          <p className="mt-1 font-display text-2xl font-semibold text-warning-strong">{considerar}</p>
+          <p className="mt-1 text-xs text-muted-foreground">potencial</p>
         </div>
       </div>
 

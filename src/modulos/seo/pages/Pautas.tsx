@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { EstadoVazio } from "@/components/EstadoVazio";
 import { toast } from "@/modulos/seo/hooks/use-toast";
 import { type Pauta, type StatusPauta, type TipoPublicacao, type TipoConteudo, type Responsavel, type Prioridade, STORAGE_KEY, initialPautas } from "@/modulos/seo/data/pautasData";
 import PautasCalendar from "@/modulos/seo/components/PautasCalendar";
@@ -13,16 +14,16 @@ import { useSharedData } from "@/modulos/seo/hooks/useSharedData";
 import { useComecaVazio } from "@/modulos/seo/contexts/ProjetoSeoContext";
 
 const statusConfig: Record<StatusPauta, { icon: typeof CheckCircle; className: string }> = {
-  "Pauta Aprovada": { icon: CheckCircle, className: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-  "Negada": { icon: XCircle, className: "bg-red-100 text-red-700 border-red-200" },
-  "Fazer Internamente": { icon: Wrench, className: "bg-amber-100 text-amber-700 border-amber-200" },
-  "Pendente": { icon: FileText, className: "bg-muted text-muted-foreground border-border" },
+  "Pauta Aprovada": { icon: CheckCircle, className: "border-success/20 bg-success/10 text-success" },
+  "Negada": { icon: XCircle, className: "border-destructive/20 bg-destructive/10 text-destructive" },
+  "Fazer Internamente": { icon: Wrench, className: "border-warning/30 bg-warning/15 text-warning-strong" },
+  "Pendente": { icon: FileText, className: "border-border bg-muted text-muted-foreground" },
 };
 
 const prioridadeConfig: Record<Prioridade, string> = {
-  "⚡ Quick Win": "bg-emerald-100 text-emerald-700",
-  "📈 Médio Prazo": "bg-amber-100 text-amber-700",
-  "🎯 Alvo Futuro": "bg-blue-100 text-blue-700",
+  "⚡ Quick Win": "border-success/20 bg-success/10 text-success",
+  "📈 Médio Prazo": "border-warning/30 bg-warning/15 text-warning-strong",
+  "🎯 Alvo Futuro": "border-info/20 bg-info/10 text-info",
 };
 
 const Pautas = () => {
@@ -124,18 +125,18 @@ const Pautas = () => {
 
   return (
     <div className="space-y-6 max-w-7xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold gradient-text">Pautas</h1>
-          <p className="text-muted-foreground text-sm mt-1">Gestão de pautas e aprovações de conteúdo — {filtered.length} de {pautas.length}</p>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold leading-tight text-foreground sm:text-xl">Pautas</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">Gestão de pautas e aprovações de conteúdo — {filtered.length} de {pautas.length}</p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={handleSave} variant={hasChanges ? "default" : "outline"} size="sm" className={hasChanges ? "bg-primary" : ""}>
-            <Save className="h-4 w-4 mr-1" /> Salvar
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={handleSave} variant={hasChanges ? "default" : "outline"} size="sm" className="h-9">
+            <Save className="mr-1 h-4 w-4" /> Salvar
           </Button>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="bg-primary"><Plus className="h-4 w-4 mr-1" /> Nova Pauta</Button>
+              <Button size="sm" className="h-9"><Plus className="mr-1 h-4 w-4" /> Nova Pauta</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>Nova Pauta</DialogTitle></DialogHeader>
@@ -186,7 +187,7 @@ const Pautas = () => {
                     <SelectItem value="Renata ESEG">Renata ESEG</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button onClick={handleAdd} className="w-full bg-primary">Adicionar</Button>
+                <Button onClick={handleAdd} className="w-full">Adicionar</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -194,42 +195,47 @@ const Pautas = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="glass-card p-4 text-center animate-fade-in-up">
-          <p className="stat-value">{stats.total}</p><p className="stat-label">Total</p>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="rounded-lg border bg-card p-4 shadow-card">
+          <p className="text-xs text-muted-foreground">Total</p>
+          <p className="mt-1 font-display text-2xl font-semibold text-foreground">{stats.total}</p>
         </div>
-        <div className="glass-card p-4 text-center animate-fade-in-up-delay-1">
-          <p className="stat-value text-emerald-600">{stats.aprovadas}</p><p className="stat-label">Aprovadas</p>
+        <div className="rounded-lg border bg-card p-4 shadow-card">
+          <p className="text-xs text-muted-foreground">Aprovadas</p>
+          <p className="mt-1 font-display text-2xl font-semibold text-success">{stats.aprovadas}</p>
         </div>
-        <div className="glass-card p-4 text-center animate-fade-in-up-delay-2">
-          <p className="stat-value text-red-500">{stats.negadas}</p><p className="stat-label">Negadas</p>
+        <div className="rounded-lg border bg-card p-4 shadow-card">
+          <p className="text-xs text-muted-foreground">Negadas</p>
+          <p className="mt-1 font-display text-2xl font-semibold text-destructive">{stats.negadas}</p>
         </div>
-        <div className="glass-card p-4 text-center animate-fade-in-up-delay-3">
-          <p className="stat-value text-amber-500">{stats.internas}</p><p className="stat-label">Fazer Interno</p>
+        <div className="rounded-lg border bg-card p-4 shadow-card">
+          <p className="text-xs text-muted-foreground">Fazer Interno</p>
+          <p className="mt-1 font-display text-2xl font-semibold text-warning-strong">{stats.internas}</p>
         </div>
-        <div className="glass-card p-4 text-center animate-fade-in-up">
-          <p className="stat-value text-muted-foreground">{stats.pendentes}</p><p className="stat-label">Pendentes</p>
+        <div className="rounded-lg border bg-card p-4 shadow-card">
+          <p className="text-xs text-muted-foreground">Pendentes</p>
+          <p className="mt-1 font-display text-2xl font-semibold text-muted-foreground">{stats.pendentes}</p>
         </div>
       </div>
 
       {/* View Toggle + Search + Filters */}
       <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Button variant={viewMode === "cards" ? "default" : "outline"} size="sm" onClick={() => setViewMode("cards")} className={viewMode === "cards" ? "bg-primary" : ""}>
-            <LayoutGrid className="h-4 w-4 mr-1" /> Cards
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant={viewMode === "cards" ? "default" : "outline"} size="sm" onClick={() => setViewMode("cards")} aria-pressed={viewMode === "cards"} className="h-9">
+            <LayoutGrid className="mr-1 h-4 w-4" /> Cards
           </Button>
-          <Button variant={viewMode === "calendar" ? "default" : "outline"} size="sm" onClick={() => setViewMode("calendar")} className={viewMode === "calendar" ? "bg-primary" : ""}>
-            <CalendarIcon className="h-4 w-4 mr-1" /> Calendário
+          <Button variant={viewMode === "calendar" ? "default" : "outline"} size="sm" onClick={() => setViewMode("calendar")} aria-pressed={viewMode === "calendar"} className="h-9">
+            <CalendarIcon className="mr-1 h-4 w-4" /> Calendário
           </Button>
         </div>
 
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por título ou keyword..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <Input placeholder="Buscar por título ou keyword..." aria-label="Buscar por título ou keyword" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9" />
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-wrap gap-2">
           <Select value={prioridadeFilter} onValueChange={setPrioridadeFilter}>
-            <SelectTrigger className="w-[180px] h-8 text-xs"><SelectValue placeholder="Prioridade" /></SelectTrigger>
+            <SelectTrigger className="h-9 w-full text-xs sm:w-[180px]"><SelectValue placeholder="Prioridade" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas Prioridades</SelectItem>
               <SelectItem value="⚡ Quick Win">⚡ Quick Win</SelectItem>
@@ -238,7 +244,7 @@ const Pautas = () => {
             </SelectContent>
           </Select>
           <Select value={categoriaFilter} onValueChange={setCategoriaFilter}>
-            <SelectTrigger className="w-[180px] h-8 text-xs"><SelectValue placeholder="Categoria" /></SelectTrigger>
+            <SelectTrigger className="h-9 w-full text-xs sm:w-[180px]"><SelectValue placeholder="Categoria" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas Categorias</SelectItem>
               {categorias.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
@@ -246,7 +252,7 @@ const Pautas = () => {
           </Select>
           {viewMode === "calendar" && (
             <Select value={mesFilter} onValueChange={setMesFilter}>
-              <SelectTrigger className="w-[180px] h-8 text-xs"><SelectValue placeholder="Mês" /></SelectTrigger>
+              <SelectTrigger className="h-9 w-full text-xs sm:w-[180px]"><SelectValue placeholder="Mês" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os Meses</SelectItem>
                 {["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"].map(m => (
@@ -256,7 +262,7 @@ const Pautas = () => {
             </Select>
           )}
           {["all", "Pendente", "Pauta Aprovada", "Negada", "Fazer Internamente"].map(s => (
-            <Button key={s} variant={statusFilter === s ? "default" : "outline"} size="sm" onClick={() => setStatusFilter(s)} className={statusFilter === s ? "bg-primary" : ""}>
+            <Button key={s} variant={statusFilter === s ? "default" : "outline"} size="sm" onClick={() => setStatusFilter(s)} aria-pressed={statusFilter === s} className="h-9">
               {s === "all" ? "Todas" : s}
             </Button>
           ))}
@@ -272,57 +278,57 @@ const Pautas = () => {
             {filtered.map(pauta => {
               const StatusIcon = statusConfig[pauta.status].icon;
               return (
-                <div key={pauta.id} className="glass-card-hover p-5 space-y-3">
+                <div key={pauta.id} className="space-y-3 rounded-lg border bg-card p-4 shadow-card">
                   <div className="flex items-start justify-between gap-2">
                     {editingField?.id === pauta.id && editingField.field === "titulo" ? (
-                      <Input value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={saveEdit} onKeyDown={e => e.key === "Enter" && saveEdit()} className="text-sm h-8 flex-1" autoFocus />
+                      <Input value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={saveEdit} onKeyDown={e => e.key === "Enter" && saveEdit()} className="h-9 flex-1 text-sm" aria-label="Título da pauta" autoFocus />
                     ) : (
-                      <h3 className="font-semibold text-foreground text-sm leading-tight flex-1 cursor-pointer hover:text-primary transition-colors" onClick={() => startEdit(pauta.id, "titulo", pauta.titulo)} title="Clique para editar">
-                        <Pencil className="h-3 w-3 inline mr-1 opacity-40" />{pauta.titulo}
+                      <h3 className="flex-1 cursor-pointer font-display text-sm font-semibold leading-snug text-foreground transition-colors hover:text-accent" onClick={() => startEdit(pauta.id, "titulo", pauta.titulo)} title="Clique para editar">
+                        <Pencil className="mr-1 inline h-3 w-3 text-muted-foreground" aria-hidden />{pauta.titulo}
                       </h3>
                     )}
                   </div>
 
                   {editingField?.id === pauta.id && editingField.field === "keyword" ? (
-                    <Input value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={saveEdit} onKeyDown={e => e.key === "Enter" && saveEdit()} className="text-xs h-7" autoFocus />
+                    <Input value={editValue} onChange={e => setEditValue(e.target.value)} onBlur={saveEdit} onKeyDown={e => e.key === "Enter" && saveEdit()} className="h-9 text-xs" aria-label="Keyword da pauta" autoFocus />
                   ) : (
-                    <p className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors" onClick={() => startEdit(pauta.id, "keyword", pauta.keyword)} title="Clique para editar">
-                      <Pencil className="h-2.5 w-2.5 inline mr-1 opacity-40" /><span className="font-medium">KW:</span> {pauta.keyword || "—"}
+                    <p className="cursor-pointer text-xs text-muted-foreground transition-colors hover:text-foreground" onClick={() => startEdit(pauta.id, "keyword", pauta.keyword)} title="Clique para editar">
+                      <Pencil className="mr-1 inline h-3 w-3" aria-hidden /><span className="font-medium">KW:</span> {pauta.keyword || "—"}
                     </p>
                   )}
 
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><TrendingUp className="h-3 w-3" /> Vol: {pauta.volume || "—"}</span>
+                    <span className="flex items-center gap-1"><TrendingUp className="h-3 w-3" aria-hidden /> Vol: {pauta.volume || "—"}</span>
                     <span>KD: {pauta.kd || "—"}</span>
                   </div>
 
                   <div className="flex flex-wrap gap-1.5">
-                    <Badge variant="outline" className={`text-xs ${statusConfig[pauta.status].className}`}>
-                      <StatusIcon className="h-3 w-3 mr-1" />{pauta.status}
+                    <Badge variant="outline" className={statusConfig[pauta.status].className}>
+                      <StatusIcon className="mr-1 h-3 w-3" aria-hidden />{pauta.status}
                     </Badge>
-                    <Badge variant="secondary" className={`text-xs border-0 ${prioridadeConfig[pauta.prioridade] || ""}`}>
+                    <Badge variant="outline" className={prioridadeConfig[pauta.prioridade] || ""}>
                       {pauta.prioridade}
                     </Badge>
                     {pauta.mesPublicacao && (
-                      <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700 border-purple-200">
-                        <CalendarIcon className="h-3 w-3 mr-1" />{pauta.mesPublicacao}
+                      <Badge variant="outline" className="border-accent/20 bg-accent/10 text-accent">
+                        <CalendarIcon className="mr-1 h-3 w-3" aria-hidden />{pauta.mesPublicacao}
                       </Badge>
                     )}
                   </div>
 
                   <div className="flex flex-wrap gap-1.5">
-                    <Badge variant="secondary" className="text-xs bg-eseg-blue/10 text-eseg-blue border-0">{pauta.tipoPublicacao}</Badge>
-                    <Badge variant="secondary" className="text-xs bg-eseg-cyan/10 text-eseg-cyan border-0">{pauta.tipoConteudo}</Badge>
-                    <Badge variant="outline" className="text-xs">{pauta.categoria}</Badge>
+                    <Badge variant="secondary">{pauta.tipoPublicacao}</Badge>
+                    <Badge variant="secondary">{pauta.tipoConteudo}</Badge>
+                    <Badge variant="outline">{pauta.categoria}</Badge>
                   </div>
 
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <User className="h-3 w-3" /> {pauta.responsavel || "Conteúdo Martech"}
+                  <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <User className="h-3 w-3" aria-hidden /> {pauta.responsavel || "Conteúdo Martech"}
                   </p>
 
-                  <div className="border-t border-border pt-3 space-y-2">
+                  <div className="grid grid-cols-2 gap-2 border-t pt-3">
                     <Select value={pauta.status} onValueChange={v => handleFieldChange(pauta.id, "status", v)}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Pendente">Pendente</SelectItem>
                         <SelectItem value="Pauta Aprovada">Pauta Aprovada</SelectItem>
@@ -331,7 +337,7 @@ const Pautas = () => {
                       </SelectContent>
                     </Select>
                     <Select value={pauta.prioridade} onValueChange={v => handleFieldChange(pauta.id, "prioridade", v)}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="⚡ Quick Win">⚡ Quick Win</SelectItem>
                         <SelectItem value="📈 Médio Prazo">📈 Médio Prazo</SelectItem>
@@ -339,7 +345,7 @@ const Pautas = () => {
                       </SelectContent>
                     </Select>
                     <Select value={pauta.tipoPublicacao} onValueChange={v => handleFieldChange(pauta.id, "tipoPublicacao", v)}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {["Página", "Landing Page", "Blogpost", "Guia", "FAQ", "Lista", "Comparativo", "Infográfico", "E-book", "Webinar", "Vídeo", "Podcast"].map(t => (
                           <SelectItem key={t} value={t}>{t}</SelectItem>
@@ -347,7 +353,7 @@ const Pautas = () => {
                       </SelectContent>
                     </Select>
                     <Select value={pauta.tipoConteudo} onValueChange={v => handleFieldChange(pauta.id, "tipoConteudo", v)}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {["Comparativo", "Institucional", "Consultivo", "Direcionador", "Educacional", "Transacional", "Navegacional", "Informativo", "Promocional"].map(t => (
                           <SelectItem key={t} value={t}>{t}</SelectItem>
@@ -355,14 +361,14 @@ const Pautas = () => {
                       </SelectContent>
                     </Select>
                     <Select value={pauta.responsavel || "Conteúdo Martech"} onValueChange={v => handleFieldChange(pauta.id, "responsavel", v)}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Conteúdo Martech">Conteúdo Martech</SelectItem>
                         <SelectItem value="Renata ESEG">Renata ESEG</SelectItem>
                       </SelectContent>
                     </Select>
                     <Select value={pauta.mesPublicacao || "sem-mes"} onValueChange={v => handleFieldChange(pauta.id, "mesPublicacao", v === "sem-mes" ? "" : v)}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Mês de publicação" /></SelectTrigger>
+                      <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Mês de publicação" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="sem-mes">Sem mês definido</SelectItem>
                         {["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"].map(m => (
@@ -377,9 +383,11 @@ const Pautas = () => {
           </div>
 
           {filtered.length === 0 && (
-            <div className="glass-card p-12 text-center">
-              <p className="text-muted-foreground">Nenhuma pauta encontrada.</p>
-            </div>
+            <EstadoVazio
+              icone={FileText}
+              titulo="Nenhuma pauta encontrada"
+              descricao="Ajuste a busca ou os filtros para ver outras pautas, ou adicione uma nova."
+            />
           )}
         </>
       )}

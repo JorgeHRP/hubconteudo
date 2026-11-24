@@ -1,10 +1,11 @@
 import { Link2, Globe, Shield } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 const topMetrics = [
-  { label: "Domain Authority", value: "41", badge: "GOOD", badgeColor: "text-emerald-400 border-emerald-400/30 bg-emerald-400/10", icon: Shield },
-  { label: "Referring Domains", value: "550", badge: "GOOD", badgeColor: "text-emerald-400 border-emerald-400/30 bg-emerald-400/10", icon: Globe },
-  { label: "Backlinks", value: "15,768", badge: "GOOD", badgeColor: "text-emerald-400 border-emerald-400/30 bg-emerald-400/10", icon: Link2, sub: "NoFollow: 879" },
+  { label: "Domain Authority", value: "41", badge: "GOOD", badgeColor: "border-success/20 bg-success/10 text-success", icon: Shield },
+  { label: "Referring Domains", value: "550", badge: "GOOD", badgeColor: "border-success/20 bg-success/10 text-success", icon: Globe },
+  { label: "Backlinks", value: "15,768", badge: "GOOD", badgeColor: "border-success/20 bg-success/10 text-success", icon: Link2, sub: "NoFollow: 879" },
 ];
 
 const backlinksOverTime = [
@@ -26,8 +27,8 @@ const backlinksOverTime = [
 const CustomTooltipLine = ({ active, payload, label }: any) => {
   if (!active || !payload) return null;
   return (
-    <div className="glass-card p-3 text-xs border border-border/30">
-      <p className="font-semibold text-foreground mb-1">{label}</p>
+    <div className="rounded-md border bg-popover p-3 text-xs shadow-pop">
+      <p className="mb-1 font-semibold text-foreground">{label}</p>
       {payload.map((p: any) => (
         <p key={p.dataKey} style={{ color: p.color }}>{p.name}: {p.value?.toLocaleString()}</p>
       ))}
@@ -39,41 +40,43 @@ const BacklinksJulho = () => {
   return (
     <div className="space-y-6 max-w-7xl">
       <div>
-        <h1 className="text-2xl font-bold gradient-text">Backlinks Julho</h1>
-        <p className="text-muted-foreground text-sm mt-1">eseg.edu.br — Dados atualizados em Julho 2026</p>
+        <h2 className="text-lg font-semibold leading-tight text-foreground sm:text-xl">Backlinks Julho</h2>
+        <p className="mt-0.5 text-sm text-muted-foreground">eseg.edu.br — Dados atualizados em Julho 2026</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {topMetrics.map((m) => (
-          <div key={m.label} className="glass-card-hover p-5 space-y-2">
-            <div className="flex items-center gap-2">
-              <m.icon className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{m.label}</span>
+          <div key={m.label} className="flex items-start justify-between gap-3 rounded-lg border bg-card p-4 shadow-card">
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">{m.label}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <span className="font-display text-2xl font-semibold text-foreground">{m.value}</span>
+                {m.badge && (
+                  <Badge variant="outline" className={`uppercase ${m.badgeColor}`}>{m.badge}</Badge>
+                )}
+              </div>
+              {m.sub && <p className="mt-1 text-xs text-muted-foreground">{m.sub}</p>}
             </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-foreground">{m.value}</span>
-              {m.badge && (
-                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${m.badgeColor}`}>{m.badge}</span>
-              )}
-            </div>
-            {m.sub && <p className="text-xs text-muted-foreground">{m.sub}</p>}
+            <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <m.icon className="h-4 w-4" />
+            </span>
           </div>
         ))}
       </div>
 
-      <div className="glass-card p-6 space-y-4">
-        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Backlinks Over Time</p>
+      <div className="space-y-4 rounded-lg border bg-card p-4 shadow-card sm:p-5">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Backlinks Over Time</p>
         <div className="h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={backlinksOverTime}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
               <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
               <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
               <Tooltip content={<CustomTooltipLine />} />
               <Legend />
-              <Line yAxisId="left" type="monotone" dataKey="backlinks" name="Backlinks" stroke="#f87171" strokeWidth={2} dot={{ r: 3, fill: "#f87171" }} />
-              <Line yAxisId="right" type="monotone" dataKey="domains" name="Referring Domains" stroke="#fbbf24" strokeWidth={2} dot={{ r: 3, fill: "#fbbf24" }} />
+              <Line yAxisId="left" type="monotone" dataKey="backlinks" name="Backlinks" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--primary))" }} />
+              <Line yAxisId="right" type="monotone" dataKey="domains" name="Referring Domains" stroke="hsl(var(--accent))" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--accent))" }} />
             </LineChart>
           </ResponsiveContainer>
         </div>

@@ -181,39 +181,39 @@ const Planejamento = () => {
   return (
     <div className="space-y-6 max-w-7xl">
       <div>
-        <h1 className="text-2xl font-bold gradient-text">Planejamento SEO</h1>
+        <h2 className="text-lg font-semibold leading-tight text-foreground sm:text-xl">Planejamento SEO</h2>
         <p className="text-muted-foreground text-sm mt-1">
           Roadmap trimestral de execução — Agosto, Setembro e Outubro
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {plan.map((m) => (
-          <Card key={m.month} className="glass-card flex flex-col">
-            <CardHeader className="pb-3">
+          <Card key={m.month} className="flex flex-col overflow-hidden">
+            <CardHeader className="border-b bg-muted/50 px-5 py-4">
               <div className="flex items-center gap-2">
-                <CalendarDays className="h-5 w-5 text-primary" />
-                <Badge variant="outline" className="text-xs">
+                <CalendarDays className="h-4 w-4 shrink-0 text-accent" aria-hidden />
+                <CardTitle className="text-base">{m.label}</CardTitle>
+                <Badge variant="outline" className="ml-auto">
                   {m.month}
                 </Badge>
-                <CardTitle className="text-xl gradient-text">{m.label}</CardTitle>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
+              <p className="text-xs leading-relaxed text-muted-foreground">
                 <span className="font-semibold text-foreground">Foco:</span> {m.focus}
               </p>
             </CardHeader>
-            <CardContent className="space-y-5 flex-1">
+            <CardContent className="flex-1 divide-y p-0">
               {m.sections.map((s) => (
-                <div key={s.title}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <s.icon className="h-4 w-4 text-primary" />
-                    <h3 className="text-sm font-semibold">{s.title}</h3>
+                <div key={s.title} className="px-5 py-4">
+                  <div className="mb-2 flex items-start gap-2">
+                    <s.icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <h3 className="font-sans text-sm font-semibold leading-snug tracking-normal">{s.title}</h3>
                   </div>
-                  <ul className="space-y-1.5 pl-1">
+                  <ul className="space-y-1.5">
                     {s.items.map((item, i) => (
-                      <li key={i} className="flex gap-2 text-xs text-muted-foreground">
-                        <span className="text-primary shrink-0">•</span>
-                        <span>{item}</span>
+                      <li key={i} className="flex gap-2 text-xs leading-relaxed text-muted-foreground">
+                        <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary/40" aria-hidden />
+                        <span className="min-w-0 break-words">{item}</span>
                       </li>
                     ))}
                   </ul>
@@ -224,29 +224,28 @@ const Planejamento = () => {
         ))}
       </div>
 
-      <Card className="glass-card">
-        <CardHeader className="pb-3">
+      <Card>
+        <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
-            <GraduationCap className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg gradient-text">Otimização Página de Curso (5 de graduação)</CardTitle>
+            <GraduationCap className="h-4 w-4 shrink-0 text-accent" aria-hidden />
+            <CardTitle className="text-base">Otimização Página de Curso (5 de graduação)</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          <div className="flex flex-wrap gap-2">
             {cursos.map((curso, i) => (
-              <div key={i} className="flex gap-2 text-sm text-muted-foreground">
-                <span className="text-primary shrink-0">•</span>
-                <span>{curso}</span>
-              </div>
+              <Badge key={i} variant="secondary" className="font-normal">
+                {curso}
+              </Badge>
             ))}
           </div>
           <div>
-            <h3 className="text-sm font-semibold mb-2">Ações resumidas</h3>
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <h3 className="mb-2 font-sans text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ações resumidas</h3>
+            <ul className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
               {otimizacoesCurso.map((item, i) => (
-                <li key={i} className="flex gap-2 text-xs text-muted-foreground">
-                  <span className="text-primary shrink-0">•</span>
-                  <span>{item}</span>
+                <li key={i} className="flex gap-2 text-xs leading-relaxed text-muted-foreground">
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary/40" aria-hidden />
+                  <span className="min-w-0">{item}</span>
                 </li>
               ))}
             </ul>

@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, NavLink, Navigate, Route, Routes, useParams } from "react-router-dom";
+import { Link, NavLink, Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 import {
   Search, Workflow, PackageCheck, Globe, ClipboardList, KeyRound, Newspaper,
   FileText, CalendarDays, FileSearch, ScanSearch, Link2, ShieldCheck, Users2,
@@ -15,6 +15,7 @@ import {
 import { flagBadgeVariant, flagLabels, formatDate } from "@/lib/cs-data";
 import { PageHeader } from "@/components/PageHeader";
 import { EstadoVazio } from "@/components/EstadoVazio";
+import { EsqueletoLista, EsqueletoPagina } from "@/components/Esqueletos";
 import { ProjetoSeoProvider } from "@/modulos/seo/contexts/ProjetoSeoContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -107,6 +108,8 @@ function EscolhaDoCliente() {
     (c) => !projetos?.some((p) => p.cliente_id === c.id)
   );
 
+  if (!clientes || !projetos) return <EsqueletoLista linhas={4} />;
+
   if ((clientes ?? []).length === 0) {
     return (
       <EstadoVazio
@@ -133,34 +136,39 @@ function EscolhaDoCliente() {
             {comProjeto.map((c) => {
               const projeto = projetos?.find((p) => p.cliente_id === c.id);
               return (
-                <Link key={c.id} to={`${BASE}/${c.id}`} className="group">
-                  <Card className="h-full transition-shadow hover:shadow-md">
-                    <CardContent className="p-5 pt-5">
-                      <div className="mb-2 flex items-start justify-between gap-2">
+                <Link
+                  key={c.id}
+                  to={`${BASE}/${c.id}`}
+                  className="group rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                >
+                  <Card className="h-full transition-colors group-hover:border-primary/30">
+                    <CardContent className="p-4 pt-4">
+                      <div className="mb-3 flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="truncate font-semibold group-hover:text-primary">{c.nome_fantasia}</p>
-                          <p className="truncate text-xs text-muted-foreground">
+                          <p className="truncate font-display text-sm font-semibold transition-colors group-hover:text-primary">{c.nome_fantasia}</p>
+                          <p className="mt-0.5 truncate text-xs text-muted-foreground">
                             {c.segmento ?? c.razao_social}
                           </p>
                         </div>
-                        <Badge variant={flagBadgeVariant[c.flag_conta ?? "green"]} className="shrink-0 text-[9px]">
+                        <Badge variant={flagBadgeVariant[c.flag_conta ?? "green"]} className="shrink-0">
                           {flagLabels[c.flag_conta ?? "green"]}
                         </Badge>
                       </div>
-                      <div className="flex items-center justify-between border-t pt-2">
-                        <p className="text-[10px] text-muted-foreground">
+                      <div className="flex items-center justify-between gap-2 border-t pt-2">
+                        <p className="min-w-0 text-xs text-muted-foreground">
                           Projeto desde {formatDate(projeto?.criado_em.slice(0, 10) ?? null)}
                           {projeto?.origem === "vazio" ? " · em branco" : " · do modelo ESEG"}
                         </p>
                         <button
                           title="Encerrar projeto"
+                          aria-label={`Encerrar projeto de ${c.nome_fantasia}`}
                           onClick={(e) => {
                             e.preventDefault();
                             if (projeto) setEncerrando({ id: projeto.id, nome: c.nome_fantasia });
                           }}
-                          className="rounded p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                          className="-mr-1.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     </CardContent>
@@ -177,28 +185,28 @@ function EscolhaDoCliente() {
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Clientes sem projeto de SEO
           </p>
-          <div className="space-y-2">
-            {semProjeto.map((c) => (
-              <Card key={c.id}>
-                <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 pt-4">
+          <Card className="overflow-hidden">
+            <ul className="divide-y">
+              {semProjeto.map((c) => (
+                <li key={c.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{c.nome_fantasia}</p>
+                    <p className="truncate text-sm font-medium">{c.nome_fantasia}</p>
                     <p className="truncate text-xs text-muted-foreground">
                       {[c.segmento, c.cidade].filter(Boolean).join(" · ") || c.razao_social}
                     </p>
                   </div>
-                  <Button size="sm" disabled={lancando !== null} onClick={() => setLancando(c.id)}>
+                  <Button size="sm" variant="outline" disabled={lancando !== null} onClick={() => setLancando(c.id)}>
                     <Plus /> Lançar projeto de SEO
                   </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                </li>
+              ))}
+            </ul>
+          </Card>
         </section>
       )}
 
       <div className="flex items-start gap-2 rounded-md border border-dashed p-3 text-xs text-muted-foreground">
-        <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden />
         <span>
           Cada projeto tem os próprios dados — palavras-chave, pautas, artigos, calendário
           e auditorias não se misturam entre clientes.
@@ -217,9 +225,9 @@ function EscolhaDoCliente() {
           <div className="space-y-2">
             <button
               onClick={() => lancar.mutate({ cliente_id: lancando!, origem: "vazio" })}
-              className="flex w-full items-start gap-3 rounded-md border p-3 text-left transition-colors hover:border-primary/50 hover:bg-muted/40"
+              className="flex w-full items-start gap-3 rounded-md border p-3 text-left transition-colors hover:border-primary/50 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             >
-              <FilePlus2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <FilePlus2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
               <div>
                 <p className="text-sm font-medium">Em branco</p>
                 <p className="text-xs text-muted-foreground">
@@ -231,9 +239,9 @@ function EscolhaDoCliente() {
 
             <button
               onClick={() => lancar.mutate({ cliente_id: lancando!, origem: "modelo_eseg" })}
-              className="flex w-full items-start gap-3 rounded-md border p-3 text-left transition-colors hover:border-primary/50 hover:bg-muted/40"
+              className="flex w-full items-start gap-3 rounded-md border p-3 text-left transition-colors hover:border-primary/50 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             >
-              <Copy className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+              <Copy className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
               <div>
                 <p className="text-sm font-medium">Copiar o modelo da ESEG</p>
                 <p className="text-xs text-muted-foreground">
@@ -256,7 +264,7 @@ function EscolhaDoCliente() {
               relançado, o conteúdo volta como estava.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
             <Button variant="outline" onClick={() => setEncerrando(null)}>Cancelar</Button>
             <Button variant="destructive" onClick={() => encerrar.mutate(encerrando!.id)}>
               <AlertTriangle /> Encerrar projeto
@@ -279,8 +287,19 @@ function PainelDoCliente({ clienteId }: { clienteId: string }) {
   const cliente = clientes?.find((c) => c.id === clienteId);
   const projeto = projetos?.find((p) => p.cliente_id === clienteId);
 
+  // Centraliza a aba ativa na barra (sem rolar a página).
+  const navRef = useRef<HTMLElement>(null);
+  const { pathname } = useLocation();
+  const pronto = Boolean(clientes && projetos && cliente && projeto);
+  useEffect(() => {
+    const nav = navRef.current;
+    const link = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!nav || !link) return;
+    nav.scrollLeft = link.offsetLeft - (nav.clientWidth - link.offsetWidth) / 2;
+  }, [pathname, pronto]);
+
   if (!clientes || !projetos) {
-    return <p className="py-12 text-center text-sm text-muted-foreground">Carregando projeto…</p>;
+    return <EsqueletoPagina />;
   }
   if (!cliente || !projeto) return <Navigate to={BASE} replace />;
 
@@ -295,17 +314,17 @@ function PainelDoCliente({ clienteId }: { clienteId: string }) {
         origem: projeto.origem,
       }}
     >
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-lg border bg-card px-4 py-2.5 shadow-card">
         <Link
           to={BASE}
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         >
-          <ArrowLeft className="h-4 w-4" /> Todos os projetos
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Todos os projetos
         </Link>
-        <div className="flex items-center gap-2">
-          <Building2 className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold">{cliente.nome_fantasia}</span>
-          <Badge variant={flagBadgeVariant[cliente.flag_conta ?? "green"]} className="text-[9px]">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <Building2 className="h-4 w-4 shrink-0 text-accent" aria-hidden />
+          <span className="min-w-0 truncate font-display text-sm font-semibold">{cliente.nome_fantasia}</span>
+          <Badge variant={flagBadgeVariant[cliente.flag_conta ?? "green"]}>
             {flagLabels[cliente.flag_conta ?? "green"]}
           </Badge>
           <Button variant="outline" size="sm" asChild>
@@ -315,8 +334,8 @@ function PainelDoCliente({ clienteId }: { clienteId: string }) {
       </div>
 
       {projeto.origem === "vazio" && (
-        <div className="mb-4 flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-xs">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+        <div className="mb-4 flex items-start gap-2 rounded-md border border-warning/30 bg-warning/15 p-3 text-xs leading-relaxed">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning-strong" aria-hidden />
           <span className="text-muted-foreground">
             Projeto em branco: a estrutura é a mesma do projeto da ESEG, porém vazia.
             Palavras-chave, artigos, pautas, calendário, on-page, concorrentes,{" "}
@@ -332,7 +351,11 @@ function PainelDoCliente({ clienteId }: { clienteId: string }) {
         </div>
       )}
 
-      <nav className="mb-5 flex gap-1.5 overflow-x-auto border-b pb-2">
+      <nav
+        ref={navRef}
+        aria-label="Seções do projeto de SEO"
+        className="relative mb-6 flex gap-1 overflow-x-auto border-b [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         {secoes.map(({ titulo, rota, icone: Icone }) => (
           <NavLink
             key={rota}
@@ -340,14 +363,14 @@ function PainelDoCliente({ clienteId }: { clienteId: string }) {
             end={rota === ""}
             className={({ isActive }) =>
               cn(
-                "flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                "-mb-px flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50",
                 isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:border-border hover:text-foreground"
               )
             }
           >
-            <Icone className="h-3.5 w-3.5" />
+            <Icone className="h-4 w-4" aria-hidden />
             {titulo}
           </NavLink>
         ))}

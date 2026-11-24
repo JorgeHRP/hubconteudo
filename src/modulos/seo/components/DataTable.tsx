@@ -14,18 +14,18 @@ interface DataTableProps<T> {
 
 function DataTable<T>({ data, columns, title }: DataTableProps<T>) {
   return (
-    <div className="glass-card overflow-hidden animate-fade-in-up">
+    <div className="overflow-hidden rounded-lg border bg-card text-card-foreground shadow-card">
       {title && (
-        <div className="px-6 py-4 border-b">
-          <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+        <div className="border-b px-4 py-3">
+          <h3 className="font-display text-base font-semibold text-foreground">{title}</h3>
         </div>
       )}
-      <div className="overflow-x-auto">
+      <div className="w-full overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="border-b">
+            <TableRow className="border-b hover:bg-transparent">
               {columns.map((col, i) => (
-                <TableHead key={i} className={`table-header ${col.className || ""}`}>
+                <TableHead key={i} className={`whitespace-nowrap ${col.className || ""}`}>
                   {col.header}
                 </TableHead>
               ))}
@@ -33,9 +33,9 @@ function DataTable<T>({ data, columns, title }: DataTableProps<T>) {
           </TableHeader>
           <TableBody>
             {data.map((row, i) => (
-              <TableRow key={i} className="hover:bg-muted/30 transition-colors">
+              <TableRow key={i}>
                 {columns.map((col, j) => (
-                  <TableCell key={j} className={`text-sm ${col.className || ""}`}>
+                  <TableCell key={j} className={`px-3 py-2 text-sm ${col.className || ""}`}>
                     {typeof col.accessor === "function"
                       ? col.accessor(row)
                       : String(row[col.accessor] ?? "")}

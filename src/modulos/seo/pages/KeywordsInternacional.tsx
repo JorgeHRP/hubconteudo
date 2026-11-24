@@ -37,8 +37,8 @@ const createEmptyRow = (): IntlKeywordRow => ({
 
 const KeywordsInternacional = () => (
   <div className="space-y-6">
-    <div className="glass-card p-5">
-      <h3 className="text-sm font-medium text-muted-foreground mb-1">Sobre esta aba</h3>
+    <div className="rounded-lg border bg-card p-4 shadow-card">
+      <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sobre esta aba</h3>
       <p className="text-sm text-foreground/80">
         Palavras-chave voltadas para o <strong>braço de internacionalização da ESEG</strong>. Foco em termos em inglês, espanhol e francês para atrair alunos internacionais interessados em estudar no Brasil.
       </p>

@@ -158,30 +158,32 @@ function EditableDataTable<T extends Record<string, any>>({
   let lastGroup = "";
 
   return (
-    <div className="glass-card overflow-visible animate-fade-in-up">
+    <div className="min-w-0 overflow-hidden rounded-lg border bg-card text-card-foreground shadow-card">
       {title && (
-        <div className="px-6 py-4 border-b flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-4 py-3">
+          <h3 className="min-w-0 font-display text-base font-semibold text-foreground">{title}</h3>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={addRow}>
               <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
             </Button>
-            <Button size="sm" onClick={handleSave} disabled={!hasChanges} className={hasChanges ? "bg-eseg-blue hover:bg-eseg-blue/90 text-white" : ""}>
+            <Button size="sm" onClick={handleSave} disabled={!hasChanges}>
               <Save className="h-3.5 w-3.5 mr-1" /> Salvar
             </Button>
           </div>
         </div>
       )}
-      <div className="overflow-x-auto w-full">
+      <div className="w-full overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="border-b">
+            <TableRow className="border-b hover:bg-transparent">
               {columns.map((col) => (
-                <TableHead key={String(col.key)} className="table-header" style={col.width ? { minWidth: col.width } : undefined}>
+                <TableHead key={String(col.key)} className="whitespace-nowrap" style={col.width ? { minWidth: col.width } : undefined}>
                   {col.header}
                 </TableHead>
               ))}
-              <TableHead className="table-header w-10 sticky right-0 bg-background z-10"></TableHead>
+              <TableHead className="sticky right-0 z-10 w-10 bg-muted">
+                <span className="sr-only">Ações</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -195,13 +197,13 @@ function EditableDataTable<T extends Record<string, any>>({
               return (
                 <React.Fragment key={rowIndex}>
                   {isNewGroup && (
-                    <TableRow className="bg-muted/40">
-                      <TableCell colSpan={columns.length + 1} className="py-2 px-4">
-                        <span className="text-xs font-semibold text-eseg-blue">{groupVal}</span>
+                    <TableRow className="bg-muted/50 hover:bg-muted/50">
+                      <TableCell colSpan={columns.length + 1} className="px-3 py-1.5">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{groupVal}</span>
                       </TableCell>
                     </TableRow>
                   )}
-                  <TableRow className={`hover:bg-muted/20 transition-colors group ${extraClass}`}>
+                  <TableRow className={`group ${extraClass}`}>
                     {columns.map((col) => {
                       const isEditing = editingCell?.row === rowIndex && editingCell?.col === col.key;
                       
@@ -215,10 +217,12 @@ function EditableDataTable<T extends Record<string, any>>({
                                 newData[rowIndex] = { ...newData[rowIndex], [col.key]: !isActive };
                                 updateData(newData);
                               }}
-                              className="p-2 transition-colors"
+                              aria-label={isActive ? `Desmarcar ${col.header}` : `Marcar ${col.header}`}
+                              aria-pressed={isActive}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                             >
                               <Star
-                                className={`h-4 w-4 transition-colors ${isActive ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/40 hover:text-yellow-400/60"}`}
+                                className={`h-4 w-4 transition-colors ${isActive ? "fill-warning text-warning" : "text-muted-foreground/40 hover:text-warning"}`}
                               />
                             </button>
                           </TableCell>
@@ -265,13 +269,13 @@ function EditableDataTable<T extends Record<string, any>>({
                               onChange={(e) => setEditValue(e.target.value)}
                               onBlur={handleCellBlur}
                               onKeyDown={handleKeyDown}
-                              className="h-8 rounded-none border-0 border-b-2 border-eseg-blue bg-eseg-blue/5 focus-visible:ring-0 text-sm px-3"
+                              className="h-9 rounded-none border-0 border-b-2 border-primary bg-primary/5 px-3 text-sm focus-visible:ring-0"
                             />
                           ) : (
-                            <div className="px-3 py-2 min-h-[36px] cursor-text hover:bg-eseg-blue/5 transition-colors rounded">
+                            <div className="min-h-[36px] cursor-text px-3 py-2 transition-colors hover:bg-primary/5">
                               {col.render ? col.render(row[col.key], row) : (
                                 col.type === "url" && row[col.key] ? (
-                                  <span className="text-xs text-eseg-blue truncate block max-w-[250px]">{String(row[col.key])}</span>
+                                  <span className="block max-w-[250px] truncate text-xs text-accent">{String(row[col.key])}</span>
                                 ) : col.type === "number" ? (
                                   <span>{Number(row[col.key]).toLocaleString()}</span>
                                 ) : (
@@ -283,10 +287,11 @@ function EditableDataTable<T extends Record<string, any>>({
                         </TableCell>
                       );
                     })}
-                    <TableCell className="p-1 sticky right-0 bg-background z-10">
+                    <TableCell className="sticky right-0 z-10 bg-card p-1">
                       <button
                         onClick={(e) => deleteRow(rowIndex, e)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-destructive"
+                        aria-label="Remover linha"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-destructive transition-opacity hover:bg-destructive/10 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 md:opacity-0 md:group-hover:opacity-100"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -298,11 +303,15 @@ function EditableDataTable<T extends Record<string, any>>({
           </TableBody>
         </Table>
       </div>
-      <div className="px-4 py-2 border-t text-xs text-muted-foreground flex justify-between">
-        <span>{data.length} registros</span>
+      <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 border-t px-4 py-2 text-xs text-muted-foreground">
+        <span className="tabular-nums">{data.length} registros</span>
         <span>Clique em qualquer célula para editar • Tab para navegar</span>
       </div>
-      {storageKey && <ModificationFooter storageKey={storageKey} history={modTracker.history} />}
+      {storageKey && (
+        <div className="[&>div]:mt-0 [&>div]:rounded-t-none [&>div]:border-x-0 [&>div]:border-b-0 [&>div]:bg-muted/30 [&>div]:shadow-none">
+          <ModificationFooter storageKey={storageKey} history={modTracker.history} />
+        </div>
+      )}
     </div>
   );
 }

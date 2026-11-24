@@ -157,7 +157,7 @@ export function AppSidebar({
         ) : (
           <div className="min-w-0 flex-1">
             <Marca altura={22} />
-            <p className="mt-1 truncate text-[11px] font-medium uppercase tracking-[0.14em] text-sidebar-foreground/60">
+            <p className="mt-1 truncate text-xs font-medium uppercase tracking-[0.14em] text-sidebar-foreground/60">
               Central Interna
             </p>
           </div>
@@ -194,7 +194,7 @@ export function AppSidebar({
                   onClick={() => alternarGrupo(grupo)}
                   aria-expanded={aberto}
                   aria-controls={idLista}
-                  className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/60 transition-colors hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring/60"
+                  className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-xs font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/60 transition-colors hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring/60"
                 >
                   <span className="flex-1 truncate">{grupo}</span>
                   {!aberto && temAtivo && (

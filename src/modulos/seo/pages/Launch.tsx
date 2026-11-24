@@ -127,20 +127,20 @@ const Launch = () => {
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
-        <h1 className="text-2xl font-bold gradient-text">Lançamento de Atualizações</h1>
+        <h2 className="text-lg font-semibold leading-tight text-foreground sm:text-xl">Lançamento de Atualizações</h2>
         <p className="text-muted-foreground text-sm mt-1">Selecione ou escreva o que foi feito para adicionar às Atualizações Semanais</p>
       </div>
 
       {/* Filtros */}
       <div className="flex flex-wrap gap-3">
         <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-          <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[160px]" aria-label="Mês"><SelectValue /></SelectTrigger>
           <SelectContent>
             {months.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={selectedWeek} onValueChange={setSelectedWeek}>
-          <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[140px]" aria-label="Semana"><SelectValue /></SelectTrigger>
           <SelectContent>
             {weeks.map(w => <SelectItem key={w} value={w}>{w}</SelectItem>)}
           </SelectContent>
@@ -148,20 +148,21 @@ const Launch = () => {
       </div>
 
       {/* Categorias */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Categoria">
         {categories.map(cat => {
           const Icon = cat.icon;
           return (
             <button
               key={cat.value}
               onClick={() => { setSelectedCategory(cat.value); setSelectedSuggestions(new Set()); }}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              aria-pressed={selectedCategory === cat.value}
+              className={`flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
                 selectedCategory === cat.value
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "bg-muted text-foreground hover:bg-muted/80"
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "bg-card text-muted-foreground hover:bg-muted/50 hover:text-foreground"
               }`}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-4 w-4" aria-hidden />
               {cat.label}
             </button>
           );
@@ -169,17 +170,17 @@ const Launch = () => {
       </div>
 
       {/* Sugestões */}
-      <div className="glass-card p-6 animate-fade-in-up">
-        <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="h-4 w-4 text-eseg-blue" />
-          <h3 className="font-semibold text-foreground">Sugestões — {currentCategory.label}</h3>
+      <div className="rounded-lg border bg-card p-5 shadow-card">
+        <div className="mb-4 flex items-center gap-2">
+          <Sparkles className="h-4 w-4 shrink-0 text-accent" aria-hidden />
+          <h3 className="font-display text-base font-semibold text-foreground">Sugestões — {currentCategory.label}</h3>
         </div>
         <div className="space-y-2">
           {currentCategory.suggestions.map((suggestion, i) => (
             <label
               key={i}
-              className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all ${
-                selectedSuggestions.has(i) ? "bg-eseg-blue/10 border border-eseg-blue/30" : "bg-muted/30 hover:bg-muted/50 border border-transparent"
+              className={`flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors ${
+                selectedSuggestions.has(i) ? "border-primary/30 bg-primary/5" : "hover:bg-muted/50"
               }`}
             >
               <Checkbox
@@ -198,36 +199,39 @@ const Launch = () => {
             value={customText}
             onChange={(e) => setCustomText(e.target.value)}
             placeholder="Ex: Publicação do artigo sobre MBA em Gestão..."
+            aria-label="Sua própria atualização"
             rows={2}
             className="resize-none"
           />
         </div>
 
-        <Button onClick={handlePublish} className="mt-4 w-full" style={{ background: "var(--gradient-primary)" }}>
-          <Send className="h-4 w-4 mr-2" />
-          Lançar Atualização ({selectedSuggestions.size + (customText.trim() ? 1 : 0)})
-        </Button>
+        <div className="mt-4 flex justify-end">
+          <Button onClick={handlePublish} className="w-full sm:w-auto">
+            <Send className="h-4 w-4 mr-2" />
+            Lançar Atualização ({selectedSuggestions.size + (customText.trim() ? 1 : 0)})
+          </Button>
+        </div>
       </div>
 
       {/* Histórico */}
       {updates.length > 0 && (
-        <div className="glass-card p-6 animate-fade-in-up">
-          <h3 className="font-semibold text-foreground mb-4">Atualizações Lançadas</h3>
-          <div className="space-y-3">
+        <div className="rounded-lg border bg-card p-5 shadow-card">
+          <h3 className="mb-1 font-display text-base font-semibold text-foreground">Atualizações Lançadas</h3>
+          <ul className="divide-y">
             {updates.map(update => (
-              <div key={update.id} className="flex items-start gap-3 p-3 rounded-xl bg-muted/30">
-                <Check className="h-4 w-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+              <li key={update.id} className="flex items-start gap-3 py-3 last:pb-0">
+                <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-success" aria-hidden />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-foreground">{update.text}</p>
-                  <div className="flex gap-2 mt-1 flex-wrap">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-eseg-blue/10 text-eseg-blue font-medium">{update.category}</span>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                    <span className="rounded-md border border-info/20 bg-info/10 px-2 py-0.5 text-xs font-medium text-info">{update.category}</span>
                     <span className="text-xs text-muted-foreground">{update.month} • {update.week}</span>
-                    <span className="text-xs text-muted-foreground/60">{update.timestamp}</span>
+                    <span className="text-xs text-muted-foreground">{update.timestamp}</span>
                   </div>
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       )}
     </div>

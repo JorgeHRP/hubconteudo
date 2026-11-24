@@ -1,4 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 
 const gscData = [
@@ -61,69 +63,69 @@ const KeywordsGSC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="glass-card p-5">
-        <h3 className="text-sm font-medium text-muted-foreground mb-1">Sobre esta aba</h3>
+      <div className="rounded-lg border bg-card p-4 shadow-card">
+        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sobre esta aba</h3>
         <p className="text-sm text-foreground/80">
           Dados extraídos diretamente do <strong>Google Search Console</strong>, mostrando as <strong>50 palavras-chave que mais geram cliques</strong> para o site da ESEG. Os números abaixo referem-se apenas a essas 50 queries, não ao total do site. 
-          As linhas em <span className="text-red-400 font-semibold">vermelho</span> indicam buscas de navegação interna (alunos e professores buscando o portal), que não representam tráfego de novos visitantes.
+          As linhas em <span className="font-semibold text-destructive">vermelho</span> indicam buscas de navegação interna (alunos e professores buscando o portal), que não representam tráfego de novos visitantes.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {[
           { label: "Total de Cliques", value: totalClicks.toLocaleString() },
           { label: "Total de Impressões", value: totalImpressions.toLocaleString() },
           { label: "CTR Médio", value: `${avgCTR}%` },
           { label: "Posição Média", value: avgPosition },
         ].map((m) => (
-          <div key={m.label} className="glass-card p-4 text-center">
+          <div key={m.label} className="rounded-lg border bg-card p-4 shadow-card">
             <p className="text-xs text-muted-foreground">{m.label}</p>
-            <p className="text-xl font-bold gradient-text mt-1">{m.value}</p>
+            <p className="mt-1 font-display text-2xl font-semibold text-foreground">{m.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="glass-card overflow-hidden">
-        <div className="px-6 py-4 border-b border-border/50 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-foreground">Top Queries — Google Search Console</h3>
-          <div className="flex items-center gap-2 text-xs text-red-400">
-            <AlertTriangle className="h-3.5 w-3.5" />
+      <Card className="overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-4 py-3 sm:px-5">
+          <h3 className="font-display text-base font-semibold text-foreground">Top Queries — Google Search Console</h3>
+          <div className="flex items-center gap-2 text-xs text-destructive">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
             <span>Vermelho = acesso de alunos/professores</span>
           </div>
         </div>
         <div className="overflow-x-auto">
-          <Table>
+          <Table className="min-w-[560px]">
             <TableHeader>
-              <TableRow className="border-b border-border/50">
-                <TableHead className="table-header">Query</TableHead>
-                <TableHead className="table-header text-right">Cliques</TableHead>
-                <TableHead className="table-header text-right">Impressões</TableHead>
-                <TableHead className="table-header text-right">CTR</TableHead>
-                <TableHead className="table-header text-right">Posição Média</TableHead>
+              <TableRow>
+                <TableHead>Query</TableHead>
+                <TableHead className="text-right">Cliques</TableHead>
+                <TableHead className="text-right">Impressões</TableHead>
+                <TableHead className="text-right">CTR</TableHead>
+                <TableHead className="whitespace-nowrap text-right">Posição Média</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {gscData.map((row, i) => (
                 <TableRow
                   key={i}
-                  className={`transition-colors ${row.isInternal ? "bg-red-500/10 hover:bg-red-500/20" : "hover:bg-muted/30"}`}
+                  className={`transition-colors ${row.isInternal ? "bg-destructive/5 hover:bg-destructive/10" : "hover:bg-muted/50"}`}
                 >
-                  <TableCell className={`text-sm font-medium ${row.isInternal ? "text-red-400" : ""}`}>
+                  <TableCell className={`text-sm font-medium ${row.isInternal ? "text-destructive" : ""}`}>
                     {row.query}
                     {row.isInternal && (
-                      <span className="ml-2 text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded-full">interno</span>
+                      <Badge variant="destructive" className="ml-2">interno</Badge>
                     )}
                   </TableCell>
-                  <TableCell className={`text-sm text-right ${row.isInternal ? "text-red-400/80" : ""}`}>{row.clicks.toLocaleString()}</TableCell>
-                  <TableCell className={`text-sm text-right ${row.isInternal ? "text-red-400/80" : ""}`}>{row.impressions.toLocaleString()}</TableCell>
-                  <TableCell className={`text-sm text-right ${row.isInternal ? "text-red-400/80" : ""}`}>{row.ctr.toFixed(2)}%</TableCell>
-                  <TableCell className={`text-sm text-right ${row.isInternal ? "text-red-400/80" : ""}`}>{row.position.toFixed(1)}</TableCell>
+                  <TableCell className="text-right text-sm tabular-nums">{row.clicks.toLocaleString()}</TableCell>
+                  <TableCell className="text-right text-sm tabular-nums">{row.impressions.toLocaleString()}</TableCell>
+                  <TableCell className="text-right text-sm tabular-nums">{row.ctr.toFixed(2)}%</TableCell>
+                  <TableCell className="text-right text-sm tabular-nums">{row.position.toFixed(1)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };

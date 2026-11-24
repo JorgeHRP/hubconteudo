@@ -127,22 +127,6 @@
 }
 
 @layer components {
-  /*
-   * Nomes antigos mantidos para não tocar em dezenas de telas de uma vez:
-   * os degradês viraram cor chapada e o "vidro" virou cartão com borda fina.
-   */
-  .gradient-primary {
-    background-color: hsl(var(--primary));
-  }
-  .gradient-sidebar {
-    background-color: hsl(var(--sidebar-background));
-  }
-  .gradient-accent {
-    background-color: hsl(var(--accent));
-  }
-  .glass-card {
-    @apply border bg-card shadow-card;
-  }
   /* Rolagem do menu lateral: fina e sem setas, no lugar da padrão do Windows. */
   .rolagem-sidebar {
     scrollbar-width: thin;
