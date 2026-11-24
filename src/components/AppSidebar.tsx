@@ -1,14 +1,13 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 import {
   Home, Newspaper, CalendarDays, Users, ClipboardList, FolderOpen, Receipt,
-  Palette, BookOpen, GraduationCap, Shield, Headphones, TrendingUp, LogOut,
-  Settings, PanelLeftClose, PanelLeft, Plane, Wallet, Megaphone, Search, Rocket, Briefcase,
+  Palette, BookOpen, GraduationCap, Shield, Headphones, TrendingUp,
+  Settings, ChevronDown, X, Plane, Wallet, Megaphone, Search, Rocket, Briefcase,
   ListChecks, Magnet, Building2, Share2, Globe2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import { roleLabels } from "@/lib/mock-data";
-import { AvatarPessoa } from "@/components/AvatarPessoa";
 import { Marca } from "@/components/Marca";
 import type { AppModulo } from "@/lib/types";
 
@@ -19,7 +18,7 @@ interface ItemNav {
   modulo?: AppModulo;
 }
 
-const grupos: { grupo: string; itens: ItemNav[] }[] = [
+export const grupos: { grupo: string; itens: ItemNav[] }[] = [
   {
     grupo: "Principal",
     itens: [
@@ -66,125 +65,201 @@ const grupos: { grupo: string; itens: ItemNav[] }[] = [
   },
 ];
 
+/** A rota do menu está ativa neste endereço? (a inicial só no endereço exato) */
+function rotaAtiva(rota: string, pathname: string) {
+  return rota === "/" ? pathname === "/" : pathname === rota || pathname.startsWith(rota + "/");
+}
+
+/** Grupo e título da tela aberta, para o caminho da barra superior. */
+export function telaAtual(pathname: string): { grupo?: string; titulo: string; rota: string } | null {
+  if (rotaAtiva("/perfil", pathname)) return { titulo: "Meu perfil", rota: "/perfil" };
+  if (rotaAtiva("/admin", pathname)) return { titulo: "Painel Admin", rota: "/admin" };
+  for (const { grupo, itens } of grupos) {
+    const item = itens.find((i) => rotaAtiva(i.rota, pathname));
+    if (item) return { grupo, titulo: item.titulo, rota: item.rota };
+  }
+  return null;
+}
+
+// Preferência só de tela: quais grupos do menu a pessoa deixou fechados.
+const CHAVE_GRUPOS = "central:menu-grupos-fechados";
+
+function lerGruposFechados(): string[] {
+  try {
+    const valor = JSON.parse(localStorage.getItem(CHAVE_GRUPOS) ?? "[]");
+    return Array.isArray(valor) ? valor : [];
+  } catch {
+    return [];
+  }
+}
+
+const classeItem = (ativo: boolean) =>
+  cn(
+    "group relative flex items-center gap-3 rounded-md px-2.5 py-2 text-sm transition-colors",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring/60",
+    ativo
+      ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+      : "text-sidebar-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"
+  );
+
+const classeIcone = (ativo: boolean) =>
+  cn(
+    "h-[18px] w-[18px] shrink-0",
+    ativo ? "text-sidebar-primary" : "text-sidebar-foreground/70 group-hover:text-sidebar-accent-foreground"
+  );
+
+/** Barra fina na lateral do item ativo. */
+function MarcaAtivo() {
+  return <span aria-hidden className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-sidebar-primary" />;
+}
+
 export function AppSidebar({
   recolhida,
   onAlternar,
+  movel = false,
 }: {
   recolhida: boolean;
   onAlternar: () => void;
+  /** Menu deslizante do celular: mostra o botão de fechar no topo. */
+  movel?: boolean;
 }) {
-  const { profile, role, temModulo, isMaster, logout } = useAuth();
-  const navigate = useNavigate();
+  const { temModulo, isMaster } = useAuth();
+  const { pathname } = useLocation();
+  const [fechados, setFechados] = useState<string[]>(lerGruposFechados);
+
+  function alternarGrupo(grupo: string) {
+    setFechados((atual) => {
+      const novo = atual.includes(grupo) ? atual.filter((g) => g !== grupo) : [...atual, grupo];
+      try {
+        localStorage.setItem(CHAVE_GRUPOS, JSON.stringify(novo));
+      } catch {
+        // Sem armazenamento local, a preferência vale só até recarregar.
+      }
+      return novo;
+    });
+  }
 
   return (
     <aside
       className={cn(
-        "gradient-sidebar flex h-screen flex-col border-r border-sidebar-border text-sidebar-foreground transition-all duration-200",
+        "flex h-screen flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200",
         recolhida ? "w-[68px]" : "w-64"
       )}
     >
-      <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-4">
-        {/* Barra escura: a versão clara da marca é a que se lê aqui. */}
+      <div
+        className={cn(
+          "flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border",
+          recolhida ? "justify-center px-2" : "px-5"
+        )}
+      >
         {recolhida ? (
-          <Marca tipo="emblema" tom="clara" altura={22} className="shrink-0" />
+          <Marca tipo="emblema" altura={24} className="shrink-0" />
         ) : (
           <div className="min-w-0 flex-1">
-            <Marca tom="clara" altura={20} />
-            <p className="mt-1 truncate text-[10px] tracking-wide text-sidebar-foreground/60">
+            <Marca altura={22} />
+            <p className="mt-1 truncate text-[11px] font-medium uppercase tracking-[0.14em] text-sidebar-foreground/60">
               Central Interna
             </p>
           </div>
         )}
-        <button
-          onClick={onAlternar}
-          className="rounded-md p-1.5 text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent hover:text-white"
-          aria-label={recolhida ? "Expandir menu" : "Recolher menu"}
-        >
-          {recolhida ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-        </button>
+        {movel && (
+          <button
+            onClick={onAlternar}
+            className="rounded-md p-2 text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            aria-label="Fechar menu"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
-      <nav className="rolagem-sidebar flex-1 space-y-5 overflow-y-auto overscroll-contain px-3 py-4">
-        {grupos.map(({ grupo, itens }) => {
+      <nav
+        aria-label="Menu principal"
+        className={cn(
+          "rolagem-sidebar flex-1 overflow-y-auto overscroll-contain py-4",
+          recolhida ? "space-y-3 px-2.5" : "space-y-1 px-3"
+        )}
+      >
+        {grupos.map(({ grupo, itens }, indice) => {
           const visiveis = itens.filter((i) => !i.modulo || temModulo(i.modulo));
           if (visiveis.length === 0) return null;
+          const aberto = recolhida || !fechados.includes(grupo);
+          const temAtivo = visiveis.some((i) => rotaAtiva(i.rota, pathname));
+          const idLista = `menu-grupo-${indice}`;
           return (
-            <div key={grupo}>
+            <div key={grupo} className={cn(recolhida && indice > 0 && "border-t border-sidebar-border pt-3")}>
               {!recolhida && (
-                <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
-                  {grupo}
-                </p>
+                <button
+                  type="button"
+                  onClick={() => alternarGrupo(grupo)}
+                  aria-expanded={aberto}
+                  aria-controls={idLista}
+                  className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/60 transition-colors hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring/60"
+                >
+                  <span className="flex-1 truncate">{grupo}</span>
+                  {!aberto && temAtivo && (
+                    <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-sidebar-primary" />
+                  )}
+                  <ChevronDown
+                    className={cn("h-3.5 w-3.5 shrink-0 transition-transform duration-200", !aberto && "-rotate-90")}
+                  />
+                </button>
               )}
-              <div className="space-y-0.5">
-                {visiveis.map(({ titulo, rota, icone: Icone }) => (
-                  <NavLink
-                    key={rota}
-                    to={rota}
-                    end={rota === "/"}
-                    title={recolhida ? titulo : undefined}
-                    className={({ isActive }) =>
-                      cn(
-                        "flex items-center gap-3 rounded-md px-2.5 py-2 text-sm transition-colors",
-                        isActive
-                          ? "bg-sidebar-primary font-medium text-sidebar-primary-foreground"
-                          : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-white"
-                      )
-                    }
-                  >
-                    <Icone className="h-4 w-4 shrink-0" />
-                    {!recolhida && <span className="truncate">{titulo}</span>}
-                  </NavLink>
-                ))}
+              <div
+                id={idLista}
+                className={cn(
+                  "grid transition-[grid-template-rows] duration-200 ease-out",
+                  aberto ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                )}
+              >
+                <div
+                  className={cn(
+                    "min-h-0 space-y-0.5 overflow-hidden",
+                    !aberto && "invisible",
+                    !recolhida && aberto && "pb-2"
+                  )}
+                >
+                  {visiveis.map(({ titulo, rota, icone: Icone }) => (
+                    <NavLink
+                      key={rota}
+                      to={rota}
+                      end={rota === "/"}
+                      title={recolhida ? titulo : undefined}
+                      className={({ isActive }) => cn(classeItem(isActive), recolhida && "justify-center px-0")}
+                    >
+                      {({ isActive }) => (
+                        <>
+                          {isActive && <MarcaAtivo />}
+                          <Icone className={classeIcone(isActive)} />
+                          {!recolhida && <span className="truncate">{titulo}</span>}
+                        </>
+                      )}
+                    </NavLink>
+                  ))}
+                </div>
               </div>
             </div>
           );
         })}
       </nav>
 
-      <div className="border-t border-sidebar-border p-3">
-        <button
-          onClick={() => navigate("/perfil")}
-          className="mb-1 flex w-full items-center gap-2.5 rounded-md p-1.5 text-left transition-colors hover:bg-sidebar-accent"
-        >
-          <AvatarPessoa nome={profile?.nome ?? "?"} foto={profile?.foto_url}
-            className="h-8 w-8 shrink-0" classeIniciais="bg-sidebar-accent text-[10px] text-white" />
-          {!recolhida && (
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-medium text-white">{profile?.nome}</p>
-              <p className="truncate text-[10px] text-sidebar-foreground/60">
-                {role ? roleLabels[role] : ""}
-              </p>
-            </div>
-          )}
-        </button>
-
-        {isMaster && (
+      {isMaster && (
+        <div className={cn("border-t border-sidebar-border py-3", recolhida ? "px-2.5" : "px-3")}>
           <NavLink
             to="/admin"
             title={recolhida ? "Painel Admin" : undefined}
-            className={({ isActive }) =>
-              cn(
-                "flex items-center gap-3 rounded-md px-2.5 py-2 text-sm transition-colors",
-                isActive
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-white"
-              )
-            }
+            className={({ isActive }) => cn(classeItem(isActive), recolhida && "justify-center px-0")}
           >
-            <Settings className="h-4 w-4 shrink-0" />
-            {!recolhida && <span>Painel Admin</span>}
+            {({ isActive }) => (
+              <>
+                {isActive && <MarcaAtivo />}
+                <Settings className={classeIcone(isActive)} />
+                {!recolhida && <span>Painel Admin</span>}
+              </>
+            )}
           </NavLink>
-        )}
-
-        <button
-          onClick={logout}
-          title={recolhida ? "Sair" : undefined}
-          className="flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-sm text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent hover:text-white"
-        >
-          <LogOut className="h-4 w-4 shrink-0" />
-          {!recolhida && <span>Sair</span>}
-        </button>
-      </div>
+        </div>
+      )}
     </aside>
   );
 }
